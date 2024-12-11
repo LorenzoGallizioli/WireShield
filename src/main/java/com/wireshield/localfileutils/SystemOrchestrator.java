@@ -27,11 +27,36 @@ public class SystemOrchestrator {
      * 
      * @param operation
      *   The operation to be performed.
-     * @param status
-     *   The connection status.
      */
-    public void manageVPN(vpnOperations operation, connectionStates status) {}
+    public void manageVPN(vpnOperations operation) {
+        String wgPath = "C:\\Program Files\\WireGuard\\wireguard.exe";
+        String configPath = "C:\\Program Files\\WireGuard\\Data\\Configurations\\peer5_galliz.conf.dpapi";
+        wireguardManager = new WireguardManager(wgPath);
+        switch (operation) {
+            case START:
+                if (wireguardManager.setInterfaceUp(configPath)) {
+                    System.out.println("[INFO] Interfaccia avviata con successo.");
+                } else {
+                    System.err.println("[ERR] Errore nell'avvio dell'interfaccia.");
+                }
+            break;
+        
+            case STOP:
+                if (wireguardManager.setInterfaceDown()) {
+                    System.out.println("[INFO] Interfaccia arrestata con successo.");
+                } else {
+                    System.err.println("[ERR] Errore nell'arresto dell'interfaccia.");
+                }
+                break;
+            
+            default:
+                System.err.println("[WARN] Operazione non supportata: " + operation);
+            break;
+        }
+    
+    }
 
+    
     /**
      * Method to manage the antivirus.
      * 
