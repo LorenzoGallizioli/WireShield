@@ -8,7 +8,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.wireshield.av.AntivirusManager;
+import com.wireshield.av.ClamAV;
 import com.wireshield.av.ScanReport;
+import com.wireshield.av.VirusTotal;
 import com.wireshield.wireguard.PeerManager;
 import com.wireshield.wireguard.WireguardManager;
 import com.wireshield.enums.runningStates;
@@ -16,8 +18,7 @@ import com.wireshield.enums.connectionStates;
 import com.wireshield.enums.vpnOperations;
 
 /*
- * The SystemOrchestrator class orchestrates various components of the system, 
- * including antivirus, download monitoring, and VPN connections.
+ * Orchestrates various system components, including antivirus, download monitoring, and VPN connections.
  */
 public class SystemOrchestrator {
 
@@ -26,36 +27,39 @@ public class SystemOrchestrator {
     private WireguardManager wireguardManager; // Manages VPN connections
     private DownloadManager downloadManager;   // Manages download monitoring
     private AntivirusManager antivirusManager; // Manages antivirus operations
-    private runningStates avStatus;            // Status of the antivirus
-    private runningStates monitorStatus;       // Status of the download monitoring
-    private connectionStates connectionStatus; // Status of the VPN connection
+    private ClamAV clamAV;
+    private VirusTotal virusTotal;
+
+    private runningStates avStatus;            // Antivirus service status
+    private runningStates monitorStatus;       // Download monitoring service status
+    private connectionStates connectionStatus; // VPN connection status
 
     /*
-     * Constructs a SystemOrchestrator instance, initializing its components.
+     * Initializes the SystemOrchestrator instance with necessary components.
      */
     public SystemOrchestrator() {
-        // Create a singleton instance of AntivirusManager
         this.antivirusManager = new AntivirusManager();
+        this.clamAV = new ClamAV(); // Initialize ClamAV
+        this.virusTotal = new VirusTotal(); // Initialize VirusTotal
 
-        // Pass the AntivirusManager instance to the DownloadManager
         this.setDownloadManager(new DownloadManager(antivirusManager));
+        antivirusManager.setClamAV(clamAV);
+        antivirusManager.setVirusTotal(virusTotal);
+
         logger.info("SystemOrchestrator initialized.");
     }
 
     /**
      * Manages the VPN connection.
      * 
-     * @param operation
-     *   The operation to be performed (START or STOP).
+     * @param operation The operation to be performed (START or STOP).
      */
     public void manageVPN(vpnOperations operation) {
-        // Define the path to the WireGuard executable and the config file
         String wgPath = "C:\\Program Files\\WireGuard\\wireguard.exe";
         String configPath = "C:\\Users\\loren\\Downloads\\peer5_galliz.conf";
-        
-        // Initialize the WireguardManager with the executable path
+
         wireguardManager = new WireguardManager(wgPath);
-        
+
         switch (operation) {
             case START:
                 if (wireguardManager.setInterfaceUp(configPath)) {
@@ -80,102 +84,90 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Manages the download monitoring service, starting or stopping it based on the status.
+     * Manages the download monitoring service.
      * 
-     * @param status 
-     *   The desired running state of the download monitoring service (UP or DOWN).
+     * @param status The desired state of the download monitoring service (UP or DOWN).
      */
     public void manageDownload(runningStates status) {
-        this.monitorStatus = status; // Update the monitoring status
-        logger.info("Managing download monitoring, Desired state: {}", status);
+        this.monitorStatus = status; // Update download monitoring status
+        logger.info("Managing download monitoring service. Desired state: {}", status);
 
         if (monitorStatus == runningStates.UP) {
             if (downloadManager.getMonitorStatus() != runningStates.UP) {
                 logger.info("Starting download monitoring service...");
                 try {
-                    downloadManager.startMonitoring(); // Start monitoring
+                    downloadManager.startMonitoring(); // Start monitoring downloads
+                    logger.info("Download monitoring service started successfully.");
                 } catch (IOException e) {
                     logger.error("Error starting the download monitoring service: {}", e.getMessage(), e);
                 }
             } else {
-                logger.info("Download monitoring is already running.");
+                logger.info("Download monitoring service is already running.");
             }
         } else {
             if (downloadManager.getMonitorStatus() != runningStates.DOWN) {
                 logger.info("Stopping download monitoring service...");
-                downloadManager.stopMonitoring(); // Stop monitoring
+                downloadManager.stopMonitoring(); // Stop monitoring downloads
+				logger.info("Download monitoring service stopped successfully.");
             } else {
-                logger.info("Download monitoring is already stopped.");
+                logger.info("Download monitoring service is already stopped.");
             }
         }
     }
 
     /**
-     * Manages the antivirus service, starting or stopping it based on the status.
+     * Manages the antivirus service.
      * 
-     * @param status 
-     *   The desired running state of the antivirus service (UP or DOWN).
+     * @param status The desired state of the antivirus service (UP or DOWN).
      */
     public void manageAV(runningStates status) {
-        this.avStatus = status; // Update the antivirus status
-        logger.info("Managing antivirus service, Desired state: {}", status);
+        this.avStatus = status; // Update antivirus status
+        logger.info("Managing antivirus service. Desired state: {}", status);
 
-        // Start antivirus scan if the status is UP
-        if (status == runningStates.UP) {
-            if (avStatus != runningStates.UP) {
-                logger.info("Starting antivirus scan...");
-                // Start scan only if it is not already running
-                new Thread(() -> antivirusManager.startPerformScan()).start(); // Perform scan in a separate thread
-                avStatus = runningStates.UP; // Update the antivirus status to UP
+        if (avStatus == runningStates.UP) {
+            if (antivirusManager.getScannerStatus() != runningStates.UP) {
+                logger.info("Starting antivirus service...");
+
+                // Starting antivirus scan and providing progress
+                try {
+                    antivirusManager.startPerformScan(); // Start antivirus scan
+                    logger.info("Antivirus service started successfully.");
+                } catch (Exception e) {
+                    logger.error("Error while starting antivirus service: {}", e.getMessage(), e);
+                }
             } else {
-                logger.info("Antivirus scan is already running.");
-            }
-        } else if (status == runningStates.DOWN) {
-            if (avStatus != runningStates.DOWN) {
-                logger.info("Stopping antivirus scan...");
-                // Stop the antivirus scan (ensure the method stopPerformScan exists for proper stopping)
-                antivirusManager.stopPerformScan(); // Stop the scan
-                avStatus = runningStates.DOWN; // Update the antivirus status to DOWN
-                logger.info("Antivirus scan stopped.");
-            } else {
-                logger.info("Antivirus scan is already stopped.");
+                logger.info("Antivirus service is already running.");
             }
         } else {
-            logger.error("Invalid antivirus state: {}", status);
+            if (antivirusManager.getScannerStatus() != runningStates.DOWN) {
+                logger.info("Stopping antivirus service...");
+                
+                // Stopping the scan
+                try {
+                    antivirusManager.stopPerformScan(); // Stop antivirus scan
+                    logger.info("Antivirus service stopped successfully.");
+                } catch (Exception e) {
+                    logger.error("Error while stopping antivirus service: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.info("Antivirus service is already stopped.");
+            }
         }
 
-        // Print final reports after scanning
-        List<ScanReport> finalReports = antivirusManager.getFinalReports(); // Get the list of final reports
+        // Print final scan reports using printReport() method
+        List<ScanReport> finalReports = antivirusManager.getFinalReports();
         if (finalReports.isEmpty()) {
-            logger.info("No reports available.");
+            logger.info("No scan reports available.");
         } else {
-            finalReports.forEach(report -> {
-                logger.info("----------");
-                logger.info("File: " + report.getFile().getName());
-
-                // Check if a threat was detected
-                if (report.isThreatDetected()) {
-                    logger.info("Threat Detected: YES");
-                    logger.info("Threat Details: " + report.getThreatDetails());
-                    logger.info("Warning Class: " + report.getWarningClass());
-                } else {
-                    logger.info("Threat Detected: NO");
-                }
-
-                // Check the validity of the report
-                if (report.isValidReport()) {
-                    logger.info("Report is Valid.");
-                } else {
-                    logger.info("Report is INVALID.");
-                }
-
-                logger.info("----------");
-            });
+            logger.info("Printing final scan reports:");
+            for (ScanReport report : finalReports) {
+                report.printReport();  // Use printReport method to print the report
+            }
         }
     }
 
     /**
-     * Returns the current connection status of the VPN.
+     * Retrieves the current VPN connection status.
      * 
      * @return The current VPN connection status.
      */
@@ -185,7 +177,7 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Returns the current status of the download monitoring service.
+     * Retrieves the current download monitoring status.
      * 
      * @return The current download monitoring status.
      */
@@ -195,7 +187,7 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Returns the current status of the antivirus service.
+     * Retrieves the current antivirus status.
      * 
      * @return The current antivirus status.
      */
@@ -205,12 +197,10 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Creates a new peer in the VPN configuration.
+     * Adds a new peer to the VPN configuration.
      * 
-     * @param peerData
-     *   The peer configuration data.
-     * @param peerName
-     *   The name of the peer to be added.
+     * @param peerData The peer configuration data.
+     * @param peerName The name of the peer to be added.
      */
     public void addPeer(String peerData, String peerName) {
         logger.info("Adding new peer with name: {}", peerName);
@@ -220,7 +210,7 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Returns the WireguardManager instance.
+     * Retrieves the WireguardManager instance.
      * 
      * @return The WireguardManager instance.
      */
@@ -229,20 +219,18 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Returns the report information based on the report name.
+     * Retrieves report information based on the report name.
      * 
-     * @param report
-     *   The name or identifier of the report to retrieve.
-     * @return The report information (dummy implementation for now).
+     * @param report The name or identifier of the report to retrieve.
+     * @return The report information.
      */
     public String getReportInfo(String report) {
         logger.info("Retrieving report info for report: {}", report);
-        // Return dummy report details for now
-        return "";
+        return ""; // Dummy implementation for now
     }
 
     /**
-     * Returns the instance of DownloadManager.
+     * Retrieves the DownloadManager instance.
      * 
      * @return The DownloadManager instance.
      */
@@ -252,10 +240,9 @@ public class SystemOrchestrator {
     }
 
     /**
-     * Sets the instance of DownloadManager.
+     * Sets the DownloadManager instance.
      * 
-     * @param downloadManager
-     *   The DownloadManager instance to be set.
+     * @param downloadManager The DownloadManager instance to set.
      */
     public void setDownloadManager(DownloadManager downloadManager) {
         logger.debug("Setting DownloadManager instance.");

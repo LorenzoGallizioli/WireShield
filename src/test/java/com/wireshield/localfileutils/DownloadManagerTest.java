@@ -14,7 +14,7 @@ import java.nio.file.*;
 
 import static org.junit.Assert.*;
 
-/**
+/*
  * This class tests various functionalities of the DownloadManager, including default path detection, 
  * handling of temporary files, file stability checks, and monitoring capabilities.
  */
@@ -102,10 +102,10 @@ public class DownloadManagerTest {
         File regularFile = new File("file.txt");
 
         // Check if files with specific extensions or naming conventions are identified as temporary
-        assertTrue("File with .crdownload extension should be temporary", downloadManager.isTemporaryFile(tempFile1));
-        assertTrue("File with .part extension should be temporary", downloadManager.isTemporaryFile(tempFile2));
-        assertTrue("Hidden file should be temporary", downloadManager.isTemporaryFile(tempFile3));
-        assertFalse("Regular file should not be temporary", downloadManager.isTemporaryFile(regularFile));
+        assertTrue("File with .crdownload extension should be temporary", FileManager.isTemporaryFile(tempFile1));
+        assertTrue("File with .part extension should be temporary", FileManager.isTemporaryFile(tempFile2));
+        assertTrue("Hidden file should be temporary", FileManager.isTemporaryFile(tempFile3));
+        assertFalse("Regular file should not be temporary", FileManager.isTemporaryFile(regularFile));
     }
 
     /**
@@ -125,7 +125,7 @@ public class DownloadManagerTest {
         Thread.sleep(500); // Allow time for the file to stabilize
 
         // Check if the file is stable after creation
-        assertTrue("File should be stable after creation", downloadManager.isFileStable(testFile));
+        assertTrue("File should be stable after creation", FileManager.isFileStable(testFile));
 
         // Cleanup
         testFile.delete();

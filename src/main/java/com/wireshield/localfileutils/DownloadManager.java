@@ -89,7 +89,7 @@ public class DownloadManager {
                                 Path newFilePath = path.resolve((Path) event.context());
                                 File newFile = newFilePath.toFile();
 
-                                if (!isTemporaryFile(newFile) && isFileStable(newFile)) {
+                                if (!FileManager.isTemporaryFile(newFile) && FileManager.isFileStable(newFile)) {
                                     String fileName = newFile.getAbsolutePath();
 
                                     // Check if file is already detected
@@ -147,34 +147,6 @@ public class DownloadManager {
 
         } catch (IOException | InterruptedException e) {
             logger.error("Error stopping monitoring: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Determines if a file is temporary or incomplete (e.g., `.crdownload`, `.part` files).
-     *
-     * @param file The file to check.
-     * @return true if the file is temporary, false otherwise.
-     */
-    public boolean isTemporaryFile(File file) {
-        String fileName = file.getName().toLowerCase();
-        return fileName.endsWith(".crdownload") || fileName.endsWith(".part") || fileName.startsWith(".");
-    }
-
-    /**
-     * Checks if a file is stable, meaning the download is complete and the file can be safely processed.
-     *
-     * @param file The file to check.
-     * @return true if the file is stable, false otherwise.
-     */
-    public boolean isFileStable(File file) {
-        try {
-            Thread.sleep(500); // Wait for a short moment to confirm stability
-            return file.exists() && file.canRead() && file.length() > 0; // File must exist, be readable, and non-empty
-        } catch (InterruptedException e) {
-            logger.error("Error checking file stability: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt();
-            return false;
         }
     }
 
