@@ -2,7 +2,7 @@ package com.wireshield.av;
 
 import java.io.File;
 
-/**
+/*
  * The AVInterface interface is responsible for scanning files using antivirus software.
  */
 public interface AVInterface {

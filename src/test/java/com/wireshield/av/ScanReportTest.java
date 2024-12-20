@@ -36,6 +36,10 @@ public class ScanReportTest {
         assertEquals("No threat detected", scanReport.getThreatDetails());  // Default threat details
         assertEquals(warningClass.CLEAR, scanReport.getWarningClass());  // Default warning class should be CLEAR
         assertTrue(scanReport.isValidReport());  // The report should be valid by default
+        assertEquals(0, scanReport.getMaliciousCount());  // Default malicious count should be 0
+        assertEquals(0, scanReport.getHarmlessCount());  // Default harmless count should be 0
+        assertEquals(0, scanReport.getSuspiciousCount());  // Default suspicious count should be 0
+        assertEquals(0, scanReport.getUndetectedCount());  // Default undetected count should be 0
     }
 
     /*
@@ -47,6 +51,17 @@ public class ScanReportTest {
         File file = new File("testfile.txt");
         scanReport.setFile(file);
         assertEquals(file, scanReport.getFile());  // Verifies that the set file matches the get file
+    }
+
+    /*
+     * Tests the setSha256 and getSha256 methods.
+     * Verifies that the SHA-256 hash is correctly set and retrieved.
+     */
+    @Test
+    public void testSetAndGetSha256() {
+        String sha256 = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+        scanReport.setSha256(sha256);
+        assertEquals(sha256, scanReport.getSha256());  // Verifies that the SHA-256 value is updated correctly
     }
 
     /*
@@ -105,18 +120,20 @@ public class ScanReportTest {
     }
 
     /*
-     * Tests the isThreatDetected method with different warning classes.
-     * Verifies that threat detection is properly indicated based on the warning class.
+     * Tests the malicious, harmless, suspicious, and undetected counts.
+     * Verifies that the respective counts are correctly updated and retrieved.
      */
     @Test
-    public void testIsThreatDetected() {
-        // Test when warningClass is DANGEROUS
-        scanReport.setWarningClass(warningClass.DANGEROUS);
-        assertTrue(scanReport.isThreatDetected());  // Threat should be detected when warningClass is DANGEROUS
+    public void testDetectionCounts() {
+        scanReport.setMaliciousCount(5);
+        scanReport.setHarmlessCount(2);
+        scanReport.setSuspiciousCount(3);
+        scanReport.setUndetectedCount(4);
 
-        // Test when warningClass is CLEAR
-        scanReport.setWarningClass(warningClass.CLEAR);
-        assertFalse(scanReport.isThreatDetected());  // Threat should not be detected when warningClass is CLEAR
+        assertEquals(5, scanReport.getMaliciousCount());  // Verifies the malicious count
+        assertEquals(2, scanReport.getHarmlessCount());  // Verifies the harmless count
+        assertEquals(3, scanReport.getSuspiciousCount());  // Verifies the suspicious count
+        assertEquals(4, scanReport.getUndetectedCount());  // Verifies the undetected count
     }
 
     /*
@@ -132,9 +149,10 @@ public class ScanReportTest {
         scanReport.setThreatDetails("Malware detected");
         scanReport.setWarningClass(warningClass.SUSPICIOUS);
         scanReport.setValid(false);
+        scanReport.setSha256("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
         // Expected string representation
-        String expectedString = "ScanReport {file=testfile.txt, threatDetected=true, threatDetails='Malware detected', warningClass=SUSPICIOUS, isValid=false}";
+        String expectedString = "ScanReport {scanId='', file=testfile.txt, threatDetected=true, threatDetails='Malware detected', warningClass=SUSPICIOUS, isValid=false, maliciousCount=0, harmlessCount=0, suspiciousCount=0, undetectedCount=0}";
         assertEquals(expectedString, scanReport.toString());  // Verifies that toString() returns the correct string representation
     }
 }
