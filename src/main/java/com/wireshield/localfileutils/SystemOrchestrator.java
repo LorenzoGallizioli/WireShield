@@ -3,10 +3,8 @@ package com.wireshield.localfileutils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import com.wireshield.av.AntivirusManager;
 import com.wireshield.av.ClamAV;
 import com.wireshield.av.ScanReport;
