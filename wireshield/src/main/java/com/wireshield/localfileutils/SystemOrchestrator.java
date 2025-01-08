@@ -204,8 +204,8 @@ public class SystemOrchestrator {
      */
     public void addPeer(String peerData, String peerName) {
         logger.info("Adding new peer with name: {}", peerName);
-        Map<String, Map<String, String>> peer = PeerManager.parsePeerConfig(peerName);
-        wireguardManager.getPeerManager().createPeer(peer, peerName);
+        Map<String, Map<String, String>> Data = PeerManager.parsePeerConfig(peerName);
+        wireguardManager.getPeerManager().createPeer(Data, peerName);
         logger.info("Peer added successfully: {}", peerName);
     }
 

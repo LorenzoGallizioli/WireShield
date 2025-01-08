@@ -36,6 +36,9 @@ public class UserInterface extends Application {
 
     private static final Logger logger = LogManager.getLogger(SystemOrchestrator.class);
     protected static SystemOrchestrator so;
+    
+    // Control variable for componentStatesGuardian thread --> runningStates.UP let the thread to continue running, runningStates.DOWN stops the thread execution
+    private runningStates componentStatesGuardianState = runningStates.DOWN; 
 
     /**
      * JavaFX Buttons.
@@ -77,6 +80,7 @@ public class UserInterface extends Application {
     protected ListView<String> avFilesListView;
     protected ObservableList<String> avFilesList = FXCollections.observableArrayList();
     private String selectedPeerFile; // Variabile per memorizzare il file selezionato.
+    
 
     /**
      * Start the application.
@@ -180,6 +184,10 @@ public class UserInterface extends Application {
     public void changeVPNState() { 
 
         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
+        	
+        	// Stop execution componentStatesGuardian thread
+        	componentStatesGuardianState = runningStates.DOWN;
+        	
             so.manageDownload(runningStates.DOWN);
             so.manageAV(runningStates.DOWN);
             so.manageVPN(vpnOperations.STOP, null);
@@ -190,12 +198,16 @@ public class UserInterface extends Application {
             so.manageVPN(vpnOperations.START, selectedPeerFile);
             so.manageAV(runningStates.UP);
             so.manageDownload(runningStates.UP);
+            
+            // Start execution componentStatesGuardian thread
+            componentStatesGuardian();
+            
             vpnButton.setText("Stop VPN");
             peerListView.setDisable(true); // Disabilita la selezione dei peer.
             logger.info("All services started successfully.");
         }
     }
-
+   
     /**
      * Displays the home page.
      */
@@ -325,6 +337,57 @@ public class UserInterface extends Application {
         Thread logUpdateThread = new Thread(task);
         logUpdateThread.setDaemon(true); // Assicura che il thread si fermi con l'applicazione
         logUpdateThread.start();
+    }
+    
+    /**
+     * Monitors the states of essential system components and handles failures.
+     * <p>
+     * This method starts a thread to periodically check the operational states of components. 
+     * If a critical component fails, the system logs the error, stops related services, 
+     * and shuts down the VPN for the selected peer.
+     * </p>
+     *
+     * <h2>Functionality:</h2>
+     * <ul>
+     *   <li>Checks if the interface is up and the connection is active.</li>
+     *   <li>Handles failures by stopping downloads, AV services, or the VPN as needed.</li>
+     *   <li>Runs every 200ms until the guardian state changes from {@code runningStates.UP}.</li>
+     * </ul>
+     *
+     * <h2>Thread Management:</h2>
+     * The thread terminates gracefully when interrupted or when the guardian state changes.
+     */
+    private void componentStatesGuardian() {
+    	Runnable task = () -> {
+            while (componentStatesGuardianState == runningStates.UP) { // Check interface is up
+            	if(so.getConnectionStatus() == connectionStates.CONNECTED) {
+            		if(so.getAVStatus() == runningStates.DOWN || so.getMonitorStatus() == runningStates.DOWN) {
+            			
+            			logger.error("An essential component has encountered an error - Shutting down services...");
+            			
+            			if(so.getAVStatus() == runningStates.DOWN) {
+            				so.manageDownload(runningStates.DOWN);
+            			} else if(so.getMonitorStatus() == runningStates.DOWN) {
+            				so.manageAV(runningStates.DOWN);
+            			}
+            			
+            			so.manageVPN(vpnOperations.STOP,null);
+            		}
+            	}
+                try {
+                    Thread.sleep(200); // wait
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("startComponentStatesGuardian() thread unexpecly interrupted");
+                    break;
+                }
+            }
+            logger.info("startComponentStatesGuardian() thread stopped");
+        };
+        
+        Thread thread = new Thread(task);
+        componentStatesGuardianState = runningStates.UP;
+        thread.start();
     }
 
 }
