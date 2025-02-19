@@ -342,7 +342,7 @@ public class UserInterface extends Application {
 	 */
 	protected void startDynamicLogUpdate() {
 		Runnable task = () -> {
-			while (true) {
+			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					// Retrieve updated logs
 					String logs = wg.getLog();
@@ -357,8 +357,8 @@ public class UserInterface extends Application {
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					logger.error("Dynamic log update thread interrupted.");
-					break;
 				} catch (Exception e) {
+					Thread.currentThread().interrupt();
 					logger.error("Error updating logs dynamically: ", e);
 				}
 			}
@@ -373,7 +373,7 @@ public class UserInterface extends Application {
 	 */
 	protected void startDynamicConnectionLogsUpdate() {
 		Runnable task = () -> {
-			while (true) {
+			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					// Retrieve updated logs
 					String logs = wg.getConnectionLogs();
@@ -386,8 +386,8 @@ public class UserInterface extends Application {
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					logger.error("Dynamic connection logs update thread interrupted.");
-					break;
 				} catch (Exception e) {
+					Thread.currentThread().interrupt();
 					logger.error("Error updating connection logs: ", e);
 				}
 			}

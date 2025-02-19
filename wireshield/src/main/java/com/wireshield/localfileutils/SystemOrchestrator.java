@@ -1,6 +1,5 @@
 package com.wireshield.localfileutils;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +35,7 @@ public class SystemOrchestrator {
     private ClamAV clamAV;                     // Integrates ClamAV for file scanning
     private VirusTotal virusTotal;             // Integrates VirusTotal for file scanning
     private runningStates avStatus = runningStates.DOWN; // Current antivirus status
-    private runningStates monitorStatus;       // Current download monitoring status
+    private runningStates monitorStatus = runningStates.DOWN; // Current download monitoring status
     
     // Control variable for componentStatesGuardian thread --> runningStates.UP let the thread to continue running, runningStates.DOWN stops the thread execution
     private runningStates guardianState = runningStates.DOWN; 
@@ -111,29 +110,40 @@ public class SystemOrchestrator {
 	 * @param status The desired state of the monitoring service (UP or DOWN).
 	 */
 	public void manageDownload(runningStates status) {
-		this.monitorStatus = status; // Update download monitoring status
+		monitorStatus = status; // Update download monitoring status
 		logger.info("Managing download monitoring service. Desired state: {}", status);
 
         if (monitorStatus == runningStates.UP) {
             if (downloadManager.getMonitorStatus() != runningStates.UP) {
                 logger.info("Starting download monitoring service...");
-                try {
-                    downloadManager.startMonitoring(); // Start monitoring downloads
-                    logger.info("Download monitoring service started successfully.");
-                    
-                } catch (IOException e) {
-                    logger.error("Error starting the download monitoring service: {}", e.getMessage(), e);
-                    this.monitorStatus = runningStates.DOWN;
-                    
+                
+                downloadManager.startMonitoring(); // Start monitoring downloads
+                monitorStatus = downloadManager.getMonitorStatus();
+                
+                if(monitorStatus == runningStates.UP) {
+                	logger.info("Download monitor service started successfully.");
+                } else {
+                	logger.error("Error occurred during Download monitor process starting.");
                 }
+                
             } else {
                 logger.info("Download monitoring service is already running.");
             }
-        } else {
+        }
+        else 
+        {
             if (downloadManager.getMonitorStatus() != runningStates.DOWN) {
                 logger.info("Stopping download monitoring service...");
+                
                 downloadManager.forceStopMonitoring(); // Stop monitoring downloads
-
+                monitorStatus = downloadManager.getMonitorStatus();
+                
+                if(monitorStatus == runningStates.DOWN) {
+                	logger.info("Download monitor service stopped successfully.");
+                } else {
+                	logger.error("Error occurred during Download monitor process stopping.");
+                }
+                
 			} else {
 				logger.info("Download monitoring service is already stopped.");
 			}
@@ -151,8 +161,7 @@ public class SystemOrchestrator {
 
 		if (avStatus == runningStates.UP) {
 			if (antivirusManager.getScannerStatus() != runningStates.UP) {
-				logger.info("Starting antivirus service...");
-
+				
                 // Starting antivirus scan and providing progress
                 antivirusManager.startScan();
                 avStatus = antivirusManager.getScannerStatus();
@@ -170,7 +179,6 @@ public class SystemOrchestrator {
 		else 
 		{
             if (antivirusManager.getScannerStatus() != runningStates.DOWN) {
-                logger.info("Stopping antivirus service...");
                 
                 // Stopping the scan
                 antivirusManager.stopScan(); 
@@ -189,9 +197,8 @@ public class SystemOrchestrator {
 
 		// Display final scan reports
 		List<ScanReport> finalReports = antivirusManager.getFinalReports();
-		if (finalReports.isEmpty()) {
-			logger.info("No scan reports available.");
-		} else {
+		if (finalReports.isEmpty()) {} 
+		else {
 			logger.info("Printing final scan reports:");
 			for (ScanReport report : finalReports) {
 				report.printReport(); // Display each report
@@ -326,7 +333,7 @@ public class SystemOrchestrator {
         			}
             	}
             	
-            	logger.info("componentStatesGuardian: " + wireguardManager.getConnectionStatus() + antivirusManager.getScannerStatus() + downloadManager.getMonitorStatus());
+            	//logger.info("componentStatesGuardian: " + wireguardManager.getConnectionStatus() + antivirusManager.getScannerStatus() + downloadManager.getMonitorStatus());
                 try {
                     Thread.sleep(200); // wait
                     
@@ -360,6 +367,13 @@ public class SystemOrchestrator {
      */
     public runningStates getGuardianState() {
     	return guardianState;
+    }
+    
+    /*
+     * Only for test
+     */
+    protected void resetIstance() {
+    	instance = null;
     }
     
 }

@@ -5,6 +5,7 @@ import org.junit.After;
 import org.junit.Test;
 import com.wireshield.enums.runningStates;
 import com.wireshield.enums.warningClass;
+import com.wireshield.localfileutils.SystemOrchestrator;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -32,6 +33,7 @@ public class AntivirusManagerTest {
 	 */
 	@Before
 	public void setUp() {
+
 		clamAV = ClamAV.getInstance(); // Uses the real implementation of ClamAV
 		virusTotal = VirusTotal.getInstance(); // Uses the real implementation of VirusTotal
 		antivirusManager = AntivirusManager.getInstance();

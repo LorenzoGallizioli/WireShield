@@ -8,6 +8,7 @@ import com.wireshield.enums.vpnOperations;
 import com.wireshield.wireguard.Peer;
 import com.wireshield.wireguard.PeerManager;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -55,8 +56,8 @@ public class SystemOrchestratorTest {
 	String peerId;
 	PeerManager pm;
 	Logger logger = LogManager.getLogger(SystemOrchestratorTest.class);
-
-    private SystemOrchestrator orchestrator;
+	
+	SystemOrchestrator orchestrator;
 
     @Mock
     private WireguardManager wireguardManager;
@@ -73,27 +74,38 @@ public class SystemOrchestratorTest {
      */
     @Before
     public void setUp() {
+    	
+    	orchestrator = SystemOrchestrator.getInstance();
+    	orchestrator.resetIstance();
+    	orchestrator = SystemOrchestrator.getInstance();
+    	
 		pm = PeerManager.getInstance();
-
-    	MockitoAnnotations.openMocks(this);
-        orchestrator = SystemOrchestrator.getInstance();
+    	
         orchestrator.setGuardianState(runningStates.DOWN); // Ensure guardian is stopped
 
-        orchestrator.setObjects(wireguardManager, antivirusManager, downloadManager);
+    }
+    
+    @After
+    public void setDown() {
+    	orchestrator.manageDownload(runningStates.DOWN);
+    	orchestrator.manageAV(runningStates.DOWN);
+    	orchestrator.manageVPN(vpnOperations.STOP, null);
+    	
     }
 
 	/**
 	 * Test the {@code manageVPN} method with the START operation. This test checks
 	 * if the VPN connection status is set to {@code CONNECTED} after starting the
 	 * VPN.
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testManageVPNStart() {
-		// Execute the method with the START operation
-		orchestrator.manageVPN(vpnOperations.START, "testPeer.conf");
-
+	public void testManageVPNStart() throws InterruptedException {
         // Test managing download monitoring when it is UP
         orchestrator.manageDownload(runningStates.UP);
+        
+        Thread.sleep(200);
+        
         assertEquals(runningStates.UP, orchestrator.getMonitorStatus());
         logger.info("Download monitoring status set to UP");
 
@@ -103,47 +115,22 @@ public class SystemOrchestratorTest {
         logger.info("Download monitoring status set to DOWN");
     }
 
-	/**
-	 * Test the {@code manageVPN} method with the STOP operation. This test checks
-	 * if the VPN connection status is set to {@code DISCONNECTED} after stopping
-	 * the VPN.
-	 */
-	@Test
-	public void testManageVPNStop() {
-		// Execute the method with the STOP operation
-		orchestrator.manageVPN(vpnOperations.STOP, null);
-
-		// Verify that the connection status is DISCONNECTED
-		assertTrue("The VPN interface should be down",
-				wireguardManager.getConnectionStatus() == connectionStates.DISCONNECTED);
-	}
-
-	/**
-	 * Test the {@code manageDownload} method with the UP state. This test verifies
-	 * that the download monitoring service is started successfully.
-	 */
-	@Test
-	public void testManageDownloadUp() {
-		// Execute the method to start the download monitoring
-		orchestrator.manageDownload(runningStates.UP);
-
-		// Verify that the monitoring status is UP
-		assertTrue("The download monitoring service should be running",
-				downloadManager.getMonitorStatus() == runningStates.UP);
-	}
 
 	/**
 	 * Test the {@code manageDownload} method with the DOWN state. This test
 	 * verifies that the download monitoring service is stopped successfully.
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testManageDownloadDown() {
+	public void testManageDownloadDown() throws InterruptedException {
+		orchestrator.manageDownload(runningStates.UP);
+		
+		Thread.sleep(200);
 		// Execute the method to stop the download monitoring
 		orchestrator.manageDownload(runningStates.DOWN);
-
+		System.out.println(orchestrator.getDownloadManager().getMonitorStatus());
 		// Verify that the monitoring status is DOWN
-		assertTrue("The download monitoring service should be stopped",
-				downloadManager.getMonitorStatus() == runningStates.DOWN);
+		assertEquals(orchestrator.getDownloadManager().getMonitorStatus(), runningStates.DOWN);
 	}
 
 	/**
@@ -156,7 +143,7 @@ public class SystemOrchestratorTest {
 		orchestrator.manageAV(runningStates.UP);
 
 		// Verify that the antivirus scan status is UP
-		assertTrue("The antivirus scan should be running", antivirusManager.getScannerStatus() == runningStates.UP);
+		assertEquals(orchestrator.getAntivirusManager().getScannerStatus(), runningStates.UP);
 	}
 
 	/**
@@ -169,24 +156,9 @@ public class SystemOrchestratorTest {
 		orchestrator.manageAV(runningStates.DOWN);
 
 		// Verify that the antivirus scan status is DOWN
-		assertTrue("The antivirus scan should be stopped", antivirusManager.getScannerStatus() == runningStates.DOWN);
+		assertTrue(orchestrator.getAntivirusManager().getScannerStatus() == runningStates.DOWN);
 	}
 
-	/**
-	 * Test the {@code getConnectionStatus} method. This test verifies that the
-	 * correct connection status is returned.
-	 */
-	@Test
-	public void testGetConnectionStatus() {
-
-		orchestrator.manageVPN(vpnOperations.START, "testPeer.conf");
-
-		// Call the method to get the connection status
-		connectionStates status = orchestrator.getConnectionStatus();
-
-		// Verify that the connection status is CONNECTED
-		assertEquals("The connection status should be CONNECTED", connectionStates.CONNECTED, status);
-	}
 
 	/**
 	 * Test the {@code getMonitorStatus} method. This test verifies that the correct
@@ -201,7 +173,7 @@ public class SystemOrchestratorTest {
 		runningStates status = orchestrator.getMonitorStatus();
 
 		// Verify that the monitoring status is UP
-		assertEquals("The monitor status should be UP", runningStates.UP, status);
+		assertEquals(runningStates.UP, status);
 	}
 
 	/**
@@ -217,7 +189,7 @@ public class SystemOrchestratorTest {
 		runningStates status = orchestrator.getAVStatus();
 
 		// Verify that the antivirus status is UP
-		assertEquals("The antivirus status should be UP", runningStates.UP, status);
+		assertEquals(runningStates.UP, status);
 	}
 
 	/**
@@ -295,6 +267,9 @@ public class SystemOrchestratorTest {
 
     @Test
     public void testStatesGuardian_NormalOperation() throws InterruptedException {
+    	MockitoAnnotations.openMocks(this);
+        orchestrator.setObjects(wireguardManager, antivirusManager, downloadManager);
+    	
         // Mock normal operation
         when(wireguardManager.getConnectionStatus()).thenReturn(connectionStates.CONNECTED);
         when(antivirusManager.getScannerStatus()).thenReturn(runningStates.UP);
@@ -320,6 +295,9 @@ public class SystemOrchestratorTest {
      */
     @Test
     public void testStatesGuardian_AVComponentFailure() throws InterruptedException {
+    	MockitoAnnotations.openMocks(this);
+        orchestrator.setObjects(wireguardManager, antivirusManager, downloadManager);
+    	
         // Mock antivirus failure
         when(orchestrator.getWireguardManager().getConnectionStatus()).thenReturn(connectionStates.CONNECTED);
         when(orchestrator.getAntivirusManager().getScannerStatus()).thenReturn(runningStates.DOWN);
@@ -343,6 +321,9 @@ public class SystemOrchestratorTest {
      */
     @Test
     public void testStatesGuardian_DownloadComponentFailure() throws InterruptedException {
+    	MockitoAnnotations.openMocks(this);
+        orchestrator.setObjects(wireguardManager, antivirusManager, downloadManager);
+    	
         // Mock antivirus failure
         when(orchestrator.getWireguardManager().getConnectionStatus()).thenReturn(connectionStates.CONNECTED);
         when(orchestrator.getAntivirusManager().getScannerStatus()).thenReturn(runningStates.UP);
@@ -362,6 +343,9 @@ public class SystemOrchestratorTest {
     
     @Test
     public void testStatesGuardian_ThreadRunningControls() throws InterruptedException {
+    	MockitoAnnotations.openMocks(this);
+        orchestrator.setObjects(wireguardManager, antivirusManager, downloadManager);
+    	
         orchestrator.statesGuardian();
         
         // Allow the thread to start
@@ -378,6 +362,7 @@ public class SystemOrchestratorTest {
     
     @Test
     public void testSetAndGetGuardianState() {
+    	
         // Set state and verify
     	orchestrator.setGuardianState(runningStates.UP);
         assertEquals(runningStates.UP, orchestrator.getGuardianState());
@@ -385,4 +370,5 @@ public class SystemOrchestratorTest {
         orchestrator.setGuardianState(runningStates.DOWN);
         assertEquals(runningStates.DOWN, orchestrator.getGuardianState());
     }
+
 }

@@ -82,7 +82,7 @@ public class DownloadManager {
 	 *
 	 * @throws IOException If an error occurs while setting up the WatchService.
 	 */
-	public void startMonitoring() throws IOException {
+	public void startMonitoring() {
 		if (monitorStatus == runningStates.UP) {
 			logger.warn("Already monitoring the download directory.");
 			return; // Already monitoring
@@ -91,68 +91,66 @@ public class DownloadManager {
 		monitorStatus = runningStates.UP; // Set monitoring status to active
 		logger.info("Monitoring directory: {}", getDownloadPath());
 
+		Path path = Paths.get(getDownloadPath());
+		
 		// Create WatchService to monitor directory
 		try {
-			watchService = FileSystems.getDefault().newWatchService();
-			Path path = Paths.get(getDownloadPath());
-
 			// Register the directory for creation events
-			path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+			watchService = FileSystems.getDefault().newWatchService();
+		        path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+		    
+		} catch (IOException e) {
+			monitorStatus = runningStates.DOWN;
+			return;
+		}
 
-			// Start monitoring in a new thread
-			monitorThread = new Thread(() -> {
-				// Loop to monitor the directory as long as the status is UP
-				while (monitorStatus == runningStates.UP && !Thread.currentThread().isInterrupted()) {
+		// Start monitoring in a new thread
+		monitorThread = new Thread(() -> {
+			// Loop to monitor the directory as long as the status is UP
+			while (!Thread.currentThread().isInterrupted()) {
 					
-					WatchKey key;
+				WatchKey key;
 					
-					try {
+				try {
 						
-						key = watchService.take(); // Wait for events
+					key = watchService.take(); // Wait for events
 						
-					} catch (InterruptedException e) {
+				} catch (InterruptedException e) {
 						// Handle interruption gracefully, but don't stop the monitoring thread
-						if (monitorStatus == runningStates.UP) {
-							logger.info("Download monitor unexpecly interrupted - Stopping Thread...");
-							
-							monitorStatus = runningStates.DOWN;
-						}
-						continue;
-					}
+					Thread.currentThread().interrupt();
+					continue;
+				}
 
-					// Process events
-					for (WatchEvent<?> event : key.pollEvents()) {
+				// Process events
+				for (WatchEvent<?> event : key.pollEvents()) {
 							
-						if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+					if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 								
-							Path newFilePath = path.resolve((Path) event.context());
-							File newFile = newFilePath.toFile();
+						Path newFilePath = path.resolve((Path) event.context());
+						File newFile = newFilePath.toFile();
 
-							if (!FileManager.isTemporaryFile(newFile) && FileManager.isFileStable(newFile)) {
-								String fileName = newFile.getAbsolutePath();
+						if (!FileManager.isTemporaryFile(newFile) && FileManager.isFileStable(newFile)) {
+							String fileName = newFile.getAbsolutePath();
 
-								// Check if file is already detected
-								if (!detectedFiles.contains(fileName)) {
+							// Check if file is already detected
+							if (!detectedFiles.contains(fileName)) {
 									detectedFiles.add(fileName);
 									logger.info("New file detected: {}", newFile.getName());
 										
 									antivirusManager.addFileToScanBuffer(newFile); // Add to antivirus queue
-								}
 							}
 						}
 					}
-
-					key.reset(); // Continue watching for further events
-					
 				}
-			});
 
-			monitorThread.start(); // Begin monitoring
-
-		} catch (IOException e) {
-			logger.error("Error creating WatchService: {}", e.getMessage(), e);
+				key.reset(); // Continue watching for further events
+				
+			}
+			
 			monitorStatus = runningStates.DOWN;
-		}
+		});
+
+		monitorThread.start(); // Begin monitoring
 	}
 
 	/**
@@ -162,29 +160,33 @@ public class DownloadManager {
 		if (monitorStatus == runningStates.DOWN) {
 			logger.warn("Monitoring is already stopped.");
 			return; // Already stopped
-		}
-
-		monitorStatus = runningStates.DOWN; // Set status to inactive
-		
-		try {
-			if (monitorThread != null && monitorThread.isAlive()) {
-				monitorThread.interrupt(); // Interrupt monitoring thread
-				monitorThread.join(); // Wait for the thread to finish
-			}
-
-			if (watchService != null) {
-				watchService.close(); // Close WatchService
-			}
-
-			logger.info("Stopped monitoring the directory.");
-
-		} catch (IOException e) {
-			logger.error("Error stopping monitoring due to IO issue: {}", e.getMessage(), e);
 			
-		} catch (InterruptedException e) {
-			logger.error("Thread interrupted while stopping monitoring: {}", e.getMessage(), e);
-
 		}
+		
+		if (monitorThread != null && monitorThread.isAlive()) {
+			
+			// Set monitorThread's termination flag UP
+			monitorThread.interrupt();
+			try {
+				// Wait for the thread to finish
+				monitorThread.join();
+					
+			} catch (InterruptedException e) {
+				logger.error("Thread interrupted while stopping monitoring.");
+			}
+		}
+
+		if (watchService != null) {
+			try {
+					
+				watchService.close(); // Close WatchService
+				
+			} catch (IOException e) {
+				logger.error("Error stopping monitoring due to IO issue: {}", e.getMessage(), e);
+			}
+		}
+		
+		logger.info("Stopped monitoring the directory.");
 	}
 
 	/**

@@ -92,12 +92,12 @@ public class AntivirusManager {
 	}
 
 	private void performScan(){
-		while (scannerStatus == runningStates.UP) {
+		while (!Thread.currentThread().isInterrupted()) {
 			File fileToScan;
 
 			if (clamAV == null) {
 				logger.error("ClamAV object not exists - Shutting down AV scanner"); 
-				scannerStatus = runningStates.DOWN;
+				Thread.currentThread().interrupt();		
 			}
 
 			// Retrieve the next file to scan from the buffer
@@ -109,12 +109,12 @@ public class AntivirusManager {
 			if (fileToScan == null) {
 				synchronized (this) {
 					try {
+						
 						wait();
+						
 					} catch (InterruptedException e) {
-
 						// error occurred - Shut down service
-						scannerStatus = runningStates.DOWN;
-						break;
+						Thread.currentThread().interrupt();
 					}
 				}
 				continue;
@@ -127,24 +127,21 @@ public class AntivirusManager {
 			// Analyze the file using ClamAV
 			clamAV.analyze(fileToScan);
 			ScanReport clamAVReport = clamAV.getReport();
-			if (clamAVReport != null) {
-				mergeReports(finalReport, clamAVReport);
-			}
+			
+			if (clamAVReport != null) mergeReports(finalReport, clamAVReport);
 
 			// If a threat is detected and the file is small enough, use VirusTotal
 			if(virusTotal != null) {
 				if (finalReport.isThreatDetected() && fileToScan.length() <= MAX_FILE_SIZE) {
 					
 					virusTotal.analyze(fileToScan);
-					
 					ScanReport virusTotalReport = virusTotal.getReport();
 					
-					if (virusTotalReport != null) {
-						mergeReports(finalReport, virusTotalReport);
-					}
+					if (virusTotalReport != null) mergeReports(finalReport, virusTotalReport);
 					
 				} else if (fileToScan.length() > MAX_FILE_SIZE) {
-					logger.warn("File is too large for VirusTotal analysis: {}", fileToScan.getName());
+					logger.warn("File {} is too large for VirusTotal analysis (>10 MB)", fileToScan.getName());
+					
 				}
 			}
 
@@ -159,28 +156,26 @@ public class AntivirusManager {
 				filesToRemove.add(fileToScan);
 			}
 		}
+		scannerStatus = runningStates.DOWN;
 	}
 
-    /*
-     * Stops the ongoing antivirus scan process gracefully.
-     */
-    public void stopScan() {
-        if (scannerStatus == runningStates.DOWN) {
-            logger.warn("No scan process is running.");
-            return;
-        }
-
-		scannerStatus = runningStates.DOWN;
+        /*
+         * Stops the ongoing antivirus scan process gracefully.
+         */
+        public void stopScan() {
+        	if (scannerStatus == runningStates.DOWN) {
+            		logger.warn("No scan process is running.");
+            		return;
+        	}
 
 		if (scanThread != null && scanThread.isAlive()) {
-			
 			scanThread.interrupt();
 			
 			try {
 				scanThread.join(); // Wait for the thread to terminate
 			} catch (InterruptedException e) {}
 		}
-	}
+        }
 
 	/**
 	 * Sets the ClamAV engine for file analysis.
