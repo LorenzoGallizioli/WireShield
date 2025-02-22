@@ -21,6 +21,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
@@ -83,7 +84,7 @@ public class UserInterface extends Application {
      * JavaFX ListViews.
      */
     @FXML
-    protected ListView<String> peerListView;
+    protected ComboBox<String> peerComboBox;
     protected ObservableList<String> peerList = FXCollections.observableArrayList();
     @FXML
     protected ListView<String> avFilesListView;
@@ -141,15 +142,15 @@ public class UserInterface extends Application {
 		startDynamicLogUpdate(); // Start updating the general logs dynamically
 
 		// Disable the peer list if the VPN is currently connected
-		peerListView.setDisable(so.getConnectionStatus() == connectionStates.CONNECTED);
+		peerComboBox.setDisable(so.getConnectionStatus() == connectionStates.CONNECTED);
 
         // Disabilita il pulsante solo se il testo è "Start VPN" e non è selezionato alcun file
         if (vpnButton.getText().equals("Start VPN")) {
             vpnButton.setDisable(true);
         }
 
-        peerListView.setItems(peerList);
-        peerListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+        peerComboBox.setItems(peerList);
+        peerComboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 selectedPeerFile = newValue; // Memorizza il file selezionato
                 if (vpnButton.getText().equals("Start VPN")) {
@@ -223,7 +224,7 @@ public class UserInterface extends Application {
 			so.manageAV(runningStates.DOWN);
 			so.manageVPN(vpnOperations.STOP, null);
 			vpnButton.setText("Start VPN");
-			peerListView.setDisable(false); // Enable the peer list when the VPN is disconnected
+			peerComboBox.setDisable(false); // Enable the peer list when the VPN is disconnected
 			logger.info("All services are stopped.");
 		} else {
 			so.manageVPN(vpnOperations.START, selectedPeerFile);
@@ -234,7 +235,7 @@ public class UserInterface extends Application {
 			so.statesGuardian();
 
 			vpnButton.setText("Stop VPN");
-			peerListView.setDisable(true); // Disable the peer list while the VPN is connected
+			peerComboBox.setDisable(true); // Disable the peer list while the VPN is connected
 			logger.info("All services started successfully.");
 		}
 	}

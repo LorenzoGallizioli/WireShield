@@ -3,12 +3,13 @@
     -fx-font-family: "Segoe UI", "Arial", sans-serif;
     -fx-font-size: 14px;
     -fx-background-color: #1a1a1a;
-    -fx-text-fill: white;
+    -fx-text-fill: #ffffff;
 }
 
 .label {
     -fx-font-size: 14px;
-    -fx-text-fill: white;
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: #ffffff;
 }
 
 /* Pane styles */
@@ -19,34 +20,34 @@
 
 /* TextArea and ListView shared styles */
 .black-textarea, .black-listview {
-    -fx-control-inner-background: #2d2d30;
-    -fx-text-fill: white;
-    -fx-background-color: #2d2d30;
+    -fx-control-inner-background: #2a2a2a;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #1a1a1a;
     -fx-font-size: 14px;
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
-    -fx-border-color: #3d3d3d;
+    -fx-border-color: #404040;
     -fx-border-width: 1px;
 }
 
 .black-listview .list-cell {
     -fx-background-color: transparent;
-    -fx-text-fill: white;
+    -fx-text-fill: #ffffff;
     -fx-padding: 8px;
 }
 
 .black-listview .list-cell:filled:hover {
-    -fx-background-color: #3d3d3d;
+    -fx-background-color: #2a2a2a;
 }
 
 .black-listview .list-cell:filled:selected {
-    -fx-background-color: #0065a9;
+    -fx-background-color: #404040;
 }
 
 /* Primary button style */
 .btn-primary {
-    -fx-background-color: #0065a9;
-    -fx-text-fill: white;
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-padding: 10 20 10 20;
@@ -56,41 +57,47 @@
 }
 
 .btn-primary:hover {
-    -fx-background-color: #0098ff;
+    -fx-background-color: #4d4d4d;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
 }
 
 .btn-primary:pressed {
-    -fx-background-color: #004c80;
+    -fx-background-color: #666666;
 }
 
 /* Top bar styles */
 #hBox {
-    -fx-background-color: #0065a9;
+    -fx-background-color: #333333;
     -fx-padding: 5 10 5 10;
     -fx-spacing: 8;
 }
 
 #hBox .button {
-    -fx-background-color: transparent;
-    -fx-text-fill: white;
+    -fx-background-color: #404040;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 16px;
     -fx-min-width: 30px;
     -fx-min-height: 25px;
     -fx-background-radius: 4px;
 }
 
+#hBox .btn-menu {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+}
+
 #hBox .button:hover {
-    -fx-background-color: rgba(255,255,255,0.1);
+    -fx-background-color: #4d4d4d;
 }
 
 /* Left sidebar styles */
 #vBox {
-    -fx-background-color: #1e1e1e;
+    -fx-background-color: #262626;
 }
 
 #vBox .button {
-    -fx-background-color: transparent;
+    -fx-background-color: #262626;
     -fx-text-fill: #cccccc;
     -fx-font-size: 16px;
     -fx-font-weight: normal;
@@ -102,12 +109,12 @@
 }
 
 #vBox .button:hover {
-    -fx-background-color: #2d2d30;
-    -fx-text-fill: white;
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
 }
 
 #vBox .button:pressed {
-    -fx-background-color: #3d3d3d;
+    -fx-background-color: #404040;
 }
 
 /* Status indicators */
@@ -117,13 +124,35 @@
 }
 
 #connLabel:text="Connected" {
-    -fx-background-color: #2e7d32;
-    -fx-text-fill: white;
+    -fx-background-color: #4d4d4d;
+    -fx-text-fill: #ffffff;
 }
 
 #connLabel:text="Disconnected" {
-    -fx-background-color: #c62828;
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
+}
+
+.combo-box {
+    -fx-background-color: #2a2a2a;
     -fx-text-fill: white;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #404040;
+}
+
+.combo-box .cell {
+    -fx-text-fill: white;
+    -fx-background-color: #2a2a2a;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #2a2a2a;
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #404040;
 }
 
 /* Upload peer button specific style */

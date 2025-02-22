@@ -1,86 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wireshield.ui.UserInterface">
-   <AnchorPane prefHeight="528.0" prefWidth="839.0">
+   <AnchorPane prefHeight="730.0" prefWidth="1100.0">
       <children>
-         <BorderPane prefHeight="530.0" prefWidth="840.0">
-            <!-- Left bar -->
-            <left>
-               <VBox fx:id="vBox" prefHeight="530.0" prefWidth="178.0" BorderPane.alignment="CENTER">
-                  <children>
-                     <Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="105.0" prefWidth="178.0" text="Home" />
-                     <Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="105.0" prefWidth="178.0" text="Antivirus" />
-                     <Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="105.0" prefWidth="178.0" text="Logs" />
-                  </children>
-               </VBox>
-            </left>
-            <!-- Top bar -->
+         <BorderPane prefHeight="730.0" prefWidth="1100.0">
+            <!-- Top bar with menu and window controls -->
             <top>
-               <HBox fx:id="hBox" prefHeight="37.0" prefWidth="840.0" BorderPane.alignment="CENTER">
-                  <children>
-                     <Region HBox.hgrow="ALWAYS" />
-                     <Button fx:id="minimizeButton" text="—" onAction="#minimizeWindow"/>
-                     <Button fx:id="closeButton" text="X" onAction="#closeWindow" />
-                  </children>
-               </HBox>
+               <VBox>
+                  <HBox fx:id="hBox" prefHeight="0" prefWidth="1100.0" BorderPane.alignment="CENTER">
+                     <children>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="minimizeButton" text="—" onAction="#minimizeWindow"/>
+                        <Button fx:id="closeButton" text="X" onAction="#closeWindow" />
+                     </children>
+                  </HBox>
+                  <HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT">
+    					<padding>
+        					<Insets left="20.0"/>
+    					</padding>
+    					<children>
+        					<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="15" prefWidth="80.0" text="Home" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="15" prefWidth="80.0" text="Antivirus" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        					<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="15" prefWidth="80.0" text="Logs" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+    					</children>
+					</HBox>
+               </VBox>
             </top>
          </BorderPane>
-         <Pane layoutX="178.0" layoutY="39.0" prefHeight="495.0" prefWidth="662.0">
+         <Pane layoutX="0" layoutY="67.0" prefHeight="643.0" prefWidth="1100.0">
             <children>
                <!-- AntiVirus panel --> 
-               <AnchorPane fx:id="avPane" prefHeight="495.0" prefWidth="662.0" styleClass="black-pane">
+               <AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
                   <children>
                      <Label text="AV status:" layoutX="14.0" layoutY="10.0" />
-                     <Label fx:id="avStatusLabel" layoutX="14.0" layoutY="30.0" prefWidth="632.0" />
+                     <Label fx:id="avStatusLabel" layoutX="14.0" layoutY="30.0" prefWidth="1070.0" />
                      <Label text="Scanned files:" layoutX="14.0" layoutY="60.0" />
-                     <ListView fx:id="avFilesListView" layoutX="14.0" layoutY="80.0" prefHeight="250.0" prefWidth="632.0" styleClass="black-listview"/>  
+                     <ListView fx:id="avFilesListView" layoutX="14.0" layoutY="80.0" prefHeight="250.0" prefWidth="1070.0" styleClass="black-listview"/>  
                   </children>
                </AnchorPane>
                <!-- Logs panel --> 
-               <AnchorPane fx:id="logsPane" prefHeight="495.0" prefWidth="662.0" styleClass="black-pane">
+               <AnchorPane fx:id="logsPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
                   <children>
-                     <TextArea fx:id="logsArea" editable="false" layoutX="14.0" layoutY="14.0" prefHeight="465.0" prefWidth="632.0" styleClass="black-textarea"/>
+                     <TextArea fx:id="logsArea" editable="false" layoutX="14.0" layoutY="14.0" prefHeight="615.0" prefWidth="1070.0" styleClass="black-textarea"/>
                   </children>
                </AnchorPane>
                <!-- Home panel --> 
-               <AnchorPane fx:id="homePane" prefHeight="495.0" prefWidth="662.0" styleClass="black-pane">
-                  <children>
-                     <HBox layoutX="14.0" layoutY="60.0" spacing="20.0">
-                        <!-- Logo -->
-                        <ImageView fitHeight="200.0" fitWidth="225.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@../../../images/wireshield_logo.png" />
-                           </image>
-                        </ImageView>
-                        <!-- Peer list -->
-                        <VBox spacing="10.0">
-                           <HBox alignment="BOTTOM_LEFT" spacing="10.0">
-                              <Label text="Available peers:" />
-                              <Region HBox.hgrow="ALWAYS" />
-                              <Button fx:id="uploadPeerButton" text="+" onAction="#handleFileSelection" styleClass="btn-primary"/>
-                           </HBox>
-                           <ListView fx:id="peerListView" prefHeight="110.0" prefWidth="400.0" styleClass="black-listview"/>
-                           <Label fx:id="connLabel" text="" />
-                        </VBox>
-                     </HBox>
-                     <!-- VPN Button -->
-                     <Button fx:id="vpnButton" layoutX="235.0" layoutY="331.0" onAction="#changeVPNState" prefHeight="62.0" prefWidth="138.0" text="Start VPN" styleClass="btn-primary" />
-                  </children>
-               </AnchorPane>
+               <AnchorPane fx:id="homePane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
+    				<children>
+       				 	<VBox spacing="10.0" layoutX="14.0" layoutY="14.0">
+    				    	<!-- Status indicator -->
+            				<Label fx:id="connLabel" text="" />
+            
+            				<!-- Peer selection row -->
+            				<HBox spacing="10.0" alignment="CENTER_LEFT">
+                				<ComboBox fx:id="peerComboBox" prefWidth="200.0" />
+                				<Button fx:id="uploadPeerButton" text="+" onAction="#handleFileSelection" styleClass="btn-primary"/>
+            				</HBox>
+            
+            				<!-- VPN Button -->
+            				<Button fx:id="vpnButton" onAction="#changeVPNState" prefHeight="62.0" prefWidth="138.0" text="Start VPN" styleClass="btn-primary" />
+        				</VBox>
+    				</children>
+				</AnchorPane>
             </children>
          </Pane>
       </children>
