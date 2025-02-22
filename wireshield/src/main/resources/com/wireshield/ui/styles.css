@@ -1,7 +1,8 @@
+/* Base styles */
 .root {
-    -fx-font-family: "Arial";
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
     -fx-font-size: 14px;
-    -fx-background-color: #252526;
+    -fx-background-color: #1a1a1a;
     -fx-text-fill: white;
 }
 
@@ -10,63 +11,130 @@
     -fx-text-fill: white;
 }
 
+/* Pane styles */
 .black-pane {
-    -fx-background-color: #252526;
+    -fx-background-color: #1a1a1a;
+    -fx-padding: 15px;
 }
 
-.black-textarea {
+/* TextArea and ListView shared styles */
+.black-textarea, .black-listview {
     -fx-control-inner-background: #2d2d30;
     -fx-text-fill: white;
     -fx-background-color: #2d2d30;
     -fx-font-size: 14px;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-color: #2d2d30;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #3d3d3d;
+    -fx-border-width: 1px;
 }
 
-.black-listview {
-    -fx-control-inner-background: #2d2d30;
+.black-listview .list-cell {
+    -fx-background-color: transparent;
     -fx-text-fill: white;
-    -fx-background-color: #2d2d30;
-    -fx-font-size: 14px;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-color: #2d2d30;
+    -fx-padding: 8px;
 }
 
+.black-listview .list-cell:filled:hover {
+    -fx-background-color: #3d3d3d;
+}
+
+.black-listview .list-cell:filled:selected {
+    -fx-background-color: #0065a9;
+}
+
+/* Primary button style */
 .btn-primary {
     -fx-background-color: #0065a9;
-    -fx-text-fill: black;
+    -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-padding: 10 20 10 20;
     -fx-cursor: hand;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
 }
 
 .btn-primary:hover {
     -fx-background-color: #0098ff;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
 }
 
+.btn-primary:pressed {
+    -fx-background-color: #004c80;
+}
+
+/* Top bar styles */
 #hBox {
     -fx-background-color: #0065a9;
+    -fx-padding: 5 10 5 10;
+    -fx-spacing: 8;
 }
 
 #hBox .button {
-    -fx-background-color: transparent; 
-    -fx-text-fill: white; 
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
     -fx-font-size: 16px;
+    -fx-min-width: 30px;
+    -fx-min-height: 25px;
+    -fx-background-radius: 4px;
+}
+
+#hBox .button:hover {
+    -fx-background-color: rgba(255,255,255,0.1);
+}
+
+/* Left sidebar styles */
+#vBox {
+    -fx-background-color: #1e1e1e;
 }
 
 #vBox .button {
-    -fx-background-color: #252526;
-    -fx-text-fill: white;
+    -fx-background-color: transparent;
+    -fx-text-fill: #cccccc;
     -fx-font-size: 16px;
-    -fx-font-weight: bold;
+    -fx-font-weight: normal;
     -fx-cursor: hand;
     -fx-background-radius: 0;
-    -fx-border-radius: 0; 
+    -fx-border-radius: 0;
+    -fx-alignment: center-left;
+    -fx-padding: 15 20;
 }
 
 #vBox .button:hover {
     -fx-background-color: #2d2d30;
+    -fx-text-fill: white;
+}
+
+#vBox .button:pressed {
+    -fx-background-color: #3d3d3d;
+}
+
+/* Status indicators */
+#connLabel {
+    -fx-padding: 8px;
+    -fx-background-radius: 4px;
+}
+
+#connLabel:text="Connected" {
+    -fx-background-color: #2e7d32;
+    -fx-text-fill: white;
+}
+
+#connLabel:text="Disconnected" {
+    -fx-background-color: #c62828;
+    -fx-text-fill: white;
+}
+
+/* Upload peer button specific style */
+#uploadPeerButton {
+    -fx-background-radius: 50%;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-padding: 5;
+}
+
+/* Panels specific styles */
+#avPane, #logsPane, #homePane {
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
 }
