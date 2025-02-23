@@ -19,7 +19,7 @@
 }
 
 /* TextArea and ListView shared styles */
-.black-textarea, .black-listview {
+.black-textarea {
     -fx-control-inner-background: #2a2a2a;
     -fx-text-fill: #ffffff;
     -fx-background-color: #1a1a1a;
@@ -30,19 +30,6 @@
     -fx-border-width: 1px;
 }
 
-.black-listview .list-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: #ffffff;
-    -fx-padding: 8px;
-}
-
-.black-listview .list-cell:filled:hover {
-    -fx-background-color: #2a2a2a;
-}
-
-.black-listview .list-cell:filled:selected {
-    -fx-background-color: #404040;
-}
 
 /* Primary button style */
 .btn-primary {
@@ -133,37 +120,99 @@
     -fx-text-fill: #ffffff;
 }
 
-.combo-box {
-    -fx-background-color: #2a2a2a;
-    -fx-text-fill: white;
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-border-color: #404040;
+/* Upload peer button specific style */
+.upload-button {
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-background-radius: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
 }
 
-.combo-box .cell {
-    -fx-text-fill: white;
-    -fx-background-color: #2a2a2a;
-}
-
-.combo-box-popup .list-view .list-cell {
-    -fx-text-fill: white;
-    -fx-background-color: #2a2a2a;
-}
-
-.combo-box-popup .list-view .list-cell:hover {
+.upload-button:hover {
     -fx-background-color: #404040;
 }
 
-/* Upload peer button specific style */
-#uploadPeerButton {
-    -fx-background-radius: 50%;
-    -fx-min-width: 30px;
-    -fx-min-height: 30px;
-    -fx-padding: 5;
+.upload-button:pressed {
+    -fx-background-color: #4d4d4d;
 }
+
 
 /* Panels specific styles */
 #avPane, #logsPane, #homePane {
     -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
+}
+
+/* New styles for peer cards container */
+.peer-container-header {
+    -fx-min-height: 40px;
+    -fx-background-color: #262626;
+}
+
+.peers-container {
+    -fx-background-color: #262626;
+    -fx-padding: 30px 20px 20px 20px; /* Extra padding on top for the upload button */
+    -fx-spacing: 10px;
+	-fx-background-radius: 10px;
+	-fx-border-color: #666666;
+	-fx-border-width: 1px;
+	-fx-border-radius: 10px;
+}
+
+/* Scroll pane */
+.scroll-pane{
+	-fx-background-color: #262626;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: #262626;
+}
+
+/* Peer card styles */
+.peer-card {
+    -fx-background-color: #333333;
+    -fx-padding: 15px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-min-height: 80px;
+    -fx-min-width: 250px;
+}
+
+.peer-card:hover {
+    -fx-background-color: #404040;
+    -fx-cursor: hand;
+}
+
+.peer-card.selected {
+    -fx-background-color: #4d4d4d;
+    -fx-border-color: #666666;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}
+
+.peer-name {
+	-fx-background-color: null;
+    -fx-font-size: 16px;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.connection-container{
+	
+}
+
+.connection-status-label {
+    -fx-background-color: #262626;
+    -fx-padding: 20px;
+    -fx-spacing: 10px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+/* VPN button repositioned */
+#vpnButton {
+    -fx-min-width: 150px;
+    -fx-min-height: 50px;
 }
