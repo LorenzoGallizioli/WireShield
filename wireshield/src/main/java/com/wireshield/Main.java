@@ -19,6 +19,7 @@ public class Main {
 	 * @param args Command-line arguments passed to the application.
 	 */
 	public static void main(String[] args) {
+		
 		if (!isRunningAsAdmin()) {
 			JOptionPane.showMessageDialog(null, "You must run this application as an administrator.",
 					"Administrator Required", JOptionPane.INFORMATION_MESSAGE);

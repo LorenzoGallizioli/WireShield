@@ -54,41 +54,7 @@ public class Connection {
 		}
 		return instance;
 	}
-
-	/**
-	 * Retrieves the sent and received traffic statistics. Updates the values by
-	 * invoking WireGuard commands.
-	 *
-	 * @return A Long array containing sent traffic (index 0) and received traffic
-	 *         (index 1).
-	 */
-	public Long[] getTraffic() {
-		this.updateTraffic();
-
-		Long[] traffic = new Long[2];
-
-		traffic[0] = this.sentTraffic;
-		traffic[1] = this.receivedTraffic;
-
-		return traffic;
-	}
-
-	/**
-	 * Updates the sent and received traffic statistics using the WireGuard
-	 * "transfer" parameter. Resets values to zero if no data is available.
-	 */
-	public void updateTraffic() {
-		String trafficString = wgShow("transfer");
-
-		if (trafficString != null) {
-			this.sentTraffic = Long.parseLong(trafficString.trim().split("\\s+")[0]);
-			this.receivedTraffic = Long.parseLong(trafficString.trim().split("\\s+")[1]);
-		} else {
-			this.sentTraffic = 0;
-			this.receivedTraffic = 0;
-		}
-	}
-
+	
 	/**
 	 * Executes the `wg show` command to retrieve specific connection parameters.
 	 *
@@ -117,6 +83,47 @@ public class Connection {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+
+	/**
+	 * Updates the sent and received traffic statistics using the WireGuard
+	 * "transfer" parameter. Resets values to zero if no data is available.
+	 */
+	public void updateTraffic() {
+		String trafficString = wgShow("transfer");
+
+		if (trafficString != null) {
+			this.sentTraffic = Long.parseLong(trafficString.trim().split("\\s+")[0]);
+			this.receivedTraffic = Long.parseLong(trafficString.trim().split("\\s+")[1]);
+		} else {
+			this.sentTraffic = 0;
+			this.receivedTraffic = 0;
+		}
+	}
+	
+	/**
+	 * Retrieves the sent and received traffic statistics. Updates the values by
+	 * invoking WireGuard commands.
+	 *
+	 * @return A Long array containing sent traffic (index 0) and received traffic
+	 *         (index 1).
+	 */
+	public Long getSentTraffic() {
+		return this.sentTraffic;
+
+	}
+	
+	/**
+	 * Retrieves the sent and received traffic statistics. Updates the values by
+	 * invoking WireGuard commands.
+	 *
+	 * @return A Long array containing sent traffic (index 0) and received traffic
+	 *         (index 1).
+	 */
+	public Long getReceivedTraffic() {
+		return this.receivedTraffic;
+
 	}
 
 	/**
@@ -158,7 +165,7 @@ public class Connection {
 	 * 
 	 * @return The name of the active interface, or null if no interface is active.
 	 */
-	protected String getActiveInterface() {
+	public String getActiveInterface() {
 		this.updateActiveInterface();
 		return this.activeInterface;
 	}
@@ -200,6 +207,7 @@ public class Connection {
 		this.updateLastHandshakeTime();
 		return this.lastHandshakeTime;
 	}
+	
 
 	/**
 	 * Provides a string representation of the connection, including interface
@@ -213,9 +221,12 @@ public class Connection {
 				"Interface: %s%nStatus: %s%nLast handshake time: %s%nReceived traffic: %s byte %nSent traffic: %s byte",
 				interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic);
 	}
+	
+	
+	
+	
 
 	// Protected setters for internal testing
-
 	protected void setSentTraffic(long sentTraffic) {
 		this.sentTraffic = sentTraffic;
 	}

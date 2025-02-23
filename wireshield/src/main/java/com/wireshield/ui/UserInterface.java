@@ -25,12 +25,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.scene.control.ListView;
+import javafx.scene.paint.Color;
 
 public class UserInterface extends Application {
 
@@ -47,7 +50,15 @@ public class UserInterface extends Application {
     @FXML
     protected Label avStatusLabel;
     @FXML
-    protected Label connLabel;
+    protected Label connStatusLabel;
+    @FXML
+    protected Label lastHandshakeTimeLabel;
+    @FXML
+    protected Label sentTrafficLable;
+    @FXML
+    protected Label receivedTrafficLabel;
+    @FXML
+    protected Label connInterfaceLabel;
     @FXML
     protected AnchorPane homePane;
     @FXML
@@ -95,6 +106,10 @@ public class UserInterface extends Application {
 
     @FXML
     public void initialize() {
+    	
+    	// Load Fonts
+    	Font.loadFont(getClass().getResourceAsStream("/fonts/RobotoMono-SemiBold.ttf"), 12);
+    	    	
         viewHome();
         updatePeerList();
         startDynamicConnectionLogsUpdate();
@@ -108,6 +123,11 @@ public class UserInterface extends Application {
     }
 
     public static void main(String[] args) {
+    	
+    	System.setProperty("prism.text", "sw"); // Usa il renderer Text2D
+    	System.setProperty("prism.lcdtext", "true"); // Abilita il subpixel rendering (per schermi LCD)
+    	
+    	
         so = SystemOrchestrator.getInstance();
         so.manageVPN(vpnOperations.STOP, null);
         wg = so.getWireguardManager();
@@ -283,10 +303,29 @@ public class UserInterface extends Application {
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    String logs = wg.getConnectionLogs();
                     Platform.runLater(() -> {
-                        connLabel.setText("");
-                        connLabel.setText(logs);
+                    	
+                        // Connected Interface
+                    	connInterfaceLabel.setText("interface: " + wg.getConnection().getActiveInterface());
+                    	
+                    	// Connection Status
+                    	if(wg.getConnection().getStatus() == connectionStates.CONNECTED) {
+                    		connStatusLabel.setText("● Connected");
+                    		connStatusLabel.getStyleClass().remove("connStatusLabel-red");
+                    		connStatusLabel.getStyleClass().add("connStatusLabel-green");
+                    	} else {
+                    		connStatusLabel.setText("● Disconnected");
+                    		connStatusLabel.getStyleClass().remove("connStatusLabel-green");
+                    		connStatusLabel.getStyleClass().add("connStatusLabel-red");
+                    	}
+                    	
+                        // Transmission                    	
+                    	sentTrafficLable.setText(wg.getConnection().getSentTraffic().toString());
+                    	receivedTrafficLabel.setText(wg.getConnection().getReceivedTraffic().toString());
+                    	
+                    	// HandShake
+                    	lastHandshakeTimeLabel.setText(wg.getConnection().getLastHandshakeTime().toString());
+                        
                     });
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {

@@ -4,6 +4,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 <?import javafx.geometry.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
 <StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wireshield.ui.UserInterface">
    <AnchorPane prefHeight="730.0" prefWidth="1100.0">
@@ -25,7 +27,7 @@
     					</padding>
     					<children>
         					<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="15" prefWidth="80.0" text="Home" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
-        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="15" prefWidth="80.0" text="Antivirus" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="20" prefWidth="80.0" text="Antivirus" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
         					<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="15" prefWidth="80.0" text="Logs" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
     					</children>
 					</HBox>
@@ -66,14 +68,44 @@
     					   </ScrollPane>
                        </VBox>
                        
-                       <!-- Connection status container-->
-                       <VBox styleClass="connection-container" prefWidth="740.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="150.0">
-                            <!-- Right side: Connection status and VPN button -->
-                       		<VBox styleClass="connection-status-label" spacing="15" AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="20.0">
-                           		<Label fx:id="connLabel" text="" />
-                           		<Button fx:id="vpnButton" onAction="#changeVPNState" text="Start VPN" styleClass="btn-primary"/>
-                       		</VBox>
-                       </VBox>
+                       <!-- Connection status container -->
+					   <VBox styleClass="connection-container" prefWidth="740.0" prefHeight="150.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="0.0">
+    
+    						<!-- Top row: Interface, Status and VPN button -->
+    						<HBox styleClass="connection-container" prefWidth="740.0" spacing="20">
+        						<padding>
+            						<Insets top="10" bottom="10" left="20" right="20"/>
+        						</padding>
+        						<VBox spacing="10">
+            						<Label fx:id="connInterfaceLabel" text="" styleClass="connectionInfo-text" />
+            						<HBox spacing="5">
+                						<Label text="Status: " styleClass="connectionInfo-text" />
+                						<Label fx:id="connStatusLabel" text="" styleClass="connectionInfo-text" />
+            						</HBox>
+        						</VBox>
+        						<Region HBox.hgrow="ALWAYS" />
+        						<Button fx:id="vpnButton" onAction="#changeVPNState" text="Start VPN" styleClass="btn-primary"/>
+    						</HBox>
+    
+    						<!-- Bottom row: Traffic and Handshake info -->
+    						<HBox spacing="30">
+        						<padding>
+            						<Insets left="20" right="20" bottom="10"/>
+        						</padding>
+        						<HBox alignment="CENTER" spacing="5">
+            						<Label text="Tx: " styleClass="connectionInfo-text" />
+            						<Label fx:id="sentTrafficLable" text="" styleClass="connectionInfo-text" />
+        						</HBox>
+        						<HBox alignment="CENTER" spacing="5">
+            						<Label text="Rx: " styleClass="connectionInfo-text" />
+            						<Label fx:id="receivedTrafficLabel" text="" styleClass="connectionInfo-text" />
+        						</HBox>
+        						<HBox>
+        							<Label text="Handshake time: " styleClass="connectionInfo-text" />
+        							<Label fx:id="lastHandshakeTimeLabel" text="" styleClass="connectionInfo-text" />
+        						</HBox>
+    						</HBox>
+						</VBox>
                        
                        <!-- Peer info container-->
                        <VBox styleClass="peerInfo-container" prefWidth="740.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="300.0" AnchorPane.bottomAnchor="0.0">

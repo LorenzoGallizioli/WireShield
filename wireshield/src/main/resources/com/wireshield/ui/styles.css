@@ -1,6 +1,7 @@
+
 /* Base styles */
 .root {
-    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-family: 'Roboto Mono Light';
     -fx-font-size: 14px;
     -fx-background-color: #1a1a1a;
     -fx-text-fill: #ffffff;
@@ -18,19 +19,6 @@
     -fx-padding: 15px;
 }
 
-/* TextArea and ListView shared styles */
-.black-textarea {
-    -fx-control-inner-background: #2a2a2a;
-    -fx-text-fill: #ffffff;
-    -fx-background-color: #1a1a1a;
-    -fx-font-size: 14px;
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-border-color: #404040;
-    -fx-border-width: 1px;
-}
-
-
 /* Primary button style */
 .btn-primary {
     -fx-background-color: #333333;
@@ -41,6 +29,7 @@
     -fx-cursor: hand;
     -fx-background-radius: 8px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+	-fx-font-smoothing-type: gray;
 }
 
 .btn-primary:hover {
@@ -105,14 +94,12 @@
 }
 
 /* Status indicators */
-#connLabel {
-    -fx-padding: 8px;
-    -fx-background-radius: 4px;
+.connStatusLabel-green {
+    -fx-text-fill: #01741e;
 }
 
-#connLabel:text="Connected" {
-    -fx-background-color: #4d4d4d;
-    -fx-text-fill: #ffffff;
+.connStatusLabel-red {
+    -fx-text-fill: #970000;
 }
 
 #connLabel:text="Disconnected" {
@@ -199,8 +186,17 @@
     -fx-font-weight: bold;
 }
 
-.connection-container{
-	
+.connection-container {
+	-fx-background-color: #262626;
+	-fx-spacing: 10px;
+    -fx-background-radius: 10px;
+}
+
+.connectionInfo-text {
+	-fx-font-family: 'Roboto Mono SemiBold';
+	-fx-font-size: 14px;
+	-fx-background-color: null;
+	-fx-font-smoothing-type: gray;
 }
 
 .connection-status-label {
