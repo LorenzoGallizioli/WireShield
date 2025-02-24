@@ -123,11 +123,6 @@ public class UserInterface extends Application {
     }
 
     public static void main(String[] args) {
-    	
-    	System.setProperty("prism.text", "sw"); // Usa il renderer Text2D
-    	System.setProperty("prism.lcdtext", "true"); // Abilita il subpixel rendering (per schermi LCD)
-    	
-    	
         so = SystemOrchestrator.getInstance();
         so.manageVPN(vpnOperations.STOP, null);
         wg = so.getWireguardManager();
@@ -247,7 +242,7 @@ public class UserInterface extends Application {
                         peerCard.getStyleClass().add("peer-card");
                         
                         Label peerName = new Label(file.getName());
-                        peerName.getStyleClass().add("peer-name");
+                        peerName.getStyleClass().add("peer-card-text");
                         peerCard.getChildren().add(peerName);
                         
                         peerCard.setOnMouseClicked(event -> {
@@ -309,14 +304,13 @@ public class UserInterface extends Application {
                     	connInterfaceLabel.setText("interface: " + wg.getConnection().getActiveInterface());
                     	
                     	// Connection Status
+                    	connStatusLabel.setText("");
                     	if(wg.getConnection().getStatus() == connectionStates.CONNECTED) {
                     		connStatusLabel.setText("● Connected");
-                    		connStatusLabel.getStyleClass().remove("connStatusLabel-red");
-                    		connStatusLabel.getStyleClass().add("connStatusLabel-green");
+                    		connStatusLabel.setStyle("-fx-text-fill: #DAF7A6 ");
                     	} else {
                     		connStatusLabel.setText("● Disconnected");
-                    		connStatusLabel.getStyleClass().remove("connStatusLabel-green");
-                    		connStatusLabel.getStyleClass().add("connStatusLabel-red");
+                    		connStatusLabel.setStyle("-fx-text-fill: #FF5733");
                     	}
                     	
                         // Transmission                    	

@@ -17,24 +17,24 @@
                   <HBox fx:id="hBox" prefHeight="0" prefWidth="1100.0" BorderPane.alignment="CENTER">
                      <children>
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="minimizeButton" text="—" onAction="#minimizeWindow"/>
-                        <Button fx:id="closeButton" text="X" onAction="#closeWindow" />
+                        <Button fx:id="minimizeButton" text="—" prefHeight="20.0" prefWidth="30.0" styleClass="minimize-button" onAction="#minimizeWindow"/>
+                        <Button fx:id="closeButton" text="X" prefHeight="20.0" prefWidth="30.0" styleClass="close-button" onAction="#closeWindow" />
                      </children>
                   </HBox>
-                  <HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT">
+                  <HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT" >
     					<padding>
         					<Insets left="20.0"/>
     					</padding>
     					<children>
-        					<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="15" prefWidth="80.0" text="Home" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
-        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="20" prefWidth="80.0" text="Antivirus" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
-        					<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="15" prefWidth="80.0" text="Logs" style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        					<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="0" prefWidth="70.0" text="Home" styleClass="btn-menu" />
+        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="0" prefWidth="100.0" text="Antivirus" styleClass="btn-menu" />
+        					<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="0" prefWidth="70.0" text="Logs" styleClass="btn-menu" />
     					</children>
 					</HBox>
                </VBox>
             </top>
          </BorderPane>
-         <Pane layoutX="0" layoutY="67.0" prefHeight="643.0" prefWidth="1100.0">
+         <Pane layoutX="0" layoutY="69.0" prefHeight="643.0" prefWidth="1100.0">
             <children>
                <!-- AntiVirus panel --> 
                <AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">

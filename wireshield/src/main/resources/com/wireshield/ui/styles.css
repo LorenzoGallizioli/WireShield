@@ -1,22 +1,50 @@
 
 /* Base styles */
 .root {
-    -fx-font-family: 'Roboto Mono Light';
+    -fx-font-family: 'Roboto Mono SemiBold';
     -fx-font-size: 14px;
     -fx-background-color: #1a1a1a;
     -fx-text-fill: #ffffff;
 }
 
-.label {
-    -fx-font-size: 14px;
-    -fx-background-color: #1a1a1a;
-    -fx-text-fill: #ffffff;
+.close-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #afaeae;
+    -fx-font-size: 20px;
+    -fx-padding: 0;
+    -fx-background-radius: 5px;
+}
+
+.close-button:hover {
+    -fx-background-color: #dd1c1a;
+}
+
+.minimize-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #afaeae;
+    -fx-font-size: 20px;
+    -fx-padding: 0;
+    -fx-background-radius: 5px;
+}
+
+.minimize-button:hover {
+    -fx-background-color: #4d4d4d;
 }
 
 /* Pane styles */
 .black-pane {
     -fx-background-color: #1a1a1a;
     -fx-padding: 15px;
+}
+
+.btn-menu {
+	-fx-background-color: transparent;
+	-fx-text-fill: #afaeae;
+	-fx-background-radius: 0px;
+}
+
+.btn-menu:hover {
+    -fx-background-color: #252525;
 }
 
 /* Primary button style */
@@ -48,63 +76,9 @@
     -fx-spacing: 8;
 }
 
-#hBox .button {
-    -fx-background-color: #404040;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 16px;
-    -fx-min-width: 30px;
-    -fx-min-height: 25px;
-    -fx-background-radius: 4px;
-}
-
-#hBox .btn-menu {
-    -fx-background-color: #1a1a1a;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 16px;
-}
-
-#hBox .button:hover {
-    -fx-background-color: #4d4d4d;
-}
-
 /* Left sidebar styles */
 #vBox {
     -fx-background-color: #262626;
-}
-
-#vBox .button {
-    -fx-background-color: #262626;
-    -fx-text-fill: #cccccc;
-    -fx-font-size: 16px;
-    -fx-font-weight: normal;
-    -fx-cursor: hand;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-alignment: center-left;
-    -fx-padding: 15 20;
-}
-
-#vBox .button:hover {
-    -fx-background-color: #333333;
-    -fx-text-fill: #ffffff;
-}
-
-#vBox .button:pressed {
-    -fx-background-color: #404040;
-}
-
-/* Status indicators */
-.connStatusLabel-green {
-    -fx-text-fill: #01741e;
-}
-
-.connStatusLabel-red {
-    -fx-text-fill: #970000;
-}
-
-#connLabel:text="Disconnected" {
-    -fx-background-color: #333333;
-    -fx-text-fill: #ffffff;
 }
 
 /* Upload peer button specific style */
@@ -121,11 +95,6 @@
 .upload-button:hover {
     -fx-background-color: #404040;
 }
-
-.upload-button:pressed {
-    -fx-background-color: #4d4d4d;
-}
-
 
 /* Panels specific styles */
 #avPane, #logsPane, #homePane {
@@ -179,7 +148,7 @@
     -fx-border-radius: 8px;
 }
 
-.peer-name {
+.peer-card-text {
 	-fx-background-color: null;
     -fx-font-size: 16px;
     -fx-text-fill: #ffffff;
@@ -194,21 +163,8 @@
 
 .connectionInfo-text {
 	-fx-font-family: 'Roboto Mono SemiBold';
+	-fx-text-fill: #afaeae;
 	-fx-font-size: 14px;
 	-fx-background-color: null;
-	-fx-font-smoothing-type: gray;
 }
 
-.connection-status-label {
-    -fx-background-color: #262626;
-    -fx-padding: 20px;
-    -fx-spacing: 10px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
-}
-
-/* VPN button repositioned */
-#vpnButton {
-    -fx-min-width: 150px;
-    -fx-min-height: 50px;
-}
