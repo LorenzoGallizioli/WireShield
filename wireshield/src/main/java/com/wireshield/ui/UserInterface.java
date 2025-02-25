@@ -114,8 +114,9 @@ public class UserInterface extends Application {
     public void initialize() {
     	
     	// Load Fonts
-    	Font.loadFont(getClass().getResourceAsStream("/fonts/RobotoMono-SemiBold.ttf"), 12);
-    	    	
+    	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Medium.ttf"), 14);
+    	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Bold.ttf"), 16);
+    	
         viewHome();
         updatePeerList();
         startDynamicConnectionLogsUpdate();
@@ -129,6 +130,10 @@ public class UserInterface extends Application {
     }
 
     public static void main(String[] args) {
+    	
+    	System.setProperty("prism.lcdtext", "true");
+    	System.setProperty("prism.text", "gray");
+    	
         so = SystemOrchestrator.getInstance();
         so.manageVPN(vpnOperations.STOP, null);
         wg = so.getWireguardManager();
@@ -244,7 +249,6 @@ public class UserInterface extends Application {
                     	
                         Scanner scanner = null;
                         String data = "";
-                        
 						try {
 							scanner = new Scanner(file);
 						} catch (FileNotFoundException e) {
@@ -255,13 +259,17 @@ public class UserInterface extends Application {
                     	while (scanner.hasNextLine()) {
                             data = data + scanner.nextLine() + "\n";
                         }
-                    
+                    	
                     	Map<String, Map<String, String>> dataMap = PeerManager.parsePeerConfig(data);
                     	wg.getPeerManager().createPeer(dataMap, file.getName());
                     }
                 }
                 logger.info("Peer cards updated successfully");
             }
+        }
+        else
+        {
+        	logger.warn("Peer directory does not exist or is not a directory: {}", folderPath);
         }
     	
     }
@@ -274,6 +282,7 @@ public class UserInterface extends Application {
             logger.error("peerCardsContainer is null");
             return;
         }
+        
         peerCardsContainer.getChildren().clear();
         
         for (Peer peer : wg.getPeerManager().getPeers()) {
@@ -283,7 +292,9 @@ public class UserInterface extends Application {
             Label peerName = new Label(peer.getName());
             Label peerAddr = new Label(peer.getEndPoint());
             
-            peerName.getStyleClass().add("peer-card-text");
+            peerName.getStyleClass().add("peer-card-text-name");
+            peerAddr.getStyleClass().add("peer-card-text-address");   
+            
             peerCard.getChildren().add(peerName);
             peerCard.getChildren().add(peerAddr);
             
@@ -295,7 +306,6 @@ public class UserInterface extends Application {
                 peerCard.getStyleClass().add("selected");
                 
                 if (vpnButton.getText().equals("Start VPN")) {
-                	
                 	vpnButton.setDisable(false);
                 }
                 
