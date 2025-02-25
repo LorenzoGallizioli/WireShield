@@ -5,14 +5,20 @@ import com.wireshield.enums.connectionStates;
 import com.wireshield.enums.runningStates;
 import com.wireshield.enums.vpnOperations;
 import com.wireshield.localfileutils.SystemOrchestrator;
+import com.wireshield.wireguard.Peer;
+import com.wireshield.wireguard.PeerManager;
 import com.wireshield.wireguard.WireguardManager;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javafx.application.Application;
@@ -222,48 +228,83 @@ public class UserInterface extends Application {
             logger.info("No file selected.");
         }
     }
-
-    protected void updatePeerList() {
-        if (peerCardsContainer == null) {
-            logger.error("peerCardsContainer is null");
-            return;
-        }
-        
-        peerCardsContainer.getChildren().clear();
+    
+    private void chargePeersFromPeerPath() {
         String folderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
         File directory = new File(folderPath);
-
+        
+        wg.getPeerManager().resetPeerList();
+        
         if (directory.exists() && directory.isDirectory()) {
             File[] files = directory.listFiles();
+            
             if (files != null) {
                 for (File file : files) {
                     if (file.isFile() && file.length() > 0) {
-                        VBox peerCard = new VBox();
-                        peerCard.getStyleClass().add("peer-card");
+                    	
+                        Scanner scanner = null;
+                        String data = "";
                         
-                        Label peerName = new Label(file.getName());
-                        peerName.getStyleClass().add("peer-card-text");
-                        peerCard.getChildren().add(peerName);
-                        
-                        peerCard.setOnMouseClicked(event -> {
-                            selectedPeerFile = file.getName();
-                            peerCardsContainer.getChildren().forEach(node -> 
-                                node.getStyleClass().remove("selected"));
-                            peerCard.getStyleClass().add("selected");
-                            if (vpnButton.getText().equals("Start VPN")) {
-                                vpnButton.setDisable(false);
-                            }
-                            logger.info("Selected peer file: {}", selectedPeerFile);
-                        });
-                        
-                        peerCardsContainer.getChildren().add(peerCard);
-                        logger.debug("Added peer card for file: {}", file.getName());
+						try {
+							scanner = new Scanner(file);
+						} catch (FileNotFoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
+                    	while (scanner.hasNextLine()) {
+                            data = data + scanner.nextLine() + "\n";
+                        }
+                    
+                    	Map<String, Map<String, String>> dataMap = PeerManager.parsePeerConfig(data);
+                    	wg.getPeerManager().createPeer(dataMap, file.getName());
                     }
                 }
                 logger.info("Peer cards updated successfully");
             }
-        } else {
-            logger.warn("Peer directory does not exist or is not a directory: {}", folderPath);
+        }
+    	
+    }
+
+    protected void updatePeerList() {
+    	
+    	chargePeersFromPeerPath();
+    	
+        if (peerCardsContainer == null) {
+            logger.error("peerCardsContainer is null");
+            return;
+        }
+        peerCardsContainer.getChildren().clear();
+        
+        for (Peer peer : wg.getPeerManager().getPeers()) {
+        	VBox peerCard = new VBox();
+            peerCard.getStyleClass().add("peer-card");
+            
+            Label peerName = new Label(peer.getName());
+            Label peerAddr = new Label(peer.getEndPoint());
+            
+            peerName.getStyleClass().add("peer-card-text");
+            peerCard.getChildren().add(peerName);
+            peerCard.getChildren().add(peerAddr);
+            
+            peerCard.setOnMouseClicked(event -> {
+            	
+                selectedPeerFile = peer.getName();
+                
+                peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
+                peerCard.getStyleClass().add("selected");
+                
+                if (vpnButton.getText().equals("Start VPN")) {
+                	
+                	vpnButton.setDisable(false);
+                }
+                
+                logger.info("Selected peer file: {}", selectedPeerFile);
+            });
+            
+            peerCardsContainer.getChildren().add(peerCard);
+            
+            logger.debug("Added peer card for file: {}", peer.getName());
         }
     }
 
@@ -307,7 +348,7 @@ public class UserInterface extends Application {
                     	connStatusLabel.setText("");
                     	if(wg.getConnection().getStatus() == connectionStates.CONNECTED) {
                     		connStatusLabel.setText("● Connected");
-                    		connStatusLabel.setStyle("-fx-text-fill: #DAF7A6 ");
+                    		connStatusLabel.setStyle("-fx-text-fill: #DAF7A6");
                     	} else {
                     		connStatusLabel.setText("● Disconnected");
                     		connStatusLabel.setStyle("-fx-text-fill: #FF5733");

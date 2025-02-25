@@ -141,4 +141,9 @@ public class PeerManager {
 
 		return configSections;
 	}
+	
+	
+	public void resetPeerList() {
+		this.peers.clear();;
+	}
 }
