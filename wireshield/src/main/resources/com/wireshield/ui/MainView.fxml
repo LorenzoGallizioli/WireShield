@@ -105,12 +105,13 @@
         							<Label fx:id="lastHandshakeTimeLabel" text="" styleClass="connectionInfo-text" />
         						</HBox>
     						</HBox>
-						</VBox>
+					   </VBox>
                        
-                       <!-- Peer info container-->
-                       <VBox styleClass="peerInfo-container" prefWidth="740.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="300.0" AnchorPane.bottomAnchor="0.0">
-                            
-                       </VBox>
+                       <!-- Connection status container
+					   <VBox styleClass="peerInfo-container" prefWidth="740.0" prefHeight="450.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="165.0">
+    
+    						    
+					   </VBox>-->
 
                    </children>
                </AnchorPane>

@@ -7,6 +7,11 @@
     src: url('../../../fonts/Montserrat-Bold.ttf');
 }
 
+/* TEXT ANTIALIASING: makes fonts borders more smooth */
+.text {
+	-fx-font-smoothing-type: gray;
+}
+
 
 /* Base styles */
 .root {
@@ -184,8 +189,92 @@
 	-fx-font-smoothing-type: gray;
 }
 
-/* Permette di rendere il testo in generale piu smooth */
-.text {
-	-fx-font-smoothing-type: gray;
+
+/* #_#_#_#_** PEER INFO CONTAINER CSS **_#_#_#_# */
+
+/* Stile per il container delle informazioni peer */
+.peerInfo-container {
+    -fx-background-color: #262626;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 0, 2);
 }
+
+/* Stile per il contenuto delle informazioni peer */
+.peer-info-content {
+	-fx-text-fill: #afaeae;
+    -fx-background-color: null;
+    -fx-padding: 10px;
+}
+
+/* Stile per il titolo */
+.peer-info-title {
+	-fx-text-fill: #afaeae;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 10px 0;
+    -fx-border-color: transparent transparent #ddd transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* Stile per le etichette */
+.peer-info-label {
+    -fx-font-weight: bold;
+	-fx-text-fill: #bebebe; /* More white than other text */
+}
+
+/* Stile per i valori */
+.peer-info-value {
+	-fx-text-fill: #afaeae;
+}
+
+/* Stile per i pulsanti di azione */
+.action-button {
+	-fx-font-weight: bold;
+	-fx-padding: 8px 15px;
+	-fx-background-radius: 3px;
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-cursor: hand;
+	-fx-background-radius: 8px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.action-button:hover {
+	-fx-background-color: #668dff; /* smooth blue */
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+}
+
+/* Stile per il pulsante di eliminazione */
+.danger-button {
+    -fx-font-weight: bold;
+    -fx-padding: 8px 15px;
+    -fx-background-radius: 3px;
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-cursor: hand;
+	-fx-background-radius: 8px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.danger-button:hover {
+	-fx-background-color: #ff6666; /* smooth red */
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+}
+
+/* Stile per il pulsante piccolo */
+.small-button {
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-font-size: 12px;
+	-fx-min-width: 40px;
+	-fx-min-height: 40px;
+	-fx-background-radius: 20px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.small-button:hover {
+    -fx-background-color: #404040;
+}
+
 

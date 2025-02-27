@@ -77,7 +77,7 @@ public class Peer {
 	 * 
 	 * @return The public key of the peer.
 	 */
-	public String getPublicKeyPath() {
+	public String getPublicKey() {
 		return publicKey;
 	}
 
@@ -86,7 +86,7 @@ public class Peer {
 	 * 
 	 * @return The preshared key of the peer.
 	 */
-	public String getPresharedKeyPath() {
+	public String getPresharedKey() {
 		return presharedKey;
 	}
 

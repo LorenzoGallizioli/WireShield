@@ -12,6 +12,7 @@ import com.wireshield.wireguard.WireguardManager;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.classfile.components.ClassPrinter.Node;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -41,14 +42,16 @@ import javafx.stage.StageStyle;
 import javafx.scene.control.ListView;
 import javafx.scene.paint.Color;
 
-public class UserInterface extends Application {
+public class UserInterface extends Application implements PeerDeletionListener{
 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
     protected static SystemOrchestrator so;
     protected static WireguardManager wg;
-    protected String selectedPeerFile;
+    protected String selectedPeer;
     private static double xOffset = 0;
     private static double yOffset = 0;
+    
+    String folderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
     // FXML Controls
     @FXML
@@ -118,6 +121,7 @@ public class UserInterface extends Application {
     	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Bold.ttf"), 16);
     	
         viewHome();
+        loadPeersFromPath();
         updatePeerList();
         startDynamicConnectionLogsUpdate();
         startDynamicLogUpdate();
@@ -168,7 +172,7 @@ public class UserInterface extends Application {
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
         } else {
-            so.manageVPN(vpnOperations.START, selectedPeerFile);
+            so.manageVPN(vpnOperations.START, selectedPeer);
             so.manageAV(runningStates.UP);
             so.manageDownload(runningStates.UP);
             so.statesGuardian();
@@ -234,8 +238,7 @@ public class UserInterface extends Application {
         }
     }
     
-    private void chargePeersFromPeerPath() {
-        String folderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    private void loadPeersFromPath() {
         File directory = new File(folderPath);
         
         wg.getPeerManager().resetPeerList();
@@ -273,10 +276,74 @@ public class UserInterface extends Application {
         }
     	
     }
+    
+    @Override
+	public void onPeerDeleted(Peer peer) {
+		// TODO Auto-generated method stub
+		wg.getPeerManager().removePeer(peer.getId());
+		
+		File file = new File(folderPath + "/" + peer.getName());		
+		if (file.isFile()) {
+			file.delete();
+		}
+
+		// Aggiorna l'interfaccia
+        Platform.runLater(() -> {
+            
+        	updatePeerList();
+            
+            // Disabilita il pulsante VPN se necessario
+            vpnButton.setDisable(true);
+            vpnButton.setText("Start VPN");
+        });
+	}
+    
+    private void fillPeerInfoContainer(VBox container, Peer peer) {
+        try {
+            // Pulisci il container prima di aggiungere nuovi elementi
+            container.getChildren().clear();
+            
+            // Carica il file FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
+            javafx.scene.Node newContent = loader.load();
+            
+            // Ottieni il controller e passa i dati del peer
+            PeerInfoController controller = loader.getController();
+            controller.setPeer(peer);
+            controller.setDeleionListener(this);
+            
+            // Aggiungi il contenuto al container
+            container.getChildren().add(newContent);
+
+			// Aggiungi il container alla scena se non è già presente
+            if (!homePane.getChildren().contains(container)) {
+            	homePane.getChildren().add(container);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Errore nel caricamento del pannello informazioni peer: " + e.getMessage(), e);
+        }
+    }
+    
+    private VBox createPeerInfoContainer() {
+    	
+    	double xOffset = 740.0;
+    	double yOffset = 450.0;
+    	double leftAnchor = 320.0;
+    	double topAnchor = 165.0;
+    	
+    	VBox peerInfo = new VBox();
+    	
+    	peerInfo.getStyleClass().add("peerInfo-container");
+    	peerInfo.setPrefWidth(xOffset);
+    	peerInfo.setPrefHeight(yOffset);
+    	AnchorPane.setLeftAnchor(peerInfo, leftAnchor);
+        AnchorPane.setTopAnchor(peerInfo, topAnchor);
+        
+        return peerInfo;
+    }
 
     protected void updatePeerList() {
-    	
-    	chargePeersFromPeerPath();
     	
         if (peerCardsContainer == null) {
             logger.error("peerCardsContainer is null");
@@ -300,7 +367,8 @@ public class UserInterface extends Application {
             
             peerCard.setOnMouseClicked(event -> {
             	
-                selectedPeerFile = peer.getName();
+            	// Connection Container Logic
+                selectedPeer = peer.getName();
                 
                 peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
                 peerCard.getStyleClass().add("selected");
@@ -309,7 +377,22 @@ public class UserInterface extends Application {
                 	vpnButton.setDisable(false);
                 }
                 
-                logger.info("Selected peer file: {}", selectedPeerFile);
+                // PeerInfo Container Logic
+                VBox existingContainer = null;
+                for (javafx.scene.Node node : homePane.getChildren()) {
+                    if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+                        existingContainer = (VBox) node;
+                        break;
+                    }
+                }
+                
+                // Se non esiste, creane uno nuovo
+                VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
+                
+                // Riempi il container con le informazioni del peer
+                fillPeerInfoContainer(peerInfoContainer, peer);
+                
+                logger.info("Selected peer file: {}", selectedPeer);
             });
             
             peerCardsContainer.getChildren().add(peerCard);
@@ -317,6 +400,7 @@ public class UserInterface extends Application {
             logger.debug("Added peer card for file: {}", peer.getName());
         }
     }
+    
 
     protected void startDynamicLogUpdate() {
         Runnable task = () -> {
