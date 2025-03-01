@@ -5,6 +5,7 @@ import com.wireshield.enums.connectionStates;
 import com.wireshield.enums.runningStates;
 import com.wireshield.enums.vpnOperations;
 import com.wireshield.localfileutils.SystemOrchestrator;
+import com.wireshield.wireguard.Connection;
 import com.wireshield.wireguard.Peer;
 import com.wireshield.wireguard.PeerManager;
 import com.wireshield.wireguard.WireguardManager;
@@ -121,10 +122,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
 	@FXML
     public void initialize() {
     	
-    	// Load Fonts
-    	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Medium.ttf"), 14);
-    	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Bold.ttf"), 16);
-	
         viewHome();
         loadPeersFromPath();
         updatePeerList();
@@ -451,11 +448,11 @@ public class UserInterface extends Application implements PeerDeletionListener{
                     	}
                     	
                         // Transmission                    	
-                    	sentTrafficLable.setText(wg.getConnection().getSentTraffic().toString());
-                    	receivedTrafficLabel.setText(wg.getConnection().getReceivedTraffic().toString());
+                    	sentTrafficLable.setText(Connection.formatBytes(wg.getConnection().getSentTraffic()));
+                    	receivedTrafficLabel.setText(Connection.formatBytes(wg.getConnection().getReceivedTraffic()));
                     	
                     	// HandShake
-                    	lastHandshakeTimeLabel.setText(wg.getConnection().getLastHandshakeTime().toString());
+                    	lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(wg.getConnection().getLastHandshakeTime()));
                         
                     });
                     Thread.sleep(1000);

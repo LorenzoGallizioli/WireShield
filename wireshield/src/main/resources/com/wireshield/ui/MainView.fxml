@@ -80,17 +80,17 @@
     						</HBox>
     
     						<!-- Bottom row: Traffic and Handshake info -->
-    						<HBox spacing="30">
+    						<HBox spacing="0">
         						<padding>
             						<Insets left="20" right="20" bottom="10"/>
         						</padding>
         						<HBox alignment="CENTER" spacing="5">
             						<Label text="Tx: " styleClass="connectionInfo-text" />
-            						<Label fx:id="sentTrafficLable" text="" styleClass="connectionInfo-text" />
+            						<Label fx:id="sentTrafficLable" text="" minWidth="110" styleClass="connectionInfo-text" />
         						</HBox>
         						<HBox alignment="CENTER" spacing="5">
             						<Label text="Rx: " styleClass="connectionInfo-text" />
-            						<Label fx:id="receivedTrafficLabel" text="" styleClass="connectionInfo-text" />
+            						<Label fx:id="receivedTrafficLabel" text="" minWidth="110" styleClass="connectionInfo-text" />
         						</HBox>
         						<HBox>
         							<Label text="Handshake time: " styleClass="connectionInfo-text" />

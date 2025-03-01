@@ -29,6 +29,12 @@ public class Connection {
 	private String activeInterface;
 	private String wgPath;
 
+	private static final long BYTE = 1L;
+    private static final long KILOBYTE = 1024L;
+    private static final long MEGABYTE = KILOBYTE * 1024L;
+    private static final long GIGABYTE = MEGABYTE * 1024L;
+    private static final long TERABYTE = GIGABYTE * 1024L;
+
 	/**
 	 * Private constructor to ensure Singleton pattern. Initializes default values
 	 * and determines the path to the WireGuard executable.
@@ -222,6 +228,34 @@ public class Connection {
 				interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic);
 	}
 	
+	
+	/**
+     * Formats a byte value to a human-readable string with appropriate unit
+     * 
+     * @param bytes The number of bytes to format
+     * @return A formatted string with the appropriate unit (B, KB, MB, GB, TB)
+     */
+    public static String formatBytes(long bytes) {
+        if (bytes < 0) {
+            return "0 B";
+        }
+        
+        if (bytes < KILOBYTE) {
+            return bytes + " B";
+        } else if (bytes < MEGABYTE) {
+            double value = bytes / (double) KILOBYTE;
+            return String.format("%.2f KB", value);
+        } else if (bytes < GIGABYTE) {
+            double value = bytes / (double) MEGABYTE;
+            return String.format("%.2f MB", value);
+        } else if (bytes < TERABYTE) {
+            double value = bytes / (double) GIGABYTE;
+            return String.format("%.2f GB", value);
+        } else {
+            double value = bytes / (double) TERABYTE;
+            return String.format("%.2f TB", value);
+        }
+    }
 	
 	
 	
