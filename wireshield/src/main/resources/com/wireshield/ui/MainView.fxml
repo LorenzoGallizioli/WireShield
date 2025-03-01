@@ -8,19 +8,11 @@
 <?import javafx.scene.image.Image?>
 
 <StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wireshield.ui.UserInterface">
-   <AnchorPane prefHeight="730.0" prefWidth="1100.0">
+   <AnchorPane prefHeight="630.0" prefWidth="1100.0">
       <children>
-         <BorderPane prefHeight="730.0" prefWidth="1100.0">
-            <!-- Top bar with menu and window controls -->
+         <BorderPane prefHeight="630.0" prefWidth="1100.0">
             <top>
                <VBox>
-                  <HBox fx:id="hBox" prefHeight="0" prefWidth="1100.0" BorderPane.alignment="CENTER">
-                     <children>
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="minimizeButton" text="—" prefHeight="20.0" prefWidth="30.0" styleClass="minimize-button" onAction="#minimizeWindow"/>
-                        <Button fx:id="closeButton" text="X" prefHeight="20.0" prefWidth="30.0" styleClass="close-button" onAction="#closeWindow" />
-                     </children>
-                  </HBox>
                   <HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT" >
     					<padding>
         					<Insets left="20.0"/>
@@ -34,7 +26,7 @@
                </VBox>
             </top>
          </BorderPane>
-         <Pane layoutX="0" layoutY="69.0" prefHeight="643.0" prefWidth="1100.0">
+         <Pane layoutX="0" layoutY="28.0" prefHeight="643.0" prefWidth="1100.0">
             <children>
                <!-- AntiVirus panel --> 
                <AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
@@ -106,13 +98,6 @@
         						</HBox>
     						</HBox>
 					   </VBox>
-                       
-                       <!-- Connection status container
-					   <VBox styleClass="peerInfo-container" prefWidth="740.0" prefHeight="450.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="165.0">
-    
-    						    
-					   </VBox>-->
-
                    </children>
                </AnchorPane>
             </children>

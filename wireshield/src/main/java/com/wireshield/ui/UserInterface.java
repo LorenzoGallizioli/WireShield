@@ -12,7 +12,6 @@ import com.wireshield.wireguard.WireguardManager;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.classfile.components.ClassPrinter.Node;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -32,15 +31,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 import javafx.scene.control.ListView;
-import javafx.scene.paint.Color;
 
 public class UserInterface extends Application implements PeerDeletionListener{
 
@@ -88,38 +85,46 @@ public class UserInterface extends Application implements PeerDeletionListener{
     @Override
     public void start(Stage primaryStage) {
         try {
+        	
             FXMLLoader loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
             scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
 
-            primaryStage.initStyle(StageStyle.UNDECORATED);
-            primaryStage.setTitle("Wireshield");
+            primaryStage.initStyle(StageStyle.DECORATED);
+            primaryStage.setTitle("WireShield - ALPHA");
             primaryStage.setScene(scene);
+            
+            primaryStage.setResizable(false);
+            
+            primaryStage.setOnCloseRequest(this::closeWindow);
             primaryStage.show();
 
             root.setOnMousePressed(event -> {
                 xOffset = event.getSceneX();
                 yOffset = event.getSceneY();
             });
+            
             root.setOnMouseDragged(event -> {
                 primaryStage.setX(event.getScreenX() - xOffset);
                 primaryStage.setY(event.getScreenY() - yOffset);
             });
+            
             logger.info("Main view loaded successfully.");
+            
         } catch (IOException e) {
             e.printStackTrace();
             logger.error("Failed to load the main view.");
         }
     }
 
-    @FXML
+	@FXML
     public void initialize() {
     	
     	// Load Fonts
     	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Medium.ttf"), 14);
     	//Font.loadFont(getClass().getResourceAsStream("/fonts/Montserrat-Bold.ttf"), 16);
-    	
+	
         viewHome();
         loadPeersFromPath();
         updatePeerList();
@@ -152,11 +157,8 @@ public class UserInterface extends Application implements PeerDeletionListener{
     }
 
     @FXML
-    public void closeWindow() {
-        Stage stage = (Stage) closeButton.getScene().getWindow();
-        stage.close();
-
-        so.manageDownload(runningStates.DOWN);
+    public void closeWindow(WindowEvent windowevent) {
+    	so.manageDownload(runningStates.DOWN);
         so.manageAV(runningStates.DOWN);
         so.manageVPN(vpnOperations.STOP, null);
         System.exit(0);
@@ -328,7 +330,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
     private VBox createPeerInfoContainer() {
     	
     	double xOffset = 740.0;
-    	double yOffset = 450.0;
+    	double yOffset = 400.0;
     	double leftAnchor = 320.0;
     	double topAnchor = 165.0;
     	
@@ -471,4 +473,5 @@ public class UserInterface extends Application implements PeerDeletionListener{
         connectionLogThread.setDaemon(true);
         connectionLogThread.start();
     }
+
 }

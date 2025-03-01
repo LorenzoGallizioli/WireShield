@@ -12,7 +12,7 @@ import javafx.scene.control.Alert.AlertType;
 public class PeerInfoController {
 
     @FXML private Label nameValue;
-    @FXML private Label idValue;
+    //@FXML private Label idValue;
     @FXML private Label publicKeyValue;
     @FXML private Label privateKeyValue;
     @FXML private Label addressValue;
@@ -27,7 +27,6 @@ public class PeerInfoController {
     @FXML private Button deletePeerBtn;
     
     private Peer currentPeer;
-    private boolean privateKeyVisible = false;
     
     private PeerDeletionListener deletionListener;
     
@@ -38,11 +37,9 @@ public class PeerInfoController {
     
     @FXML
     public void initialize() {
-        // Configura il pulsante per mostrare/nascondere la chiave privata
-        showPrivateKeyBtn.setOnAction(event -> togglePrivateKeyVisibility());
-        
+
         // Configura il pulsante modifica
-        editPeerBtn.setOnAction(event -> handleEditPeer());
+        //editPeerBtn.setOnAction(event -> handleEditPeer());
         
         // Configura il pulsante delete
         deletePeerBtn.setOnAction(event -> handleDeletePeer());
@@ -64,31 +61,13 @@ public class PeerInfoController {
         if (currentPeer == null) return;
         
         nameValue.setText(currentPeer.getName());
-        idValue.setText(currentPeer.getId());
         publicKeyValue.setText(currentPeer.getPublicKey());
-        // Nascondi inizialmente la chiave privata
-        privateKeyValue.setText("••••••••••••••••");
         addressValue.setText(currentPeer.getAddress());
         endPointValue.setText(currentPeer.getEndPoint());
         dnsValue.setText(currentPeer.getDNS());
         mtuValue.setText(currentPeer.getMTU());
         presharedKeyValue.setText(currentPeer.getPublicKey());
         allowedIPsValue.setText(currentPeer.getAllowedIps());
-    }
-    
-    /**
-     * Gestisce la visibilità della chiave privata
-     */
-    private void togglePrivateKeyVisibility() {
-        privateKeyVisible = !privateKeyVisible;
-        
-        if (privateKeyVisible) {
-            privateKeyValue.setText(currentPeer.getPrivateKey());
-            showPrivateKeyBtn.setText("Nascondi");
-        } else {
-            privateKeyValue.setText("••••••••••••••••");
-            showPrivateKeyBtn.setText("Mostra");
-        }
     }
     
     /**

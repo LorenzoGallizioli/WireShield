@@ -3,12 +3,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.wireshield.ui.PeerInfoController"
-      spacing="10"
-      styleClass="peer-info-content">
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.wireshield.ui.PeerInfoController" spacing="10" styleClass="peer-info-content">
     
     <padding>
         <Insets top="15" right="15" bottom="15" left="15" />
@@ -23,12 +21,13 @@
         </columnConstraints>
         
         <!-- Nome -->
-        <Label text="Nome:" styleClass="peer-info-label" GridPane.rowIndex="0" GridPane.columnIndex="0" />
-        <Label fx:id="nameValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+        <Label text="Nome:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <Label fx:id="nameValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
         
-        <!-- ID -->
+        <!-- ID 
         <Label text="ID:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
         <Label fx:id="idValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+        -->
         
         <!-- Chiave Pubblica -->
         <Label text="Chiave Pubblica:" styleClass="peer-info-label" GridPane.rowIndex="2" GridPane.columnIndex="0" />
@@ -36,10 +35,7 @@
         
         <!-- Chiave Privata -->
         <Label text="Chiave Privata:" styleClass="peer-info-label" GridPane.rowIndex="3" GridPane.columnIndex="0" />
-        <HBox spacing="10" GridPane.rowIndex="3" GridPane.columnIndex="1">
-            <Label fx:id="privateKeyValue" text="-" styleClass="peer-info-value" wrapText="true" HBox.hgrow="ALWAYS" />
-            <Button fx:id="showPrivateKeyBtn" text="Mostra" AnchorPane.rightAnchor="50" styleClass="small-button" />
-        </HBox>
+        <Label fx:id="privateKeyValue" text="Hidden for security" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1" />
         
         <!-- Indirizzo -->
         <Label text="Indirizzo:" styleClass="peer-info-label" GridPane.rowIndex="4" GridPane.columnIndex="0" />
@@ -67,8 +63,8 @@
     </GridPane>
     
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button fx:id="editPeerBtn" text="Modifica" styleClass="action-button" />
-        <Button fx:id="deletePeerBtn" text="Elimina" styleClass="danger-button" />
+        <!-- <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" /> -->
+        <Button fx:id="deletePeerBtn" text="Delete" styleClass="danger-button" />
     </HBox> 
     
 </VBox>

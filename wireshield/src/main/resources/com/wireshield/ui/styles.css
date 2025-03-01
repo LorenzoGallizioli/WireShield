@@ -53,7 +53,7 @@
 
 .btn-menu {
 	-fx-background-color: transparent;
-	-fx-text-fill: #afaeae;
+	-fx-text-fill: #ffffff;
 	-fx-background-radius: 0px;
 }
 
@@ -266,10 +266,10 @@
 .small-button {
 	-fx-background-color: #333333;
 	-fx-text-fill: #ffffff;
-	-fx-font-size: 12px;
+	-fx-font-size: 14px;
 	-fx-min-width: 40px;
-	-fx-min-height: 40px;
-	-fx-background-radius: 20px;
+    -fx-min-height: 40px;
+	-fx-background-radius: 30px;
 	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
 }
 
