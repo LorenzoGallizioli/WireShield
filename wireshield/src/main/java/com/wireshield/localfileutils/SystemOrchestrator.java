@@ -92,6 +92,7 @@ public class SystemOrchestrator {
 		switch (operation) {
 		case START:
 			wireguardManager.setInterfaceUp(peer);
+			wireguardManager.startUpdateConnectionStats();
 			break;
 
 		case STOP:
