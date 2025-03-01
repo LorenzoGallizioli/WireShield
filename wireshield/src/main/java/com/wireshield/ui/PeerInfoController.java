@@ -11,20 +11,32 @@ import javafx.scene.control.Alert.AlertType;
 
 public class PeerInfoController {
 
-    @FXML private Label nameValue;
+    @FXML
+    private Label nameValue;
     //@FXML private Label idValue;
-    @FXML private Label publicKeyValue;
-    @FXML private Label privateKeyValue;
-    @FXML private Label addressValue;
-    @FXML private Label endPointValue;
-    @FXML private Label dnsValue;
-    @FXML private Label mtuValue;
-    @FXML private Label presharedKeyValue;
-    @FXML private Label allowedIPsValue;
+    @FXML
+    private Label publicKeyValue;
+    @FXML
+    private Label privateKeyValue;
+    @FXML
+    private Label addressValue;
+    @FXML
+    private Label endPointValue;
+    @FXML
+    private Label dnsValue;
+    @FXML
+    private Label mtuValue;
+    @FXML
+    private Label presharedKeyValue;
+    @FXML
+    private Label allowedIPsValue;
     
-    @FXML private Button showPrivateKeyBtn;
-    @FXML private Button editPeerBtn;
-    @FXML private Button deletePeerBtn;
+    @FXML
+    private Button showPrivateKeyBtn;
+    @FXML
+    private Button editPeerBtn;
+    @FXML
+    private Button deletePeerBtn;
     
     private Peer currentPeer;
     
@@ -74,9 +86,7 @@ public class PeerInfoController {
      * Gestisce l'azione di modifica del peer
      */
     private void handleEditPeer() {
-        // Implementa la logica per modificare il peer
-        // Questo potrebbe aprire una nuova finestra di dialogo o un altro pannello
-        System.out.println("Modifica peer: " + currentPeer.getName());
+    	
     }
     
     /**

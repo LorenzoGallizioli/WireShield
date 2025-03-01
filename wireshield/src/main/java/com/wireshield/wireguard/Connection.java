@@ -224,7 +224,7 @@ public class Connection {
 		String interfaceName = this.activeInterface == null ? "None" : this.activeInterface;
 
 		return String.format(
-				"Interface: %s%nStatus: %s%nLast handshake time: %s%nReceived traffic: %s byte %nSent traffic: %s byte",
+				"[INFO] Interface: %s%n[INFO] Status: %s%n[INFO] Last handshake time: %s%n[INFO] Received traffic: %s%n[INFO] Sent traffic: %s",
 				interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic);
 	}
 	
@@ -258,8 +258,6 @@ public class Connection {
     }
 	
 	
-	
-
 	// Protected setters for internal testing
 	protected void setSentTraffic(long sentTraffic) {
 		this.sentTraffic = sentTraffic;
