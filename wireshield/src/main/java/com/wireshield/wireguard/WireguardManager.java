@@ -3,6 +3,7 @@ package com.wireshield.wireguard;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.sql.Time;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,15 +47,18 @@ public class WireguardManager {
 			return;
 		}
 
-		if (Connection.getInstance() != null)
+		if (Connection.getInstance() != null) {
 			this.connection = Connection.getInstance();
-		else
+		} else {
 			throw new IllegalStateException("Il costruttore di Connection ha restituito un oggetto null");
-		if (PeerManager.getInstance() != null)
+		} 
+		
+		if (PeerManager.getInstance() != null) {
 			this.peerManager = PeerManager.getInstance();
-		else
+		} else {
 			throw new IllegalStateException("Il costruttore di PeerManager ha restituito un oggetto null");
-
+		}
+		
 		this.startUpdateWireguardLogs(); // Start log update thread
 	}
 
@@ -188,20 +192,22 @@ public class WireguardManager {
 	private synchronized void updateConnectionStats() {
 
 		// Wait until the interface is active
-		while (connection.getActiveInterface() == null) {
+		if (connection.getActiveInterface() != null) {
+			
+			// Update active interface
+			connection.updateActiveInterface();
+
+			// Update traffic
+			connection.updateTraffic();
+
+			// Update last handshake time
+			connection.updateLastHandshakeTime();
+			
+		}else {
 			
 			logger.error("connection.getActiveInterface() returns NULL object");
 			// Interface not active, check again shortly
-		}
-
-		// Update active interface
-		connection.updateActiveInterface();
-
-		// Update traffic
-		connection.updateTraffic();
-
-		// Update last handshake time
-		connection.updateLastHandshakeTime();
+		}		
 
 	}
 
@@ -227,6 +233,10 @@ public class WireguardManager {
 				}
 			}
 			logger.info("updateConnectionStats() thread stopped.");
+			
+			connection.setLastHandshakeTime(0);
+			connection.setReceivedTraffic(0);
+			connection.setSentTraffic(0);
 		};
 
 		Thread thread = new Thread(task);
@@ -331,7 +341,7 @@ public class WireguardManager {
 	 * 
 	 * @return The current Connection object.
 	 */
-	protected Connection getConnection() {
+	public Connection getConnection() {
 		return this.connection;
 	}
 

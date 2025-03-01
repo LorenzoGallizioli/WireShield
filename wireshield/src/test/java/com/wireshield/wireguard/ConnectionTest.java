@@ -32,15 +32,19 @@ public class ConnectionTest {
 	 * returned. This test mocks the output of the 'wgShow' command.
 	 */
 	@Test
-	public void testGetTraffic_valid() {
+	public void testUpdateAndGetTraffic_valid() {
 
 		// Mocking the wgShow("transfer") to return valid traffic data
 		Mockito.doReturn("12345 67890").when(conn).wgShow("transfer");
-
+		
+		conn.updateTraffic();
+		
 		// Call the method and validate the results
-		Long[] traffic = conn.getTraffic();
+		Long[] traffic = new Long[2];
+		traffic[0] = conn.getSentTraffic();
+		traffic[1] = conn.getReceivedTraffic();
 		assertNotNull(traffic);
-
+		
 		// Assert that the traffic array is not null and the values are correct
 		assertEquals(12345, (long) traffic[0]);
 		assertEquals(67890, (long) traffic[1]);
@@ -51,14 +55,18 @@ public class ConnectionTest {
 	 * This test simulates a null response from the 'wgShow' command.
 	 */
 	@Test
-	public void testGetTraffic_null() {
+	public void testUpdateAndGetTraffic_null() {
 
 		// Mocking the wgShow("transfer") to return null
 		Mockito.doReturn(null).when(conn).wgShow("transfer");
+		
+		conn.updateTraffic();
 
 		// Call the method and validate the results
-		Long[] traffic = conn.getTraffic();
-
+		Long[] traffic = new Long[2];
+		traffic[0] = conn.getSentTraffic();
+		traffic[1] = conn.getReceivedTraffic();
+		
 		// Assert that both traffic values default to 0 when the response is null
 		assertEquals(0, (long) traffic[0]);
 		assertEquals(0, (long) traffic[1]);

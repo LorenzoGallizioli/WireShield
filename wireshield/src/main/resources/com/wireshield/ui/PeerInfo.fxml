@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.wireshield.ui.PeerInfoController" spacing="10" styleClass="peer-info-content">
+    
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15" />
+    </padding>
+    
+    <Label text="Informazioni Peer" styleClass="peer-info-title"/>
+    
+    <GridPane hgap="15" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="130" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+        
+        <!-- Nome -->
+        <Label text="Nome:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <Label fx:id="nameValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+        
+        <!-- ID 
+        <Label text="ID:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <Label fx:id="idValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+        -->
+        
+        <!-- Chiave Pubblica -->
+        <Label text="Chiave Pubblica:" styleClass="peer-info-label" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+        <Label fx:id="publicKeyValue" text="-" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+        
+        <!-- Chiave Privata -->
+        <Label text="Chiave Privata:" styleClass="peer-info-label" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+        <Label fx:id="privateKeyValue" text="Hidden for security" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+        
+        <!-- Indirizzo -->
+        <Label text="Indirizzo:" styleClass="peer-info-label" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+        <Label fx:id="addressValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+        
+        <!-- Endpoint -->
+        <Label text="Endpoint:" styleClass="peer-info-label" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+        <Label fx:id="endPointValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+        
+        <!-- DNS -->
+        <Label text="DNS:" styleClass="peer-info-label" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+        <Label fx:id="dnsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="6" GridPane.columnIndex="1" />
+        
+        <!-- MTU -->
+        <Label text="MTU:" styleClass="peer-info-label" GridPane.rowIndex="7" GridPane.columnIndex="0" />
+        <Label fx:id="mtuValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="7" GridPane.columnIndex="1" />
+        
+        <!-- Preshared Key -->
+        <Label text="Preshared Key:" styleClass="peer-info-label" GridPane.rowIndex="8" GridPane.columnIndex="0" />
+        <Label fx:id="presharedKeyValue" text="-" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="8" GridPane.columnIndex="1" />
+        
+        <!-- Allowed IPs -->
+        <Label text="Allowed IPs:" styleClass="peer-info-label" GridPane.rowIndex="9" GridPane.columnIndex="0" />
+        <Label fx:id="allowedIPsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="9" GridPane.columnIndex="1" />
+    </GridPane>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <!-- <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" /> -->
+        <Button fx:id="deletePeerBtn" text="Delete" styleClass="danger-button" />
+    </HBox> 
+    
+</VBox>
