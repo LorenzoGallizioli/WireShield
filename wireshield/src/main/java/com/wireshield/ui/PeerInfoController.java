@@ -1,7 +1,6 @@
 package com.wireshield.ui;
 
 import com.wireshield.wireguard.Peer;
-import com.wireshield.wireguard.PeerManager;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -13,7 +12,6 @@ public class PeerInfoController {
 
     @FXML
     private Label nameValue;
-    //@FXML private Label idValue;
     @FXML
     private Label publicKeyValue;
     @FXML
@@ -46,20 +44,13 @@ public class PeerInfoController {
         this.deletionListener = listener;
     }
 
-    
     @FXML
     public void initialize() {
-
-        // Configura il pulsante modifica
-        //editPeerBtn.setOnAction(event -> handleEditPeer());
-        
-        // Configura il pulsante delete
         deletePeerBtn.setOnAction(event -> handleDeletePeer());
-        
     }
     
     /**
-     * Imposta il peer corrente e aggiorna l'UI con i suoi dati
+     * Sets the current peer and updates the UI with its data.
      */
     public void setPeer(Peer peer) {
         this.currentPeer = peer;
@@ -67,7 +58,7 @@ public class PeerInfoController {
     }
     
     /**
-     * Aggiorna l'interfaccia utente con i dati del peer
+     * Updates the user interface with the peer's data.
      */
     private void updateUI() {
         if (currentPeer == null) return;
@@ -85,32 +76,29 @@ public class PeerInfoController {
     }
     
     /**
-     * Gestisce l'azione di modifica del peer
+     * Handles the peer edit action.
      */
-    private void handleEditPeer() {
-    	
-    }
+    private void handleEditPeer() {}
     
     /**
-     * Gestisce l'azione di eliminazione del peer
+     * Handles the peer deletion action.
      */
     private void handleDeletePeer() {
         Alert confirmDialog = new Alert(AlertType.CONFIRMATION);
-        confirmDialog.setTitle("Conferma Eliminazione");
-        confirmDialog.setHeaderText("Eliminare il peer " + currentPeer.getName() + "?");
-        confirmDialog.setContentText("Questa operazione non può essere annullata.");
+        confirmDialog.setTitle("Delete Confirmation");
+        confirmDialog.setHeaderText("Delete peer " + currentPeer.getName() + "?");
+        confirmDialog.setContentText("This action cannot be undone.");
         
         confirmDialog.showAndWait().ifPresent(response -> {
             if (response == javafx.scene.control.ButtonType.OK) {
-            	
-            	if (deletionListener != null) {
-            		deletionListener.onPeerDeleted(currentPeer);
+            
+                if (deletionListener != null) {
+                    deletionListener.onPeerDeleted(currentPeer);
                 }
-            	
-            	deletePeerBtn.setDisable(true);
-            	
-                // Implementa la logica per eliminare il peer
-                System.out.println("Peer eliminato: " + currentPeer.getName());
+                
+                deletePeerBtn.setDisable(true);
+                
+                System.out.println("Peer deleted: " + currentPeer.getName());
             }
         });
     }

@@ -49,7 +49,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
     private static double xOffset = 0;
     private static double yOffset = 0;
     
-    String folderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    String peerFolderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
     // FXML Controls
     @FXML
@@ -75,8 +75,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
     @FXML
     protected TextArea logsArea;
     @FXML
-    protected Button minimizeButton;
-    @FXML
     protected Button closeButton;
     @FXML
     protected ListView<String> avFilesListView;
@@ -89,15 +87,15 @@ public class UserInterface extends Application implements PeerDeletionListener{
         	
             FXMLLoader loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
             Parent root = loader.load();
+            
             Scene scene = new Scene(root);
             scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
 
             primaryStage.initStyle(StageStyle.DECORATED);
             primaryStage.setTitle("WireShield - ALPHA");
+            
             primaryStage.setScene(scene);
-            
             primaryStage.setResizable(false);
-            
             primaryStage.setOnCloseRequest(this::closeWindow);
             primaryStage.show();
 
@@ -125,6 +123,8 @@ public class UserInterface extends Application implements PeerDeletionListener{
         viewHome();
         loadPeersFromPath();
         updatePeerList();
+        
+        // to be updated
         startDynamicConnectionLogsUpdate();
         startDynamicLogUpdate();
 
@@ -137,20 +137,15 @@ public class UserInterface extends Application implements PeerDeletionListener{
 
     public static void main(String[] args) {
     	
-    	System.setProperty("prism.lcdtext", "true");
-    	System.setProperty("prism.text", "gray");
+    	//System.setProperty("prism.lcdtext", "true");
+    	//System.setProperty("prism.text", "gray");
     	
         so = SystemOrchestrator.getInstance();
-        so.manageVPN(vpnOperations.STOP, null);
         wg = so.getWireguardManager();
+        
+        so.manageVPN(vpnOperations.STOP, null);
+        
         launch(args);
-    }
-
-    @FXML
-    public void minimizeWindow() {
-        Stage stage = (Stage) minimizeButton.getScene().getWindow();
-        stage.setIconified(true);
-        logger.info("Window minimized.");
     }
 
     @FXML
@@ -158,6 +153,9 @@ public class UserInterface extends Application implements PeerDeletionListener{
     	so.manageDownload(runningStates.DOWN);
         so.manageAV(runningStates.DOWN);
         so.manageVPN(vpnOperations.STOP, null);
+        
+        // add function to wait all threads stops
+        
         System.exit(0);
     }
 
@@ -188,7 +186,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
     @FXML
     public void viewLogs() {
         logsPane.toFront();
-        logger.info("Viewing logs...");
     }
 
     @FXML
@@ -209,7 +206,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
 
     @FXML
     public void handleFileSelection(ActionEvent event) {
-        String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    	
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select a File");
         fileChooser.getExtensionFilters().add(
@@ -221,24 +218,29 @@ public class UserInterface extends Application implements PeerDeletionListener{
 
         if (selectedFile != null) {
             try {
-                Path targetPath = Path.of(defaultPeerPath, selectedFile.getName());
+                Path targetPath = Path.of(peerFolderPath, selectedFile.getName());
                 Files.createDirectories(targetPath.getParent());
                 Files.copy(selectedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
                 logger.debug("File copied to: {}", targetPath.toAbsolutePath());
+                
+                // Update list and peerContainer
                 loadPeersFromPath();
                 updatePeerList();
+                
                 logger.info("File copied successfully.");
+                
             } catch (IOException e) {
                 e.printStackTrace();
                 logger.error("Failed to copy the file.");
             }
+            
         } else {
             logger.info("No file selected.");
         }
     }
     
     private void loadPeersFromPath() {
-        File directory = new File(folderPath);
+        File directory = new File(peerFolderPath);
         
         wg.getPeerManager().resetPeerList();
         
@@ -271,7 +273,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
         }
         else
         {
-        	logger.warn("Peer directory does not exist or is not a directory: {}", folderPath);
+        	logger.warn("Peer directory does not exist or is not a directory: {}", peerFolderPath);
         }
     	
     }
@@ -281,7 +283,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
 		// TODO Auto-generated method stub
 		wg.getPeerManager().removePeer(peer.getId());
 		
-		File file = new File(folderPath + "/" + peer.getName());		
+		File file = new File(peerFolderPath + "/" + peer.getName());		
 		if (file.isFile()) {
 			file.delete();
 		}
@@ -289,7 +291,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
 		// Aggiorna l'interfaccia
         Platform.runLater(() -> {
             
-        	loadPeersFromPath();
         	updatePeerList();
             
             // Disabilita il pulsante VPN se necessario
