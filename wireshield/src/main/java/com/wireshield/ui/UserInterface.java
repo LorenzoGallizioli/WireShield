@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -168,6 +169,13 @@ public class UserInterface extends Application implements PeerDeletionListener{
             so.manageVPN(vpnOperations.STOP, null);
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
+            
+            Peer[] peers = wg.getPeerManager().getPeers();
+            Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
+            if(!Arrays.asList(peers).contains(p)) {
+            	vpnButton.setDisable(true);
+            }
+            
         } else {
             so.manageVPN(vpnOperations.START, selectedPeer);
             so.manageAV(runningStates.UP);
@@ -294,8 +302,9 @@ public class UserInterface extends Application implements PeerDeletionListener{
         	updatePeerList();
             
             // Disabilita il pulsante VPN se necessario
-            vpnButton.setDisable(true);
-            vpnButton.setText("Start VPN");
+        	if(so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+        		vpnButton.setDisable(true);
+        	}
         });
 	}
     
