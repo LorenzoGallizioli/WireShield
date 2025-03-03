@@ -23,6 +23,7 @@ import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -41,7 +42,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import javafx.scene.control.ListView;
 
-public class UserInterface extends Application implements PeerDeletionListener{
+public class UserInterface extends Application implements PeerOperationListener{
 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
     protected static SystemOrchestrator so;
@@ -159,7 +160,13 @@ public class UserInterface extends Application implements PeerDeletionListener{
         
         System.exit(0);
     }
-
+    
+    /**
+     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
+     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
+     * selected peer configuration.
+     * Updates the UI to reflect the current state.
+     */
     @FXML
     public void changeVPNState() {
         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
@@ -170,6 +177,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
             
+            // Disable vpnButton if selected peer is been deleted
             Peer[] peers = wg.getPeerManager().getPeers();
             Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
             if(!Arrays.asList(peers).contains(p)) {
@@ -212,6 +220,13 @@ public class UserInterface extends Application implements PeerDeletionListener{
         avPane.toFront();
     }
 
+    /**
+     * Handles the selection and import of WireGuard configuration files.
+     * Opens a file chooser dialog for the user to select a .conf file, copies it to the
+     * peer directory, and updates the peer list in the UI.
+     *
+     * @param event The action event that triggered this method
+     */
     @FXML
     public void handleFileSelection(ActionEvent event) {
     	
@@ -247,6 +262,12 @@ public class UserInterface extends Application implements PeerDeletionListener{
         }
     }
     
+    
+    /**
+     * Loads peer configurations from the specified folder path.
+     * Resets the current peer list and rebuilds it by parsing each configuration file.
+     * Peer objects are created based on the parsed configuration data.
+     */
     private void loadPeersFromPath() {
         File directory = new File(peerFolderPath);
         
@@ -264,7 +285,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
 						try {
 							scanner = new Scanner(file);
 						} catch (FileNotFoundException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						
@@ -286,9 +306,14 @@ public class UserInterface extends Application implements PeerDeletionListener{
     	
     }
     
-    @Override
+    /**
+     * Handles the deletion of a peer from the system. Removes the peer from the peer manager
+     * and deletes its configuration file from the filesystem. Updates the UI accordingly
+     * to reflect the deletion.
+     *
+     * @param peer The peer object that needs to be deleted
+     */
 	public void onPeerDeleted(Peer peer) {
-		// TODO Auto-generated method stub
 		wg.getPeerManager().removePeer(peer.getId());
 		
 		File file = new File(peerFolderPath + "/" + peer.getName());		
@@ -296,38 +321,105 @@ public class UserInterface extends Application implements PeerDeletionListener{
 			file.delete();
 		}
 
-		// Aggiorna l'interfaccia
         Platform.runLater(() -> {
             
         	updatePeerList();
             
-            // Disabilita il pulsante VPN se necessario
         	if(so.getConnectionStatus() == connectionStates.DISCONNECTED) {
         		vpnButton.setDisable(true);
         	}
         });
 	}
     
-    private void fillPeerInfoContainer(VBox container, Peer peer) {
+    /**
+     * Handles the peer modification process by opening the peer configuration file
+     * in an external editor. After the editor is closed, it refreshes the peer list
+     * and updates the peer information displayed in the UI.
+     *
+     * @param peer The peer object that needs to be modified
+     */
+    public void onPeerModified(Peer peer) {
+	    File configFile = new File(peerFolderPath + "/" + peer.getName());
+	       
+	    new Thread(() -> {
+	        try {
+	            ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());	            
+	            Process process = processBuilder.start();
+	            
+	            int exitCode = process.waitFor();
+	            
+	            Platform.runLater(() -> {
+	            	loadPeersFromPath();
+	            	updatePeerList();
+	            	
+	            	selectedPeer = peer.getName();
+	    	            	
+	                Peer updatedPeer = wg.getPeerManager().getPeerByName(peer.getName());
+	                if (updatedPeer != null) {
+
+	                	VBox existingContainer = null;
+	                    for (javafx.scene.Node node : homePane.getChildren()) {
+	                        if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+	                            existingContainer = (VBox) node;
+	                            break;
+	                        }
+	                    }
+	                    
+	                    if (existingContainer != null) {
+	                        fillPeerInfoContainer(updatedPeer, existingContainer);
+	                    }
+	                }
+	                
+	             // Find and re-apply the "selected" class to the peer card
+                    for (javafx.scene.Node node : peerCardsContainer.getChildren()) {
+                        if (node instanceof VBox peerCard) {
+                            // We need to find the right peer card by checking the label content
+                            for (javafx.scene.Node cardChild : peerCard.getChildren()) {
+                                if (cardChild instanceof Label cardLabel && 
+                                    cardLabel.getStyleClass().contains("peer-card-text-name") && 
+                                    cardLabel.getText().equals(selectedPeer)) {
+                                    // This is the card we want to select
+                                    peerCard.getStyleClass().add("selected");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                
+	            	
+	                System.out.println("Editor closed with exit code: " + exitCode + ". UI refresh done.");
+	            });
+	            
+	        } catch (IOException | InterruptedException e) {
+	            e.printStackTrace();
+	        }
+	    }).start();
+	}
+    
+    /**
+     * Populates the specified container with detailed information about the peer.
+     * Loads the peerInfo.fxml template and configures its controller with the
+     * provided peer data.
+     *
+     * @param peer The peer object containing the data to display
+     * @param peerInfoContainer The VBox container where peer information will be shown
+     */
+    private void fillPeerInfoContainer(Peer peer, VBox peerInfoContainer) {
         try {
-            // Pulisci il container prima di aggiungere nuovi elementi
-            container.getChildren().clear();
+
+        	peerInfoContainer.getChildren().clear();
             
-            // Carica il file FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
             
-            // Ottieni il controller e passa i dati del peer
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
-            controller.setDeletionListener(this);
+            controller.setOperationListener(this);
             
-            // Aggiungi il contenuto al container
-            container.getChildren().add(newContent);
+            peerInfoContainer.getChildren().add(newContent);
 
-			// Aggiungi il container alla scena se non è già presente
-            if (!homePane.getChildren().contains(container)) {
-            	homePane.getChildren().add(container);
+            if (!homePane.getChildren().contains(peerInfoContainer)) {
+            	homePane.getChildren().add(peerInfoContainer);
             }
             
         } catch (Exception e) {
@@ -352,7 +444,49 @@ public class UserInterface extends Application implements PeerDeletionListener{
         
         return peerInfo;
     }
+    
+    /**
+     * Handles peer selection events when a peer card is clicked.
+     * Updates the UI to reflect the selected peer, enables the VPN button if appropriate,
+     * and displays detailed information about the selected peer.
+     *
+     * @param peer The peer that was selected
+     * @param peerCard The VBox representing the peer card in the UI that was clicked
+     */
+    private void onClickOperation(Peer peer, VBox peerCard) {
+    	
+    	peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
+        peerCard.getStyleClass().add("selected");
+    	
+    	// Connection Container Logic
+        selectedPeer = peer.getName();
+        
+        if (vpnButton.getText().equals("Start VPN")) {
+        	vpnButton.setDisable(false);
+        }
+        
+        // PeerInfo Container Logic
+        VBox existingContainer = null;
+        for (javafx.scene.Node node : homePane.getChildren()) {
+            if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+                existingContainer = (VBox) node;
+                break;
+            }
+        }
+        
+        VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
+        
+        fillPeerInfoContainer(peer, peerInfoContainer);
+        
+        logger.info("Selected peer file: {}", selectedPeer);
+    }
 
+    /**
+     * Updates the list of peers displayed in the UI.
+     * Clears and repopulates the peer cards container with current peer data.
+     * Each card displays the peer name and endpoint address, and is clickable to select that peer.
+     * This method is called after any changes to the peer configurations.
+     */
     protected void updatePeerList() {
     	
         if (peerCardsContainer == null) {
@@ -375,35 +509,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
             peerCard.getChildren().add(peerName);
             peerCard.getChildren().add(peerAddr);
             
-            peerCard.setOnMouseClicked(event -> {
-            	
-            	// Connection Container Logic
-                selectedPeer = peer.getName();
-                
-                peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
-                peerCard.getStyleClass().add("selected");
-                
-                if (vpnButton.getText().equals("Start VPN")) {
-                	vpnButton.setDisable(false);
-                }
-                
-                // PeerInfo Container Logic
-                VBox existingContainer = null;
-                for (javafx.scene.Node node : homePane.getChildren()) {
-                    if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
-                        existingContainer = (VBox) node;
-                        break;
-                    }
-                }
-                
-                // Se non esiste, creane uno nuovo
-                VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
-                
-                // Riempi il container con le informazioni del peer
-                fillPeerInfoContainer(peerInfoContainer, peer);
-                
-                logger.info("Selected peer file: {}", selectedPeer);
-            });
+            peerCard.setOnMouseClicked(event -> onClickOperation(peer, peerCard));
             
             peerCardsContainer.getChildren().add(peerCard);
             
@@ -411,7 +517,12 @@ public class UserInterface extends Application implements PeerDeletionListener{
         }
     }
     
-
+    /**
+     * Starts a background thread that periodically updates the log display area.
+     * Retrieves the latest logs from the WireGuard manager and updates the UI
+     * while preserving the current scroll position.
+     * This thread runs as a daemon to ensure it's terminated when the application closes.
+     */
     protected void startDynamicLogUpdate() {
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -439,6 +550,17 @@ public class UserInterface extends Application implements PeerDeletionListener{
         logUpdateThread.start();
     }
 
+    /**
+     * Starts a background thread that periodically updates the connection information displayed in the UI.
+     * Updates various UI elements with real-time connection data such as:
+     * - Active interface name
+     * - Connection status with appropriate color indication
+     * - Sent and received traffic data with appropriate formatting
+     * - Time since the last handshake occurred
+     * 
+     * This thread runs as a daemon to ensure it's terminated when the application closes.
+     * Updates occur at 1-second intervals to provide near real-time feedback.
+     */
     protected void startDynamicConnectionLogsUpdate() {
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {

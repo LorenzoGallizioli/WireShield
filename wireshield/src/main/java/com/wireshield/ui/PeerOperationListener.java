@@ -2,6 +2,7 @@ package com.wireshield.ui;
 
 import com.wireshield.wireguard.Peer;
 
-public interface PeerDeletionListener {
+public interface PeerOperationListener {
 	void onPeerDeleted(Peer peer);
+	void onPeerModified(Peer peer);
 }
