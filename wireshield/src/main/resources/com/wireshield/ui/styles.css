@@ -1,72 +1,280 @@
+
+@font-face {
+    src: url('../../../fonts/Montserrat-Medium.ttf');
+}
+
+@font-face {
+    src: url('../../../fonts/Montserrat-Bold.ttf');
+}
+
+/* TEXT ANTIALIASING: makes fonts borders more smooth */
+.text {
+	-fx-font-smoothing-type: gray;
+}
+
+
+/* Base styles */
 .root {
-    -fx-font-family: "Arial";
+    -fx-font-family: 'Montserrat Medium';
     -fx-font-size: 14px;
-    -fx-background-color: #252526;
-    -fx-text-fill: white;
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: #ffffff;
 }
 
-.label {
-    -fx-font-size: 14px;
-    -fx-text-fill: white;
+.close-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #afaeae;
+    -fx-font-size: 20px;
+    -fx-padding: 0;
+    -fx-background-radius: 5px;
 }
 
+.close-button:hover {
+    -fx-background-color: #dd1c1a;
+}
+
+.minimize-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #afaeae;
+    -fx-font-size: 20px;
+    -fx-padding: 0;
+    -fx-background-radius: 5px;
+}
+
+.minimize-button:hover {
+    -fx-background-color: #4d4d4d;
+}
+
+/* Pane styles */
 .black-pane {
-    -fx-background-color: #252526;
+    -fx-background-color: #1a1a1a;
+    -fx-padding: 15px;
 }
 
-.black-textarea {
-    -fx-control-inner-background: #2d2d30;
-    -fx-text-fill: white;
-    -fx-background-color: #2d2d30;
-    -fx-font-size: 14px;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-color: #2d2d30;
+.btn-menu {
+	-fx-background-color: transparent;
+	-fx-text-fill: #ffffff;
+	-fx-background-radius: 0px;
 }
 
-.black-listview {
-    -fx-control-inner-background: #2d2d30;
-    -fx-text-fill: white;
-    -fx-background-color: #2d2d30;
-    -fx-font-size: 14px;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-color: #2d2d30;
+.btn-menu:hover {
+    -fx-background-color: #252525;
 }
 
+/* Primary button style */
 .btn-primary {
-    -fx-background-color: #0065a9;
-    -fx-text-fill: black;
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 16px;
-    -fx-font-weight: bold;
     -fx-padding: 10 20 10 20;
     -fx-cursor: hand;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+	-fx-font-smoothing-type: gray;
 }
 
 .btn-primary:hover {
-    -fx-background-color: #0098ff;
+    -fx-background-color: #4d4d4d;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
 }
 
+.btn-primary:pressed {
+    -fx-background-color: #666666;
+}
+
+/* Top bar styles */
 #hBox {
-    -fx-background-color: #0065a9;
+    -fx-background-color: #333333;
+    -fx-padding: 5 10 5 10;
+    -fx-spacing: 8;
 }
 
-#hBox .button {
-    -fx-background-color: transparent; 
-    -fx-text-fill: white; 
-    -fx-font-size: 16px;
+/* Left sidebar styles */
+#vBox {
+    -fx-background-color: #262626;
 }
 
-#vBox .button {
-    -fx-background-color: #252526;
-    -fx-text-fill: white;
+/* Upload peer button specific style */
+.upload-button {
+    -fx-background-color: #333333;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 16px;
-    -fx-font-weight: bold;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-background-radius: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.upload-button:hover {
+    -fx-background-color: #404040;
+}
+
+/* Panels specific styles */
+#avPane, #logsPane, #homePane {
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
+}
+
+/* New styles for peer cards container */
+.peer-container-header {
+    -fx-min-height: 40px;
+    -fx-background-color: #262626;
+}
+
+.peers-container {
+    -fx-background-color: #262626;
+    -fx-padding: 30px 20px 20px 20px; /* Extra padding on top for the upload button */
+    -fx-spacing: 10px;
+	-fx-background-radius: 10px;
+	-fx-border-color: #666666;
+	-fx-border-width: 1px;
+	-fx-border-radius: 10px;
+}
+
+/* Scroll pane */
+.scroll-pane{
+	-fx-background-color: #262626;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: #262626;
+}
+
+/* Peer card styles */
+.peer-card {
+    -fx-background-color: #333333;
+    -fx-padding: 15px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-min-height: 80px;
+    -fx-min-width: 250px;
+}
+
+.peer-card:hover {
+    -fx-background-color: #404040;
     -fx-cursor: hand;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0; 
 }
 
-#vBox .button:hover {
-    -fx-background-color: #2d2d30;
+.peer-card.selected {
+    -fx-background-color: #4d4d4d;
+    -fx-border-color: #666666;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
 }
+
+.peer-card-text-name {
+	-fx-font-family: 'Montserrat Bold';
+	-fx-background-color: null;
+    -fx-font-size: 16px;
+    -fx-text-fill: #ffffff;
+}
+
+.peer-card-text-address {
+	-fx-font-family: 'Montserrat Medium';
+	-fx-background-color: null;
+	-fx-font-size: 12px;
+	-fx-text-fill: #afaeae;
+}
+
+.connection-container {
+	-fx-background-color: #262626;
+	-fx-spacing: 10px;
+    -fx-background-radius: 10px;
+}
+
+.connectionInfo-text {
+	-fx-font-family: 'Montserrat Medium';
+	-fx-text-fill: #afaeae;
+	-fx-font-size: 16px;
+	-fx-background-color: null;
+	-fx-font-smoothing-type: gray;
+}
+
+
+/* #_#_#_#_** PEER INFO CONTAINER CSS **_#_#_#_# */
+
+/* Stile per il container delle informazioni peer */
+.peerInfo-container {
+    -fx-background-color: #262626;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 0, 2);
+}
+
+/* Stile per il contenuto delle informazioni peer */
+.peer-info-content {
+	-fx-text-fill: #afaeae;
+    -fx-background-color: null;
+    -fx-padding: 10px;
+}
+
+/* Stile per il titolo */
+.peer-info-title {
+	-fx-text-fill: #afaeae;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 10px 0;
+    -fx-border-color: transparent transparent #ddd transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* Stile per le etichette */
+.peer-info-label {
+    -fx-font-weight: bold;
+	-fx-text-fill: #bebebe; /* More white than other text */
+}
+
+/* Stile per i valori */
+.peer-info-value {
+	-fx-text-fill: #afaeae;
+}
+
+/* Stile per i pulsanti di azione */
+.action-button {
+	-fx-font-weight: bold;
+	-fx-padding: 8px 15px;
+	-fx-background-radius: 3px;
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-cursor: hand;
+	-fx-background-radius: 8px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.action-button:hover {
+	-fx-background-color: #668dff; /* smooth blue */
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+}
+
+/* Stile per il pulsante di eliminazione */
+.danger-button {
+    -fx-font-weight: bold;
+    -fx-padding: 8px 15px;
+    -fx-background-radius: 3px;
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-cursor: hand;
+	-fx-background-radius: 8px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.danger-button:hover {
+	-fx-background-color: #ff6666; /* smooth red */
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+}
+
+/* Stile per il pulsante piccolo */
+.small-button {
+	-fx-background-color: #333333;
+	-fx-text-fill: #ffffff;
+	-fx-font-size: 14px;
+	-fx-min-width: 40px;
+    -fx-min-height: 40px;
+	-fx-background-radius: 30px;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.small-button:hover {
+    -fx-background-color: #404040;
+}
+
+

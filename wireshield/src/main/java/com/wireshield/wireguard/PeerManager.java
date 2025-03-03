@@ -31,6 +31,7 @@ public class PeerManager {
 			instance = new PeerManager();
 		}
 		return instance;
+
 	}
 
 	/**
@@ -89,6 +90,25 @@ public class PeerManager {
 		}
 		return null;
 	}
+	
+	/**
+	 * Finds and returns a peer by its name.
+	 * 
+	 * @param name The name of the peer to find.
+	 * 
+	 * @return The peer with the specified name, or null if not found.
+	 */
+	public Peer getPeerByName(String name) {
+		if (name != null && !name.isEmpty()) {
+			for (Peer p : peers) {
+				if (name.equals(p.getName())) {
+					return p;
+				}
+			}
+
+		}
+		return null;
+	}
 
 	/**
 	 * Returns all the peers.
@@ -140,5 +160,10 @@ public class PeerManager {
 		}
 
 		return configSections;
+	}
+	
+	
+	public void resetPeerList() {
+		this.peers.clear();;
 	}
 }

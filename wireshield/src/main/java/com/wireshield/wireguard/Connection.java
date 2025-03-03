@@ -29,6 +29,12 @@ public class Connection {
 	private String activeInterface;
 	private String wgPath;
 
+	private static final long BYTE = 1L;
+    private static final long KILOBYTE = 1024L;
+    private static final long MEGABYTE = KILOBYTE * 1024L;
+    private static final long GIGABYTE = MEGABYTE * 1024L;
+    private static final long TERABYTE = GIGABYTE * 1024L;
+
 	/**
 	 * Private constructor to ensure Singleton pattern. Initializes default values
 	 * and determines the path to the WireGuard executable.
@@ -54,41 +60,7 @@ public class Connection {
 		}
 		return instance;
 	}
-
-	/**
-	 * Retrieves the sent and received traffic statistics. Updates the values by
-	 * invoking WireGuard commands.
-	 *
-	 * @return A Long array containing sent traffic (index 0) and received traffic
-	 *         (index 1).
-	 */
-	public Long[] getTraffic() {
-		this.updateTraffic();
-
-		Long[] traffic = new Long[2];
-
-		traffic[0] = this.sentTraffic;
-		traffic[1] = this.receivedTraffic;
-
-		return traffic;
-	}
-
-	/**
-	 * Updates the sent and received traffic statistics using the WireGuard
-	 * "transfer" parameter. Resets values to zero if no data is available.
-	 */
-	public void updateTraffic() {
-		String trafficString = wgShow("transfer");
-
-		if (trafficString != null) {
-			this.sentTraffic = Long.parseLong(trafficString.trim().split("\\s+")[0]);
-			this.receivedTraffic = Long.parseLong(trafficString.trim().split("\\s+")[1]);
-		} else {
-			this.sentTraffic = 0;
-			this.receivedTraffic = 0;
-		}
-	}
-
+	
 	/**
 	 * Executes the `wg show` command to retrieve specific connection parameters.
 	 *
@@ -117,6 +89,47 @@ public class Connection {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+
+	/**
+	 * Updates the sent and received traffic statistics using the WireGuard
+	 * "transfer" parameter. Resets values to zero if no data is available.
+	 */
+	public void updateTraffic() {
+		String trafficString = wgShow("transfer");
+
+		if (trafficString != null) {
+			this.sentTraffic = Long.parseLong(trafficString.trim().split("\\s+")[0]);
+			this.receivedTraffic = Long.parseLong(trafficString.trim().split("\\s+")[1]);
+		} else {
+			this.sentTraffic = 0;
+			this.receivedTraffic = 0;
+		}
+	}
+	
+	/**
+	 * Retrieves the sent and received traffic statistics. Updates the values by
+	 * invoking WireGuard commands.
+	 *
+	 * @return A Long array containing sent traffic (index 0) and received traffic
+	 *         (index 1).
+	 */
+	public Long getSentTraffic() {
+		return this.sentTraffic;
+
+	}
+	
+	/**
+	 * Retrieves the sent and received traffic statistics. Updates the values by
+	 * invoking WireGuard commands.
+	 *
+	 * @return A Long array containing sent traffic (index 0) and received traffic
+	 *         (index 1).
+	 */
+	public Long getReceivedTraffic() {
+		return this.receivedTraffic;
+
 	}
 
 	/**
@@ -158,7 +171,7 @@ public class Connection {
 	 * 
 	 * @return The name of the active interface, or null if no interface is active.
 	 */
-	protected String getActiveInterface() {
+	public String getActiveInterface() {
 		this.updateActiveInterface();
 		return this.activeInterface;
 	}
@@ -200,6 +213,7 @@ public class Connection {
 		this.updateLastHandshakeTime();
 		return this.lastHandshakeTime;
 	}
+	
 
 	/**
 	 * Provides a string representation of the connection, including interface
@@ -210,12 +224,41 @@ public class Connection {
 		String interfaceName = this.activeInterface == null ? "None" : this.activeInterface;
 
 		return String.format(
-				"Interface: %s%nStatus: %s%nLast handshake time: %s%nReceived traffic: %s byte %nSent traffic: %s byte",
+				"[INFO] Interface: %s%n[INFO] Status: %s%n[INFO] Last handshake time: %s%n[INFO] Received traffic: %s%n[INFO] Sent traffic: %s",
 				interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic);
 	}
-
+	
+	
+	/**
+     * Formats a byte value to a human-readable string with appropriate unit
+     * 
+     * @param bytes The number of bytes to format
+     * @return A formatted string with the appropriate unit (B, KB, MB, GB, TB)
+     */
+    public static String formatBytes(long bytes) {
+        if (bytes < 0) {
+            return "0 B";
+        }
+        
+        if (bytes < KILOBYTE) {
+            return bytes + " B";
+        } else if (bytes < MEGABYTE) {
+            double value = bytes / (double) KILOBYTE;
+            return String.format("%.2f KB", value);
+        } else if (bytes < GIGABYTE) {
+            double value = bytes / (double) MEGABYTE;
+            return String.format("%.2f MB", value);
+        } else if (bytes < TERABYTE) {
+            double value = bytes / (double) GIGABYTE;
+            return String.format("%.2f GB", value);
+        } else {
+            double value = bytes / (double) TERABYTE;
+            return String.format("%.2f TB", value);
+        }
+    }
+	
+	
 	// Protected setters for internal testing
-
 	protected void setSentTraffic(long sentTraffic) {
 		this.sentTraffic = sentTraffic;
 	}
