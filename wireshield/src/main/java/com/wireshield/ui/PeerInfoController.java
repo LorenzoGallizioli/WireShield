@@ -42,7 +42,7 @@ public class PeerInfoController {
     
     private PeerDeletionListener deletionListener;
     
-    public void setDeleionListener(PeerDeletionListener listener) {
+    public void setDeletionListener(PeerDeletionListener listener) {
         this.deletionListener = listener;
     }
 
@@ -80,6 +80,8 @@ public class PeerInfoController {
         mtuValue.setText(currentPeer.getMTU());
         presharedKeyValue.setText(currentPeer.getPublicKey());
         allowedIPsValue.setText(currentPeer.getAllowedIps());
+        
+        deletePeerBtn.setDisable(false);
     }
     
     /**
@@ -104,6 +106,8 @@ public class PeerInfoController {
             	if (deletionListener != null) {
             		deletionListener.onPeerDeleted(currentPeer);
                 }
+            	
+            	deletePeerBtn.setDisable(true);
             	
                 // Implementa la logica per eliminare il peer
                 System.out.println("Peer eliminato: " + currentPeer.getName());

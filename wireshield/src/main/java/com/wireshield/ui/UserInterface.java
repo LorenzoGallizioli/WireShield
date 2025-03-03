@@ -183,7 +183,6 @@ public class UserInterface extends Application implements PeerDeletionListener{
     @FXML
     public void viewHome() {
         homePane.toFront();
-        updatePeerList();
     }
 
     @FXML
@@ -226,6 +225,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
                 Files.createDirectories(targetPath.getParent());
                 Files.copy(selectedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
                 logger.debug("File copied to: {}", targetPath.toAbsolutePath());
+                loadPeersFromPath();
                 updatePeerList();
                 logger.info("File copied successfully.");
             } catch (IOException e) {
@@ -289,6 +289,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
 		// Aggiorna l'interfaccia
         Platform.runLater(() -> {
             
+        	loadPeersFromPath();
         	updatePeerList();
             
             // Disabilita il pulsante VPN se necessario
@@ -309,7 +310,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
             // Ottieni il controller e passa i dati del peer
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
-            controller.setDeleionListener(this);
+            controller.setDeletionListener(this);
             
             // Aggiungi il contenuto al container
             container.getChildren().add(newContent);
