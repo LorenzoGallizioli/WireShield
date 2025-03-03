@@ -23,6 +23,7 @@ import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -41,7 +42,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import javafx.scene.control.ListView;
 
-public class UserInterface extends Application implements PeerDeletionListener{
+public class UserInterface extends Application implements PeerOperationListener{
 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
     protected static SystemOrchestrator so;
@@ -170,6 +171,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
             
+            // Disable vpnButton if selected peer is been deleted
             Peer[] peers = wg.getPeerManager().getPeers();
             Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
             if(!Arrays.asList(peers).contains(p)) {
@@ -308,26 +310,80 @@ public class UserInterface extends Application implements PeerDeletionListener{
         });
 	}
     
-    private void fillPeerInfoContainer(VBox container, Peer peer) {
+    public void onPeerModified(Peer peer) {
+	    File configFile = new File(peerFolderPath + "/" + peer.getName());
+	       
+	    new Thread(() -> {
+	        try {
+	            ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());	            
+	            Process process = processBuilder.start();
+	            
+	            int exitCode = process.waitFor();
+	            
+	            Platform.runLater(() -> {
+	            	loadPeersFromPath();
+	            	updatePeerList();
+	            	
+	            	selectedPeer = peer.getName();
+	    	            	
+	                Peer updatedPeer = wg.getPeerManager().getPeerByName(peer.getName());
+	                if (updatedPeer != null) {
+
+	                	VBox existingContainer = null;
+	                    for (javafx.scene.Node node : homePane.getChildren()) {
+	                        if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+	                            existingContainer = (VBox) node;
+	                            break;
+	                        }
+	                    }
+	                    
+	                    if (existingContainer != null) {
+	                        fillPeerInfoContainer(updatedPeer, existingContainer);
+	                    }
+	                }
+	                
+	             // Find and re-apply the "selected" class to the peer card
+                    for (javafx.scene.Node node : peerCardsContainer.getChildren()) {
+                        if (node instanceof VBox peerCard) {
+                            // We need to find the right peer card by checking the label content
+                            for (javafx.scene.Node cardChild : peerCard.getChildren()) {
+                                if (cardChild instanceof Label cardLabel && 
+                                    cardLabel.getStyleClass().contains("peer-card-text-name") && 
+                                    cardLabel.getText().equals(selectedPeer)) {
+                                    // This is the card we want to select
+                                    peerCard.getStyleClass().add("selected");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                
+	            	
+	                System.out.println("Editor closed with exit code: " + exitCode + ". UI refresh done.");
+	            });
+	            
+	        } catch (IOException | InterruptedException e) {
+	            e.printStackTrace();
+	        }
+	    }).start();
+	}
+    
+    private void fillPeerInfoContainer(Peer peer, VBox peerInfoContainer) {
         try {
-            // Pulisci il container prima di aggiungere nuovi elementi
-            container.getChildren().clear();
+
+        	peerInfoContainer.getChildren().clear();
             
-            // Carica il file FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
             
-            // Ottieni il controller e passa i dati del peer
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
-            controller.setDeletionListener(this);
+            controller.setOperationListener(this);
             
-            // Aggiungi il contenuto al container
-            container.getChildren().add(newContent);
+            peerInfoContainer.getChildren().add(newContent);
 
-			// Aggiungi il container alla scena se non è già presente
-            if (!homePane.getChildren().contains(container)) {
-            	homePane.getChildren().add(container);
+            if (!homePane.getChildren().contains(peerInfoContainer)) {
+            	homePane.getChildren().add(peerInfoContainer);
             }
             
         } catch (Exception e) {
@@ -352,6 +408,34 @@ public class UserInterface extends Application implements PeerDeletionListener{
         
         return peerInfo;
     }
+    
+    private void onClickOperation(Peer peer, VBox peerCard) {
+    	
+    	peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
+        peerCard.getStyleClass().add("selected");
+    	
+    	// Connection Container Logic
+        selectedPeer = peer.getName();
+        
+        if (vpnButton.getText().equals("Start VPN")) {
+        	vpnButton.setDisable(false);
+        }
+        
+        // PeerInfo Container Logic
+        VBox existingContainer = null;
+        for (javafx.scene.Node node : homePane.getChildren()) {
+            if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+                existingContainer = (VBox) node;
+                break;
+            }
+        }
+        
+        VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
+        
+        fillPeerInfoContainer(peer, peerInfoContainer);
+        
+        logger.info("Selected peer file: {}", selectedPeer);
+    }
 
     protected void updatePeerList() {
     	
@@ -375,35 +459,7 @@ public class UserInterface extends Application implements PeerDeletionListener{
             peerCard.getChildren().add(peerName);
             peerCard.getChildren().add(peerAddr);
             
-            peerCard.setOnMouseClicked(event -> {
-            	
-            	// Connection Container Logic
-                selectedPeer = peer.getName();
-                
-                peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
-                peerCard.getStyleClass().add("selected");
-                
-                if (vpnButton.getText().equals("Start VPN")) {
-                	vpnButton.setDisable(false);
-                }
-                
-                // PeerInfo Container Logic
-                VBox existingContainer = null;
-                for (javafx.scene.Node node : homePane.getChildren()) {
-                    if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
-                        existingContainer = (VBox) node;
-                        break;
-                    }
-                }
-                
-                // Se non esiste, creane uno nuovo
-                VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
-                
-                // Riempi il container con le informazioni del peer
-                fillPeerInfoContainer(peerInfoContainer, peer);
-                
-                logger.info("Selected peer file: {}", selectedPeer);
-            });
+            peerCard.setOnMouseClicked(event -> onClickOperation(peer, peerCard));
             
             peerCardsContainer.getChildren().add(peerCard);
             

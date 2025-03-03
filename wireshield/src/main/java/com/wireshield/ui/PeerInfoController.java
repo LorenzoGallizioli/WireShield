@@ -28,7 +28,6 @@ public class PeerInfoController {
     private Label presharedKeyValue;
     @FXML
     private Label allowedIPsValue;
-    
     @FXML
     private Button showPrivateKeyBtn;
     @FXML
@@ -38,15 +37,16 @@ public class PeerInfoController {
     
     private Peer currentPeer;
     
-    private PeerDeletionListener deletionListener;
+    private PeerOperationListener operationListener;
     
-    public void setDeletionListener(PeerDeletionListener listener) {
-        this.deletionListener = listener;
+    public void setOperationListener(PeerOperationListener listener) {
+        this.operationListener = listener;
     }
 
     @FXML
     public void initialize() {
         deletePeerBtn.setOnAction(event -> handleDeletePeer());
+        editPeerBtn.setOnAction(event -> handleEditPeer());
     }
     
     /**
@@ -73,12 +73,20 @@ public class PeerInfoController {
         allowedIPsValue.setText(currentPeer.getAllowedIps());
         
         deletePeerBtn.setDisable(false);
+        editPeerBtn.setDisable(false);
+
     }
     
     /**
      * Handles the peer edit action.
      */
-    private void handleEditPeer() {}
+    private void handleEditPeer() {
+    	
+    	if(operationListener != null) {
+    		operationListener.onPeerModified(currentPeer);
+    	}
+    	
+    }
     
     /**
      * Handles the peer deletion action.
@@ -92,11 +100,12 @@ public class PeerInfoController {
         confirmDialog.showAndWait().ifPresent(response -> {
             if (response == javafx.scene.control.ButtonType.OK) {
             
-                if (deletionListener != null) {
-                    deletionListener.onPeerDeleted(currentPeer);
+                if (operationListener != null) {
+                	operationListener.onPeerDeleted(currentPeer);
                 }
                 
                 deletePeerBtn.setDisable(true);
+                editPeerBtn.setDisable(true);
                 
                 System.out.println("Peer deleted: " + currentPeer.getName());
             }
