@@ -160,7 +160,13 @@ public class UserInterface extends Application implements PeerOperationListener{
         
         System.exit(0);
     }
-
+    
+    /**
+     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
+     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
+     * selected peer configuration.
+     * Updates the UI to reflect the current state.
+     */
     @FXML
     public void changeVPNState() {
         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
@@ -214,6 +220,13 @@ public class UserInterface extends Application implements PeerOperationListener{
         avPane.toFront();
     }
 
+    /**
+     * Handles the selection and import of WireGuard configuration files.
+     * Opens a file chooser dialog for the user to select a .conf file, copies it to the
+     * peer directory, and updates the peer list in the UI.
+     *
+     * @param event The action event that triggered this method
+     */
     @FXML
     public void handleFileSelection(ActionEvent event) {
     	
@@ -249,6 +262,12 @@ public class UserInterface extends Application implements PeerOperationListener{
         }
     }
     
+    
+    /**
+     * Loads peer configurations from the specified folder path.
+     * Resets the current peer list and rebuilds it by parsing each configuration file.
+     * Peer objects are created based on the parsed configuration data.
+     */
     private void loadPeersFromPath() {
         File directory = new File(peerFolderPath);
         
@@ -266,7 +285,6 @@ public class UserInterface extends Application implements PeerOperationListener{
 						try {
 							scanner = new Scanner(file);
 						} catch (FileNotFoundException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						
@@ -288,9 +306,14 @@ public class UserInterface extends Application implements PeerOperationListener{
     	
     }
     
-    @Override
+    /**
+     * Handles the deletion of a peer from the system. Removes the peer from the peer manager
+     * and deletes its configuration file from the filesystem. Updates the UI accordingly
+     * to reflect the deletion.
+     *
+     * @param peer The peer object that needs to be deleted
+     */
 	public void onPeerDeleted(Peer peer) {
-		// TODO Auto-generated method stub
 		wg.getPeerManager().removePeer(peer.getId());
 		
 		File file = new File(peerFolderPath + "/" + peer.getName());		
@@ -298,18 +321,23 @@ public class UserInterface extends Application implements PeerOperationListener{
 			file.delete();
 		}
 
-		// Aggiorna l'interfaccia
         Platform.runLater(() -> {
             
         	updatePeerList();
             
-            // Disabilita il pulsante VPN se necessario
         	if(so.getConnectionStatus() == connectionStates.DISCONNECTED) {
         		vpnButton.setDisable(true);
         	}
         });
 	}
     
+    /**
+     * Handles the peer modification process by opening the peer configuration file
+     * in an external editor. After the editor is closed, it refreshes the peer list
+     * and updates the peer information displayed in the UI.
+     *
+     * @param peer The peer object that needs to be modified
+     */
     public void onPeerModified(Peer peer) {
 	    File configFile = new File(peerFolderPath + "/" + peer.getName());
 	       
@@ -368,6 +396,14 @@ public class UserInterface extends Application implements PeerOperationListener{
 	    }).start();
 	}
     
+    /**
+     * Populates the specified container with detailed information about the peer.
+     * Loads the peerInfo.fxml template and configures its controller with the
+     * provided peer data.
+     *
+     * @param peer The peer object containing the data to display
+     * @param peerInfoContainer The VBox container where peer information will be shown
+     */
     private void fillPeerInfoContainer(Peer peer, VBox peerInfoContainer) {
         try {
 
@@ -409,6 +445,14 @@ public class UserInterface extends Application implements PeerOperationListener{
         return peerInfo;
     }
     
+    /**
+     * Handles peer selection events when a peer card is clicked.
+     * Updates the UI to reflect the selected peer, enables the VPN button if appropriate,
+     * and displays detailed information about the selected peer.
+     *
+     * @param peer The peer that was selected
+     * @param peerCard The VBox representing the peer card in the UI that was clicked
+     */
     private void onClickOperation(Peer peer, VBox peerCard) {
     	
     	peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
@@ -437,6 +481,12 @@ public class UserInterface extends Application implements PeerOperationListener{
         logger.info("Selected peer file: {}", selectedPeer);
     }
 
+    /**
+     * Updates the list of peers displayed in the UI.
+     * Clears and repopulates the peer cards container with current peer data.
+     * Each card displays the peer name and endpoint address, and is clickable to select that peer.
+     * This method is called after any changes to the peer configurations.
+     */
     protected void updatePeerList() {
     	
         if (peerCardsContainer == null) {
@@ -467,7 +517,12 @@ public class UserInterface extends Application implements PeerOperationListener{
         }
     }
     
-
+    /**
+     * Starts a background thread that periodically updates the log display area.
+     * Retrieves the latest logs from the WireGuard manager and updates the UI
+     * while preserving the current scroll position.
+     * This thread runs as a daemon to ensure it's terminated when the application closes.
+     */
     protected void startDynamicLogUpdate() {
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -495,6 +550,17 @@ public class UserInterface extends Application implements PeerOperationListener{
         logUpdateThread.start();
     }
 
+    /**
+     * Starts a background thread that periodically updates the connection information displayed in the UI.
+     * Updates various UI elements with real-time connection data such as:
+     * - Active interface name
+     * - Connection status with appropriate color indication
+     * - Sent and received traffic data with appropriate formatting
+     * - Time since the last handshake occurred
+     * 
+     * This thread runs as a daemon to ensure it's terminated when the application closes.
+     * Updates occur at 1-second intervals to provide near real-time feedback.
+     */
     protected void startDynamicConnectionLogsUpdate() {
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
