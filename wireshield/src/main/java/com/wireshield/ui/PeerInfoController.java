@@ -69,7 +69,7 @@ public class PeerInfoController {
         endPointValue.setText(currentPeer.getEndPoint());
         dnsValue.setText(currentPeer.getDNS());
         mtuValue.setText(currentPeer.getMTU());
-        presharedKeyValue.setText(currentPeer.getPublicKey());
+        presharedKeyValue.setText(currentPeer.getPresharedKey());
         allowedIPsValue.setText(currentPeer.getAllowedIps());
         
         deletePeerBtn.setDisable(false);

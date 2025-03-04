@@ -31,8 +31,7 @@ public class Peer {
 	 * @param allowedIPs   The allowed IPs for the peer.
 	 * @param name         The name of the peer.
 	 */
-	public Peer(String privateKey, String address, String dns, String mtu, String publicKey, String presharedKey,
-			String endpoint, String allowedIPs, String name) {
+	public Peer(String privateKey, String address, String dns, String mtu, String publicKey, String presharedKey, String endpoint, String allowedIPs, String name) {
 		this.privateKey = privateKey;
 		this.address = address;
 		this.dns = dns;
