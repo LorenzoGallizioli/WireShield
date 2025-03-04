@@ -63,7 +63,7 @@
     </GridPane>
     
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <!-- <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" /> -->
+        <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" />
         <Button fx:id="deletePeerBtn" text="Delete" styleClass="danger-button" />
     </HBox> 
     
