@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The PeerManager class manages WireGuard peers, providing functionality for
@@ -53,6 +55,7 @@ public class PeerManager {
 		String endpoint = peerData.get("Peer").get("Endpoint");
 		String allowedIPs = peerData.get("Peer").get("AllowedIPs");
 
+		System.out.println(peerData.toString());
 		Peer p = new Peer(privateKey, address, dns, mtu, publicKey, presharedKey, endpoint, allowedIPs, name);
 		peers.add(p);
 		return p.getId();
@@ -120,47 +123,41 @@ public class PeerManager {
 	}
 
 	/**
-	 * Parses a configuration string and returns a map of sections and their
-	 * key-value pairs.
-	 * 
-	 * @param config The configuration string to parse.
-	 * 
-	 * @return A map where each section name (e.g., "Interface", "Peer") is mapped
-	 *         to a map of key-value pairs for that section.
-	 */
-	public static Map<String, Map<String, String>> parsePeerConfig(String config) {
-		Map<String, Map<String, String>> configSections = new HashMap<>();
+     * Parses the content of the .conf file and returns a map with the sections and their corresponding parameters.
+     * It uses regex to robustly identify the sections and key-value pairs.
+     *
+     * @param config the content of the configuration file
+     * @return a map with sections and associated parameters
+     */
+    public static Map<String, Map<String, String>> parsePeerConfig(String config) {
+        Map<String, Map<String, String>> configSections = new HashMap<>();
 
-		String[] sections = config.split("\\[");
-		for (String section : sections) {
-			if (section.trim().isEmpty()) {
-				continue;
-			}
+        // Pattern to identify the sections: captures the section name between square brackets
+        // and the content until the next section or the end of the file.
+        Pattern sectionPattern = Pattern.compile("\\[\\s*(.+?)\\s*\\](.*?)(?=\\[|\\z)", Pattern.DOTALL);
+        Matcher sectionMatcher = sectionPattern.matcher(config);
 
-			int endOfSectionName = section.indexOf("]");
-			String sectionName = section.substring(0, endOfSectionName).trim();
+        while (sectionMatcher.find()) {
+            String sectionName = sectionMatcher.group(1).trim();
+            String sectionBody = sectionMatcher.group(2).trim();
 
-			String sectionBody = section.substring(endOfSectionName + 1).trim();
+            Map<String, String> sectionParams = new HashMap<>();
 
-			Map<String, String> sectionParams = new HashMap<>();
-			String[] lines = sectionBody.split("\n");
-			for (String line : lines) {
-				line = line.trim();
-				if (line.isEmpty() || line.startsWith("#")) {
-					continue;
-				}
+            // Pattern to find the key/value pairs.
+            // (?m) enables multiline mode so that ^ and $ refer to the beginning and end of each line.
+            Pattern keyValuePattern = Pattern.compile("(?m)^\\s*([^=]+?)\\s*=\\s*(.+)$");
+            Matcher kvMatcher = keyValuePattern.matcher(sectionBody);
 
-				String[] keyValue = line.split("=", 2);
-				if (keyValue.length == 2) {
-					sectionParams.put(keyValue[0].trim(), keyValue[1].trim());
-				}
-			}
+            while (kvMatcher.find()) {
+                String key = kvMatcher.group(1).trim();
+                String value = kvMatcher.group(2).trim();
+                sectionParams.put(key, value);
+            }
 
-			configSections.put(sectionName, sectionParams);
-		}
-
-		return configSections;
-	}
+            configSections.put(sectionName, sectionParams);
+        }
+        return configSections;
+    }
 	
 	
 	public void resetPeerList() {
