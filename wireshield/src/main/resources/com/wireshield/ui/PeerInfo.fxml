@@ -23,12 +23,7 @@
         <!-- Nome -->
         <Label text="Nome:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
         <Label fx:id="nameValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
-        
-        <!-- ID 
-        <Label text="ID:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
-        <Label fx:id="idValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
-        -->
-        
+
         <!-- Chiave Pubblica -->
         <Label text="Chiave Pubblica:" styleClass="peer-info-label" GridPane.rowIndex="2" GridPane.columnIndex="0" />
         <Label fx:id="publicKeyValue" text="-" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1" />
@@ -65,6 +60,5 @@
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" />
         <Button fx:id="deletePeerBtn" text="Delete" styleClass="danger-button" />
-    </HBox> 
-    
+    </HBox>     
 </VBox>

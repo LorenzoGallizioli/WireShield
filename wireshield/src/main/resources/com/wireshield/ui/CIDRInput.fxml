@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.wireshield.ui.CIDRInputController"
+      styleClass="cidr-input-container">
+      
+    <VBox spacing="10" AnchorPane.topAnchor="-30.0" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+          
+        <Label text="Inserisci indirizzi CIDR:" styleClass="cidr-info-label"/>
+        
+        <TextField fx:id="cidrTextField" maxWidth="230" promptText="Es. 192.168.0.0/24" styleClass="input-field"/>
+        
+        <ScrollPane fitToWidth="true" prefHeight="150" styleClass="cidr-scroll-pane">
+            <FlowPane fx:id="cidrCardsContainer" hgap="5" vgap="5" styleClass="cidr-flow-pane">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+            </FlowPane>
+        </ScrollPane>
+        
+    </VBox>
+</AnchorPane>
