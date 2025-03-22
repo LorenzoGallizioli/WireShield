@@ -2,17 +2,19 @@ package com.wireshield.localfileutils;
 
 import java.util.List;
 import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import com.wireshield.av.AntivirusManager;
 import com.wireshield.av.ClamAV;
 import com.wireshield.av.ScanReport;
 import com.wireshield.av.VirusTotal;
+import com.wireshield.enums.connectionStates;
+import com.wireshield.enums.runningStates;
+import com.wireshield.enums.vpnOperations;
 import com.wireshield.wireguard.PeerManager;
 import com.wireshield.wireguard.WireguardManager;
-import com.wireshield.enums.runningStates;
-import com.wireshield.enums.connectionStates;
-import com.wireshield.enums.vpnOperations;
 
 /**
  * The SystemOrchestrator class is responsible for orchestrating multiple system
@@ -246,7 +248,9 @@ public class SystemOrchestrator {
     public void addPeer(String peerData, String peerName) {
         logger.info("Adding new peer with name: {}", peerName);
         Map<String, Map<String, String>> Data = PeerManager.parsePeerConfig(peerName);
-        wireguardManager.getPeerManager().createPeer(Data, peerName);
+        if (wireguardManager.getPeerManager().createPeer(Data, peerName) == null) {
+			logger.error("Error occurred while adding peer (PostUp & PostDown are not allowed): {}", peerName);
+		}
         logger.info("Peer added successfully: {}", peerName);
     }
 

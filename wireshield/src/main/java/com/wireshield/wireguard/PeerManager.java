@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javafx.collections.ObservableList;
+
 /**
  * The PeerManager class manages WireGuard peers, providing functionality for
  * creating, removing, and retrieving peers.
@@ -37,26 +39,38 @@ public class PeerManager {
 	}
 
 	/**
-	 * Creates a new Peer object using the provided peer data and adds it to the
-	 * peer list.
+	 * Creates a new peer with the specified configuration parameters and adds it to
+	 * the list of peers.
 	 * 
-	 * @param peerData A map containing peer information.
+	 * @param peerData The configuration parameters for the peer.
 	 * @param name     The name of the peer.
 	 * 
-	 * @return The ID of the newly created peer.
+	 * @return The ID of the created peer, or null if the peer could not be created.
 	 */
 	public String createPeer(Map<String, Map<String, String>> peerData, String name) {
+
+		if (peerData == null || name == null || name.isEmpty()) {
+			return null;
+		}
+		System.out.println(peerData.toString());
+
 		String privateKey = peerData.get("Interface").get("PrivateKey");
 		String address = peerData.get("Interface").get("Address");
 		String dns = peerData.get("Interface").get("DNS");
 		String mtu = peerData.get("Interface").get("MTU");
+
+		ObservableList<String> permittedCIDRList = null;
+		if (peerData.get("PostUp") != null){
+			return null;
+		}
+
 		String publicKey = peerData.get("Peer").get("PublicKey");
 		String presharedKey = peerData.get("Peer").get("PresharedKey");
 		String endpoint = peerData.get("Peer").get("Endpoint");
 		String allowedIPs = peerData.get("Peer").get("AllowedIPs");
 
 		System.out.println(peerData.toString());
-		Peer p = new Peer(privateKey, address, dns, mtu, publicKey, presharedKey, endpoint, allowedIPs, name);
+		Peer p = new Peer(privateKey, address, dns, mtu, publicKey, presharedKey, endpoint, allowedIPs, permittedCIDRList, name);
 		peers.add(p);
 		return p.getId();
 	}

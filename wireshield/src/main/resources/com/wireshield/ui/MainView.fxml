@@ -61,7 +61,7 @@
                        </VBox>
                        
                        <!-- Connection status container -->
-					   <VBox styleClass="connection-container" prefWidth="740.0" prefHeight="150.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="0.0">
+					   <VBox styleClass="connection-container" prefWidth="740.0" prefHeight="130.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="0.0">
     
     						<!-- Top row: Interface, Status and VPN button -->
     						<HBox styleClass="connection-container" prefWidth="740.0" spacing="20">

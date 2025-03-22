@@ -2,6 +2,8 @@ package com.wireshield.wireguard;
 
 import java.util.UUID;
 
+import javafx.collections.ObservableList;
+
 /**
  * The Peer class represents a WireGuard peer, storing information such as keys,
  * address, DNS, and other configurations.
@@ -17,6 +19,7 @@ public class Peer {
 	private String allowedIPs;
 	private String name;
 	private String id;
+	ObservableList<String> permittedCIDRList;
 
 	/**
 	 * Constructs a new Peer with specified configuration parameters.
@@ -31,7 +34,7 @@ public class Peer {
 	 * @param allowedIPs   The allowed IPs for the peer.
 	 * @param name         The name of the peer.
 	 */
-	public Peer(String privateKey, String address, String dns, String mtu, String publicKey, String presharedKey, String endpoint, String allowedIPs, String name) {
+	public Peer(String privateKey, String address, String dns, String mtu, String publicKey, String presharedKey, String endpoint, String allowedIPs, ObservableList<String> permittedCIDRList, String name) {
 		this.privateKey = privateKey;
 		this.address = address;
 		this.dns = dns;
@@ -41,7 +44,22 @@ public class Peer {
 		this.endPoint = endpoint;
 		this.allowedIPs = allowedIPs;
 		this.name = name;
+		this.permittedCIDRList = permittedCIDRList;
 		this.id = generateUniqueId(); // Generate unique ID for the peer.
+	}
+
+	/**
+	 * Adds a CIDR to the list of permitted CIDRs for the peer.
+	 * 
+	 * @param cidr The CIDR to add to the list.
+	 * @return True if the CIDR was added successfully, false if it already exists.
+	 */
+	public boolean addCIDR(String cidr) {
+		if (permittedCIDRList.contains(cidr)) {
+			return false;
+		}
+		permittedCIDRList.add(cidr);
+		return true;
 	}
 
 	/**

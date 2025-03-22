@@ -1,15 +1,4 @@
 package com.wireshield.ui;
-import com.wireshield.av.FileManager;
-import com.wireshield.av.ScanReport;
-import com.wireshield.enums.connectionStates;
-import com.wireshield.enums.runningStates;
-import com.wireshield.enums.vpnOperations;
-import com.wireshield.localfileutils.SystemOrchestrator;
-import com.wireshield.wireguard.Connection;
-import com.wireshield.wireguard.Peer;
-import com.wireshield.wireguard.PeerManager;
-import com.wireshield.wireguard.WireguardManager;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,23 +13,36 @@ import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.wireshield.av.FileManager;
+import com.wireshield.av.ScanReport;
+import com.wireshield.enums.connectionStates;
+import com.wireshield.enums.runningStates;
+import com.wireshield.enums.vpnOperations;
+import com.wireshield.localfileutils.SystemOrchestrator;
+import com.wireshield.windows.WFPManager;
+import com.wireshield.wireguard.Connection;
+import com.wireshield.wireguard.Peer;
+import com.wireshield.wireguard.PeerManager;
+import com.wireshield.wireguard.WireguardManager;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
-import javafx.scene.control.ListView;
 
 public class UserInterface extends Application implements PeerOperationListener{
 
@@ -51,7 +53,7 @@ public class UserInterface extends Application implements PeerOperationListener{
     private static double xOffset = 0;
     private static double yOffset = 0;
     
-    String peerFolderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
     // FXML Controls
     @FXML
@@ -82,6 +84,10 @@ public class UserInterface extends Application implements PeerOperationListener{
     protected ListView<String> avFilesListView;
     @FXML
     protected VBox peerCardsContainer;
+    @FXML
+    protected CIDRInputController cidrInputController;
+    @FXML
+    protected AnchorPane CIDRPane;
 
     @Override
     public void start(Stage primaryStage) {
@@ -241,10 +247,13 @@ public class UserInterface extends Application implements PeerOperationListener{
 
         if (selectedFile != null) {
             try {
-                Path targetPath = Path.of(peerFolderPath, selectedFile.getName());
+                Path targetPath = Path.of(defaultPeerPath, selectedFile.getName());
                 Files.createDirectories(targetPath.getParent());
                 Files.copy(selectedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
                 logger.debug("File copied to: {}", targetPath.toAbsolutePath());
+
+                String peerNameWithoutExtension = selectedFile.getName().contains(".") ? selectedFile.getName().substring(0, selectedFile.getName().lastIndexOf(".")) : selectedFile.getName();
+                WFPManager.createCIDRFile(defaultPeerPath, peerNameWithoutExtension);
                 
                 // Update list and peerContainer
                 loadPeersFromPath();
@@ -269,8 +278,10 @@ public class UserInterface extends Application implements PeerOperationListener{
      * Peer objects are created based on the parsed configuration data.
      */
     private void loadPeersFromPath() {
-        File directory = new File(peerFolderPath);
+        File directory = new File(defaultPeerPath);
         
+        System.out.println("Loading peers from path: " + defaultPeerPath);
+
         wg.getPeerManager().resetPeerList();
         
         if (directory.exists() && directory.isDirectory()) {
@@ -278,7 +289,7 @@ public class UserInterface extends Application implements PeerOperationListener{
             
             if (files != null) {
                 for (File file : files) {
-                    if (file.isFile() && file.length() > 0) {
+                    if (file.isFile() && file.length() > 0 && file.getName().toLowerCase().endsWith(".conf")) {
                     	
                         Scanner scanner = null;
                         String data = "";
@@ -301,7 +312,7 @@ public class UserInterface extends Application implements PeerOperationListener{
         }
         else
         {
-        	logger.warn("Peer directory does not exist or is not a directory: {}", peerFolderPath);
+        	logger.warn("Peer directory does not exist or is not a directory: {}", defaultPeerPath);
         }
     	
     }
@@ -315,11 +326,18 @@ public class UserInterface extends Application implements PeerOperationListener{
      */
 	public void onPeerDeleted(Peer peer) {
 		wg.getPeerManager().removePeer(peer.getId());
+
+        String peerName = peer.getName();
 		
-		File file = new File(peerFolderPath + "/" + peer.getName());		
+		File file = new File(defaultPeerPath + "/" + peerName);		
 		if (file.isFile()) {
 			file.delete();
 		}
+
+
+        System.out.println("Peer deleted: " + peerName);
+        String peerNameWithoutExtension = peerName.contains(".") ? peerName.substring(0, peerName.lastIndexOf(".")) : peerName;
+        WFPManager.deleteCIDRFile(defaultPeerPath, peerNameWithoutExtension);
 
         Platform.runLater(() -> {
             
@@ -339,7 +357,7 @@ public class UserInterface extends Application implements PeerOperationListener{
      * @param peer The peer object that needs to be modified
      */
     public void onPeerModified(Peer peer) {
-	    File configFile = new File(peerFolderPath + "/" + peer.getName());
+	    File configFile = new File(defaultPeerPath + "/" + peer.getName());
 	       
 	    new Thread(() -> {
 	        try {
@@ -386,7 +404,6 @@ public class UserInterface extends Application implements PeerOperationListener{
                         }
                     }
                 
-	            	
 	                System.out.println("Editor closed with exit code: " + exitCode + ". UI refresh done.");
 	            });
 	            
@@ -412,11 +429,18 @@ public class UserInterface extends Application implements PeerOperationListener{
             FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
             
+            FXMLLoader loaderCIDR = new FXMLLoader(getClass().getResource("CIDRInput.fxml"));
+            javafx.scene.Node CIDRspace = loaderCIDR.load();
+            cidrInputController = loaderCIDR.getController();
+            cidrInputController.setPeer(peer);
+            cidrInputController.loadCIDR();
+
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
             controller.setOperationListener(this);
             
             peerInfoContainer.getChildren().add(newContent);
+            peerInfoContainer.getChildren().add(CIDRspace);
 
             if (!homePane.getChildren().contains(peerInfoContainer)) {
             	homePane.getChildren().add(peerInfoContainer);
@@ -430,9 +454,9 @@ public class UserInterface extends Application implements PeerOperationListener{
     private VBox createPeerInfoContainer() {
     	
     	double xOffset = 740.0;
-    	double yOffset = 400.0;
+    	double yOffset = 470.0;
     	double leftAnchor = 320.0;
-    	double topAnchor = 165.0;
+    	double topAnchor = 145.0;
     	
     	VBox peerInfo = new VBox();
     	
@@ -514,6 +538,25 @@ public class UserInterface extends Application implements PeerOperationListener{
             peerCardsContainer.getChildren().add(peerCard);
             
             logger.debug("Added peer card for file: {}", peer.getName());
+        }
+    }
+
+    private void loadCIDRComponent(AnchorPane targetPane) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("CIDRInput.fxml"));
+            Node cidrComponent = loader.load();
+            cidrInputController = loader.getController();
+            
+            // Posiziona il componente nel target pane
+            AnchorPane.setTopAnchor(cidrComponent, 10.0);
+            AnchorPane.setLeftAnchor(cidrComponent, 10.0);
+            AnchorPane.setRightAnchor(cidrComponent, 10.0);
+            
+            targetPane.getChildren().add(cidrComponent);
+            
+            logger.info("Componente CIDR caricato con successo");
+        } catch (IOException e) {
+            logger.error("Errore nel caricamento del componente CIDR: " + e.getMessage(), e);
         }
     }
     

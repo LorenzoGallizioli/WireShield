@@ -278,3 +278,20 @@
 }
 
 
+/* Stile per il campo di gestione cidr */
+
+.input-field {
+    -fx-background-color: #404040;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.cidr-info-label {
+    -fx-font-weight: bold;
+	-fx-text-fill: #bebebe; /* More white than other text */
+    -fx-font-size: 14px;
+}
+
+

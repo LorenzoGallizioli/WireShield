@@ -2,17 +2,18 @@ package com.wireshield.wireguard;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.sql.Time;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.parser.ParseException;
+
 import com.wireshield.av.FileManager;
 import com.wireshield.enums.connectionStates;
+import com.wireshield.windows.WFPManager;
 
 /**
  * The WireguardManager class is responsible for managing the WireGuard VPN,
@@ -29,6 +30,7 @@ public class WireguardManager {
 	private Connection connection;
 	private PeerManager peerManager;
 	private String logs;
+	private Process WFPprocess;
 
 	/**
 	 * Private constructor for the WireguardManager class. Initializes paths and
@@ -90,6 +92,9 @@ public class WireguardManager {
 			logger.warn("WireGuard interface is already up.");
 			return false; // Interface is up
 		}
+
+		String peerNameWithoutExtension = configFileName.contains(".") ? configFileName.substring(0, configFileName.lastIndexOf(".")) : configFileName;
+		setUpWFPRules(WFPManager.makeCommand(WFPManager.getAllCIDR_permit(defaultPeerPath, peerNameWithoutExtension)));
 		
 		int exitCode;
 		
@@ -145,6 +150,8 @@ public class WireguardManager {
 			return false;
 		}
 		
+		setDownWFPRules();
+
 		int exitCode;
 
 		try {
@@ -282,7 +289,7 @@ public class WireguardManager {
 	 */
 	public void startUpdateWireguardLogs() {
 		Runnable task = () -> {
-			while (!Thread.currentThread().isInterrupted()) {
+			while (!Thread.currentThread().isInterrupted() || connection.getStatus() == connectionStates.CONNECTED) {
 				
 				String[] command = {"cmd.exe", "/c", wireguardPath + " /dumplog > " + logDumpPath};
 				try {
@@ -305,6 +312,62 @@ public class WireguardManager {
 		Thread thread = new Thread(task);
 		thread.start();
 	}
+
+	/**
+ 	 * Starts a background thread to apply custom Windows Filtering Platform (WFP) rules
+ 	 * by executing a specified command. The method continuously monitors the process
+ 	 * and ensures that the rules are removed when the connection is no longer active.
+ 	 *
+     * @param command The command to execute for setting up WFP rules.
+ 	 */
+	public void setUpWFPRules(String command) {
+
+		System.out.println("Command: " + command);
+
+		Runnable task = () -> {
+			try {
+				// Start process
+				WFPprocess = new ProcessBuilder(command.split(" ")).start();
+				System.out.println("WFP custom rules applied: " + command);
+	
+				while (!Thread.currentThread().isInterrupted()) {
+					// Check if process is still running
+					WFPprocess.waitFor();
+
+					if (!WFPprocess.isAlive()) {
+						System.out.println("WFP process terminated");
+						Thread.currentThread().interrupt();
+						break;
+					}
+				}
+				this.setDownWFPRules();
+				System.out.println("WFP custom rules removed");
+					
+			} catch (InterruptedException e) {
+				logger.error("WFPprocess unexpecly interrupted (InterruptedException) - Stopping Thread...");
+				Thread.currentThread().interrupt();	
+			} catch (IOException e) {
+				logger.error("WFPprocess unexpecly interrupted (IOException) - Stopping Thread...");
+				Thread.currentThread().interrupt();	
+			}
+			logger.info("setUpWFPRules() thread and service interrupted.");
+		};
+		
+		Thread thread = new Thread(task);
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	
+	/**
+ 	 * Terminates the WFP process if it is still running.
+ 	 * This method is called when the connection is closed or the process has finished.
+ 	 */
+	public void setDownWFPRules() {
+        if (WFPprocess != null && WFPprocess.isAlive()) {
+            WFPprocess.destroy(); 
+        }
+    }
 	
 	/**
 	 * Returns the current connection logs.
