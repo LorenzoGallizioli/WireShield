@@ -1,21 +1,18 @@
 package com.wireshield.av;
 
-import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 /**
  * Utility class for managing files, including creation, reading, writing,
@@ -151,34 +148,6 @@ public class FileManager {
 			logger.error("Error checking file stability: {}", e.getMessage(), e);
 			Thread.currentThread().interrupt();
 			return false;
-		}
-	}
-
-	/**
-	 * Calculates the SHA256 hash of a given file.
-	 *
-	 * @param file the file to calculate the hash for
-	 * @return the SHA256 hash as a hexadecimal string, or null if an error occurs
-	 */
-	public static String calculateSHA256(File file) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			try (FileInputStream fis = new FileInputStream(file)) {
-				byte[] byteArray = new byte[1024];
-				int bytesCount;
-				while ((bytesCount = fis.read(byteArray)) != -1) {
-					digest.update(byteArray, 0, bytesCount);
-				}
-			}
-			byte[] bytes = digest.digest();
-			StringBuilder sb = new StringBuilder();
-			for (byte b : bytes) {
-				sb.append(String.format("%02x", b));
-			}
-			return sb.toString();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
 		}
 	}
 
