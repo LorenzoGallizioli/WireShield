@@ -16,12 +16,6 @@ public class ScanReport {
 	private warningClass warningState; // The warning classification (CLEAR, SUSPICIOUS, DANGEROUS)
 	private Boolean isValid; // Indicates if the scan report is valid
 
-	// Threat detection counters
-	private int maliciousCount;
-	private int harmlessCount;
-	private int suspiciousCount;
-	private int undetectedCount;
-
 	/**
 	 * Default constructor initializing default values for the scan report.
 	 */
@@ -30,16 +24,10 @@ public class ScanReport {
 		this.threatDetails = "No threat detected";
 		this.warningState = warningClass.CLEAR;
 		this.isValid = true;
-		this.maliciousCount = 0;
-		this.harmlessCount = 0;
-		this.suspiciousCount = 0;
-		this.undetectedCount = 0;
 	}
 
 	/**
 	 * Constructor initializing the scan report with a scanId and file.
-	 * 
-	 * @param scanId The scan ID
 	 * @param file   The file being scanned
 	 */
 	public ScanReport(File file) {
@@ -138,78 +126,6 @@ public class ScanReport {
 	}
 
 	/**
-	 * Gets the number of malicious detections.
-	 *
-	 * @return The count of malicious detections.
-	 */
-	public int getMaliciousCount() {
-		return maliciousCount;
-	}
-
-	/**
-	 * Sets the number of malicious detections.
-	 *
-	 * @param maliciousCount The malicious count to set.
-	 */
-	public void setMaliciousCount(int maliciousCount) {
-		this.maliciousCount = maliciousCount;
-	}
-
-	/**
-	 * Gets the number of harmless detections.
-	 *
-	 * @return The count of harmless detections.
-	 */
-	public int getHarmlessCount() {
-		return harmlessCount;
-	}
-
-	/**
-	 * Sets the number of harmless detections.
-	 *
-	 * @param harmlessCount The harmless count to set.
-	 */
-	public void setHarmlessCount(int harmlessCount) {
-		this.harmlessCount = harmlessCount;
-	}
-
-	/**
-	 * Gets the number of suspicious detections.
-	 *
-	 * @return The count of suspicious detections.
-	 */
-	public int getSuspiciousCount() {
-		return suspiciousCount;
-	}
-
-	/**
-	 * Sets the number of suspicious detections.
-	 *
-	 * @param suspiciousCount The suspicious count to set.
-	 */
-	public void setSuspiciousCount(int suspiciousCount) {
-		this.suspiciousCount = suspiciousCount;
-	}
-
-	/**
-	 * Gets the number of undetected results.
-	 *
-	 * @return The count of undetected results.
-	 */
-	public int getUndetectedCount() {
-		return undetectedCount;
-	}
-
-	/**
-	 * Sets the number of undetected results.
-	 *
-	 * @param undetectedCount The undetected count to set.
-	 */
-	public void setUndetectedCount(int undetectedCount) {
-		this.undetectedCount = undetectedCount;
-	}
-
-	/**
 	 * Prints the scan report in a structured format.
 	 */
 	public void printReport() {
@@ -225,9 +141,6 @@ public class ScanReport {
 		System.out.printf("%-20s: %s%n", "Threat Details", threatDetails);
 		System.out.printf("%-20s: %s%n", "Warning Class", warningState);
 		System.out.printf("%-20s: %s%n", "Report Status", isValidReport() ? "Valid" : "Invalid");
-		System.out.printf("%-20s: %d%n", "Malicious Count", maliciousCount);
-		System.out.printf("%-20s: %d%n", "Harmless Count", harmlessCount);
-		System.out.printf("%-20s: %d%n", "Suspicious Count", suspiciousCount);
 		
 		System.out.println(separator);
 	}
@@ -239,7 +152,6 @@ public class ScanReport {
     public String toString() {
         return "ScanReport {" + "file=" + (file != null ? file.getName() : "null")
                 + ", threatDetected=" + threatDetected + ", threatDetails='" + threatDetails + '\'' + ", warningClass="
-                + warningState + ", isValid=" + isValid + ", maliciousCount=" + maliciousCount + ", harmlessCount="
-                + harmlessCount + ", suspiciousCount=" + suspiciousCount + '}';
+                + warningState + ", isValid=" + isValid + '}';
     }
 }

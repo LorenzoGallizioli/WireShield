@@ -32,7 +32,6 @@ public class AntivirusManager {
 	private runningStates scannerStatus;
 
 	private Thread scanThread;
-	static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // Maximum file size for VirusTotal analysis (10 MB)
 
 	private AntivirusManager() {
 		logger.info("AntivirusManager initialized.");
@@ -214,17 +213,7 @@ public class AntivirusManager {
 			if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
 				target.setWarningClass(source.getWarningClass());
 			}
-
-			target.setMaliciousCount(target.getMaliciousCount() + source.getMaliciousCount());
-			target.setHarmlessCount(target.getHarmlessCount() + source.getHarmlessCount());
-			target.setSuspiciousCount(target.getSuspiciousCount() + source.getSuspiciousCount());
-			target.setUndetectedCount(target.getUndetectedCount() + source.getUndetectedCount());
+		target.setValid(target.isValidReport() && (source.isValidReport()));
 		}
-
-		if (source != null && source.getSha256() != null && !source.getSha256().equals(target.getSha256())) {
-			target.setSha256(source.getSha256());
-		}
-
-		target.setValid(target.isValidReport() && (source != null && source.isValidReport()));
 	}
 }

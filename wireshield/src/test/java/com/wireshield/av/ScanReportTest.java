@@ -1,14 +1,17 @@
 package com.wireshield.av;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.PrintStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
-import java.io.File;
 import com.wireshield.enums.warningClass;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 
 /**
  * Test class for ScanReport. This class tests the functionality of the
@@ -26,8 +29,7 @@ public class ScanReportTest {
 	@Before
 	public void setUp() {
 		scanReport = new ScanReport(); // Initialize the ScanReport object before each test
-		scanReport = new ScanReport("scan123", new File("testfile.txt")); // Initialize ScanReport with a scanId and a
-																			// file
+		scanReport = new ScanReport(new File("testfile.txt")); // Initialize ScanReport with a scanId and a file
 	}
 
 	/**
@@ -41,10 +43,6 @@ public class ScanReportTest {
 		assertEquals("No threat detected", scanReport.getThreatDetails()); // Default threat details
 		assertEquals(warningClass.CLEAR, scanReport.getWarningClass()); // Default warning class should be CLEAR
 		assertTrue(scanReport.isValidReport()); // The report should be valid by default
-		assertEquals(0, scanReport.getMaliciousCount()); // Default malicious count should be 0
-		assertEquals(0, scanReport.getHarmlessCount()); // Default harmless count should be 0
-		assertEquals(0, scanReport.getSuspiciousCount()); // Default suspicious count should be 0
-		assertEquals(0, scanReport.getUndetectedCount()); // Default undetected count should be 0
 	}
 
 	/**
@@ -56,17 +54,6 @@ public class ScanReportTest {
 		File file = new File("testfile.txt");
 		scanReport.setFile(file);
 		assertEquals(file, scanReport.getFile()); // Verifies that the set file matches the get file
-	}
-
-	/**
-	 * Tests the setSha256 and getSha256 methods. Verifies that the SHA-256 hash is
-	 * correctly set and retrieved.
-	 */
-	@Test
-	public void testSetAndGetSha256() {
-		String sha256 = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-		scanReport.setSha256(sha256);
-		assertEquals(sha256, scanReport.getSha256()); // Verifies that the SHA-256 value is updated correctly
 	}
 
 	/**
@@ -128,23 +115,6 @@ public class ScanReportTest {
 	}
 
 	/**
-	 * Tests the malicious, harmless, suspicious, and undetected counts. Verifies
-	 * that the respective counts are correctly updated and retrieved.
-	 */
-	@Test
-	public void testDetectionCounts() {
-		scanReport.setMaliciousCount(5);
-		scanReport.setHarmlessCount(2);
-		scanReport.setSuspiciousCount(3);
-		scanReport.setUndetectedCount(4);
-
-		assertEquals(5, scanReport.getMaliciousCount()); // Verifies the malicious count
-		assertEquals(2, scanReport.getHarmlessCount()); // Verifies the harmless count
-		assertEquals(3, scanReport.getSuspiciousCount()); // Verifies the suspicious count
-		assertEquals(4, scanReport.getUndetectedCount()); // Verifies the undetected count
-	}
-
-	/**
 	 * Tests the toString method of the ScanReport class. Verifies that the toString
 	 * method returns the correct string representation of the ScanReport object.
 	 */
@@ -157,10 +127,9 @@ public class ScanReportTest {
 		scanReport.setThreatDetails("Malware detected");
 		scanReport.setWarningClass(warningClass.SUSPICIOUS);
 		scanReport.setValid(false);
-		scanReport.setSha256("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
 		// Expected string representation
-		String expectedString = "ScanReport {scanId='scan123', file=testfile.txt, SHA256 Hash=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef, threatDetected=true, threatDetails='Malware detected', warningClass=SUSPICIOUS, isValid=false, maliciousCount=0, harmlessCount=0, suspiciousCount=0, undetectedCount=0}";
+		String expectedString = "ScanReport {file=testfile.txt, threatDetected=true, threatDetails='Malware detected', warningClass=SUSPICIOUS, isValid=false}";
 		assertEquals(expectedString, scanReport.toString()); // Verifies that toString() returns the correct string
 																// representation
 	}
@@ -174,15 +143,10 @@ public class ScanReportTest {
 		// Set values for the test
 		File file = new File("testfile.txt");
 		scanReport.setFile(file);
-		scanReport.setSha256("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 		scanReport.setThreatDetected(true);
 		scanReport.setThreatDetails("Malware detected");
 		scanReport.setWarningClass(warningClass.SUSPICIOUS);
 		scanReport.setValid(false);
-		scanReport.setMaliciousCount(1);
-		scanReport.setHarmlessCount(0);
-		scanReport.setSuspiciousCount(2);
-		scanReport.setUndetectedCount(3);
 
 		// Create a ByteArrayOutputStream to capture the printed output
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -200,24 +164,9 @@ public class ScanReportTest {
 
 		// Check that the output contains the expected information
 		assertTrue(printedReport.contains("File                : testfile.txt"));
-		assertTrue(printedReport
-				.contains("SHA256 Hash         : 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"));
 		assertTrue(printedReport.contains("Threat Detected     : Yes"));
 		assertTrue(printedReport.contains("Threat Details      : Malware detected"));
 		assertTrue(printedReport.contains("Warning Class       : SUSPICIOUS"));
 		assertTrue(printedReport.contains("Report Status       : Invalid"));
-		assertTrue(printedReport.contains("Malicious Count     : 1"));
-		assertTrue(printedReport.contains("Harmless Count      : 0"));
-		assertTrue(printedReport.contains("Suspicious Count    : 2"));
-		assertTrue(printedReport.contains("Undetected Count    : 3"));
-	}
-
-	/**
-	 * Tests the getScanId method of the ScanReport class. Verifies that the scanId
-	 * is correctly retrieved.
-	 */
-	@Test
-	public void testGetScanId() {
-		assertEquals("scan123", scanReport.getScanId()); // Verifies that scanId is correctly set
 	}
 }
