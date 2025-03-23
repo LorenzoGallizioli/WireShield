@@ -1,18 +1,21 @@
 package com.wireshield.av;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
-import com.wireshield.enums.runningStates;
-import com.wireshield.enums.warningClass;
-import com.wireshield.localfileutils.SystemOrchestrator;
-
 import java.io.File;
-import java.io.FileWriter;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import static org.junit.Assert.*;
+
+import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.wireshield.enums.runningStates;
+import com.wireshield.enums.warningClass;
 
 /**
  * Test class for the AntivirusManager class. This class contains unit tests for
@@ -23,7 +26,6 @@ public class AntivirusManagerTest {
 
 	private AntivirusManager antivirusManager;
 	private ClamAV clamAV;
-	private VirusTotal virusTotal;
 	runningStates avStatus = runningStates.DOWN; // Initial state is DOWN
 
 	/**
@@ -35,10 +37,8 @@ public class AntivirusManagerTest {
 	public void setUp() {
 
 		clamAV = ClamAV.getInstance(); // Uses the real implementation of ClamAV
-		virusTotal = VirusTotal.getInstance(); // Uses the real implementation of VirusTotal
 		antivirusManager = AntivirusManager.getInstance();
 		antivirusManager.setClamAV(clamAV);
-		antivirusManager.setVirusTotal(virusTotal);
 	}
 
 	/**
@@ -54,8 +54,6 @@ public class AntivirusManagerTest {
 		File file4 = new File("file4.pdf");
 		File fakeFile = new File("fakeFile.txt");
 		File testFile = new File("testfile.exe");
-		File largeFile = new File("largeTestFile.txt");
-
 		// Delete the files if they exist
 		file1.delete();
 		file2.delete();
@@ -63,7 +61,6 @@ public class AntivirusManagerTest {
 		file4.delete();
 		fakeFile.delete();
 		testFile.delete();
-		largeFile.delete();
 	}
 
 	/**
@@ -234,61 +231,6 @@ public class AntivirusManagerTest {
 		assertTrue(foundFile1);
 		assertTrue(foundFile2);
 		assertTrue(foundFile3);
-	}
-
-	/**
-	 * Test to verify that large files are excluded from VirusTotal scanning. This
-	 * ensures that files exceeding the MAX_FILE_SIZE are not processed by
-	 * VirusTotal.
-	 * 
-	 * @throws IOException If an I/O error occurs during file creation.
-	 */
-	@Test
-	public void testLargeFileExclusionFromVirusTotal() throws IOException, InterruptedException {
-
-		// Define a large file size exceeding the limit (e.g., 20 MB if MAX_FILE_SIZE is
-		// 10 MB)
-		final long LARGE_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-
-		// Generate a large string content to simulate a large file (filling with
-		// repetitive characters)
-		StringBuilder largeContentBuilder = new StringBuilder((int) LARGE_FILE_SIZE);
-		for (int i = 0; i < LARGE_FILE_SIZE; i++) {
-			largeContentBuilder.append('A'); // Fill with repetitive characters
-		}
-		String largeContent = largeContentBuilder.toString();
-
-		// Define the file path as a string
-		String largeFilePath = "largeTestFile.txt";
-
-		// Write the large file using FileManager
-		FileManager.writeFile(largeFilePath, largeContent);
-
-		// Create a File object for the large file
-		File largeFile = new File(largeFilePath);
-
-		// Add the large file to the scan buffer
-		antivirusManager.addFileToScanBuffer(largeFile);
-
-		// Wait for the scan to complete
-		while (!antivirusManager.getScanBuffer().isEmpty() || antivirusManager.getFinalReports().size() < 4) {
-			Thread.sleep(1000); // Wait briefly before checking again
-		}
-
-		// Verify that the large file is removed from the scan buffer after processing
-		assertFalse("The large file should be removed from the scan buffer after processing",
-				antivirusManager.getScanBuffer().contains(largeFile));
-
-		// Verify that no VirusTotal analysis was performed for the large file
-		boolean virusTotalNotCalled = true;
-		for (ScanReport report : antivirusManager.getFinalReports()) {
-			if (report.getFile().equals(largeFile.getName()) && report.getThreatDetails().contains("VirusTotal")) {
-				virusTotalNotCalled = false;
-			}
-		}
-
-		// Assert that VirusTotal was not called for the large file
-		assertTrue("Large file should not be marked as scanned by VirusTotal", virusTotalNotCalled);
 	}
 
 	/**
