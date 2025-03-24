@@ -9,7 +9,7 @@ import win32com.client
 
 def download_from_drive(file_id, output_path):
     """Scarica il file ZIP di ClamAV da Google Drive"""
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    url = "https://drive.google.com/uc?export=download&id=1dQHnsNEV7Z2y-UovmTyufPlzlHiGq9yq"
     session = requests.Session()
     
     print("🔽 Scaricando ClamAV da Google Drive...")
