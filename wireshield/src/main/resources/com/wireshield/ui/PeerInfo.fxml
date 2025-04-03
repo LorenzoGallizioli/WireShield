@@ -24,37 +24,41 @@
         <Label text="Nome:" styleClass="peer-info-label" GridPane.rowIndex="1" GridPane.columnIndex="0" />
         <Label fx:id="nameValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="1" GridPane.columnIndex="1" />
 
-        <!-- Chiave Pubblica -->
+        <!-- Chiave Pubblica
         <Label text="Chiave Pubblica:" styleClass="peer-info-label" GridPane.rowIndex="2" GridPane.columnIndex="0" />
         <Label fx:id="publicKeyValue" text="-" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1" />
-        
-        <!-- Chiave Privata -->
+        -->
+
+        <!-- Chiave Privata
         <Label text="Chiave Privata:" styleClass="peer-info-label" GridPane.rowIndex="3" GridPane.columnIndex="0" />
         <Label fx:id="privateKeyValue" text="Hidden for security" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1" />
-        
+        -->
+
         <!-- Indirizzo -->
-        <Label text="Indirizzo:" styleClass="peer-info-label" GridPane.rowIndex="4" GridPane.columnIndex="0" />
-        <Label fx:id="addressValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+        <Label text="Indirizzo:" styleClass="peer-info-label" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+        <Label fx:id="addressValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="2" GridPane.columnIndex="1" />
         
         <!-- Endpoint -->
-        <Label text="Endpoint:" styleClass="peer-info-label" GridPane.rowIndex="5" GridPane.columnIndex="0" />
-        <Label fx:id="endPointValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+        <Label text="Endpoint:" styleClass="peer-info-label" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+        <Label fx:id="endPointValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="3" GridPane.columnIndex="1" />
         
         <!-- DNS -->
-        <Label text="DNS:" styleClass="peer-info-label" GridPane.rowIndex="6" GridPane.columnIndex="0" />
-        <Label fx:id="dnsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="6" GridPane.columnIndex="1" />
+        <Label text="DNS:" styleClass="peer-info-label" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+        <Label fx:id="dnsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="4" GridPane.columnIndex="1" />
         
-        <!-- MTU -->
+        <!-- MTU 
         <Label text="MTU:" styleClass="peer-info-label" GridPane.rowIndex="7" GridPane.columnIndex="0" />
         <Label fx:id="mtuValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="7" GridPane.columnIndex="1" />
-        
-        <!-- Preshared Key -->
+        -->
+
+        <!-- Preshared Key 
         <Label text="Preshared Key:" styleClass="peer-info-label" GridPane.rowIndex="8" GridPane.columnIndex="0" />
         <Label fx:id="presharedKeyValue" text="-" styleClass="peer-info-value" wrapText="true" GridPane.rowIndex="8" GridPane.columnIndex="1" />
-        
+        -->
+
         <!-- Allowed IPs -->
-        <Label text="Allowed IPs:" styleClass="peer-info-label" GridPane.rowIndex="9" GridPane.columnIndex="0" />
-        <Label fx:id="allowedIPsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="9" GridPane.columnIndex="1" />
+        <Label text="Allowed IPs:" styleClass="peer-info-label" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+        <Label fx:id="allowedIPsValue" text="-" styleClass="peer-info-value" GridPane.rowIndex="5" GridPane.columnIndex="1" />
     </GridPane>
     
     <HBox spacing="10" alignment="CENTER_RIGHT">

@@ -106,12 +106,12 @@ public class PeerInfoController {
         if (currentPeer == null) return;
         
         nameValue.setText(currentPeer.getName());
-        publicKeyValue.setText(currentPeer.getPublicKey());
+        //publicKeyValue.setText(currentPeer.getPublicKey());
         addressValue.setText(currentPeer.getAddress());
         endPointValue.setText(currentPeer.getEndPoint());
         dnsValue.setText(currentPeer.getDNS());
-        mtuValue.setText(currentPeer.getMTU());
-        presharedKeyValue.setText(currentPeer.getPresharedKey());
+        //mtuValue.setText(currentPeer.getMTU());
+        //presharedKeyValue.setText(currentPeer.getPresharedKey());
         allowedIPsValue.setText(currentPeer.getAllowedIps());
         
         deletePeerBtn.setDisable(false);
