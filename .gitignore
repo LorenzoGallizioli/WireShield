@@ -23,7 +23,7 @@ local.properties
 .recommenders
 
 #vscode
-.vscode/*
+.vscode/
 
 # External tool builders
 .externalToolBuilders/
