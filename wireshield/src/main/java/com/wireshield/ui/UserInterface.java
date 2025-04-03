@@ -30,7 +30,6 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -433,7 +432,7 @@ public class UserInterface extends Application implements PeerOperationListener{
             javafx.scene.Node CIDRspace = loaderCIDR.load();
             cidrInputController = loaderCIDR.getController();
             cidrInputController.setPeer(peer);
-            cidrInputController.loadCIDR();
+            cidrInputController.loadCIDRs();
 
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
@@ -538,25 +537,6 @@ public class UserInterface extends Application implements PeerOperationListener{
             peerCardsContainer.getChildren().add(peerCard);
             
             logger.debug("Added peer card for file: {}", peer.getName());
-        }
-    }
-
-    private void loadCIDRComponent(AnchorPane targetPane) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("CIDRInput.fxml"));
-            Node cidrComponent = loader.load();
-            cidrInputController = loader.getController();
-            
-            // Posiziona il componente nel target pane
-            AnchorPane.setTopAnchor(cidrComponent, 10.0);
-            AnchorPane.setLeftAnchor(cidrComponent, 10.0);
-            AnchorPane.setRightAnchor(cidrComponent, 10.0);
-            
-            targetPane.getChildren().add(cidrComponent);
-            
-            logger.info("Componente CIDR caricato con successo");
-        } catch (IOException e) {
-            logger.error("Errore nel caricamento del componente CIDR: " + e.getMessage(), e);
         }
     }
     

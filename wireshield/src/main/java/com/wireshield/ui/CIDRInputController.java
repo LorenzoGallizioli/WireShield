@@ -120,7 +120,7 @@ public class CIDRInputController {
         this.peer = peer;
     }
 
-    public void loadCIDR(){
+    public void loadCIDRs(){
         String peerNameWithoutExtension = peer.getName().contains(".") ? peer.getName().substring(0, peer.getName().lastIndexOf(".")) : peer.getName();
         List<String> CIDRList = WFPManager.getAllCIDR_permit(defaultPeerPath, peerNameWithoutExtension);
 

@@ -3,10 +3,10 @@ package com.wireshield.ui;
 import com.wireshield.wireguard.Peer;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 
 public class PeerInfoController {
 
@@ -14,8 +14,6 @@ public class PeerInfoController {
     private Label nameValue;
     @FXML
     private Label publicKeyValue;
-    @FXML
-    private Label privateKeyValue;
     @FXML
     private Label addressValue;
     @FXML
@@ -28,8 +26,6 @@ public class PeerInfoController {
     private Label presharedKeyValue;
     @FXML
     private Label allowedIPsValue;
-    @FXML
-    private Button showPrivateKeyBtn;
     @FXML
     private Button editPeerBtn;
     @FXML
