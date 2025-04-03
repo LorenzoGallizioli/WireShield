@@ -60,5 +60,21 @@
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button fx:id="editPeerBtn" text="Modify" styleClass="action-button" />
         <Button fx:id="deletePeerBtn" text="Delete" styleClass="danger-button" />
-    </HBox>     
+    </HBox>    
+
+    <VBox spacing="10" AnchorPane.topAnchor="-30.0" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+          
+        <Label text="Inserisci indirizzi CIDR:" styleClass="cidr-info-label"/>
+        
+        <TextField fx:id="cidrTextField" maxWidth="230" promptText="Es. 192.168.0.0/24" styleClass="input-field"/>
+        
+        <ScrollPane fitToWidth="true" prefHeight="150" styleClass="cidr-scroll-pane">
+            <FlowPane fx:id="cidrCardsContainer" hgap="5" vgap="5" styleClass="cidr-flow-pane">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+            </FlowPane>
+        </ScrollPane>
+        
+    </VBox> 
 </VBox>

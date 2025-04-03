@@ -84,8 +84,6 @@ public class UserInterface extends Application implements PeerOperationListener{
     @FXML
     protected VBox peerCardsContainer;
     @FXML
-    protected CIDRInputController cidrInputController;
-    @FXML
     protected AnchorPane CIDRPane;
 
     @Override
@@ -427,19 +425,13 @@ public class UserInterface extends Application implements PeerOperationListener{
             
             FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
-            
-            FXMLLoader loaderCIDR = new FXMLLoader(getClass().getResource("CIDRInput.fxml"));
-            javafx.scene.Node CIDRspace = loaderCIDR.load();
-            cidrInputController = loaderCIDR.getController();
-            cidrInputController.setPeer(peer);
-            cidrInputController.loadCIDRs();
 
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
             controller.setOperationListener(this);
+            controller.loadCIDRs();
             
             peerInfoContainer.getChildren().add(newContent);
-            peerInfoContainer.getChildren().add(CIDRspace);
 
             if (!homePane.getChildren().contains(peerInfoContainer)) {
             	homePane.getChildren().add(peerInfoContainer);
