@@ -46,11 +46,18 @@ import javafx.stage.WindowEvent;
 public class UserInterface extends Application implements PeerOperationListener{
 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
+    
     protected static SystemOrchestrator so;
     protected static WireguardManager wg;
     protected String selectedPeer;
+
     private static double xOffset = 0;
     private static double yOffset = 0;
+
+    double peerInfo_xOffset = 740.0;
+    double peerInfo_yOffset = 470.0;
+    double peerInfo_leftAnchor = 320.0;
+    double peerInfo_topAnchor = 145.0;
     
     String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
@@ -442,20 +449,22 @@ public class UserInterface extends Application implements PeerOperationListener{
         }
     }
     
+    /**
+     * Creates a new VBox container for displaying peer information.
+     * Sets its style class and preferred dimensions.
+     * Anchors it to the specified position within the home pane.
+     * 
+     * @return VBox The newly created VBox container for peer information
+     */
     private VBox createPeerInfoContainer() {
-    	
-    	double xOffset = 740.0;
-    	double yOffset = 470.0;
-    	double leftAnchor = 320.0;
-    	double topAnchor = 145.0;
     	
     	VBox peerInfo = new VBox();
     	
     	peerInfo.getStyleClass().add("peerInfo-container");
-    	peerInfo.setPrefWidth(xOffset);
-    	peerInfo.setPrefHeight(yOffset);
-    	AnchorPane.setLeftAnchor(peerInfo, leftAnchor);
-        AnchorPane.setTopAnchor(peerInfo, topAnchor);
+    	peerInfo.setPrefWidth(peerInfo_xOffset);
+    	peerInfo.setPrefHeight(peerInfo_yOffset);
+    	AnchorPane.setLeftAnchor(peerInfo, peerInfo_leftAnchor);
+        AnchorPane.setTopAnchor(peerInfo, peerInfo_topAnchor);
         
         return peerInfo;
     }

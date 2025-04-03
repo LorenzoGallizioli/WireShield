@@ -154,6 +154,12 @@ public class PeerInfoController {
         });
     }
     
+    /**
+     * Processes the CIDR input provided by the user.
+     * Validates the input, adds it to the list if not already present, 
+     * creates a visual representation, and updates the firewall rules accordingly.
+     * If the CIDR is invalid, logs a warning.
+     */
     private void processCIDRInput() {
         String cidrInput = cidrTextField.getText().trim();
         
@@ -183,11 +189,24 @@ public class PeerInfoController {
         }
     }
     
+    /**
+     * Validates whether a given CIDR string matches the expected pattern.
+     *
+     * @param cidr The CIDR string to validate.
+     * @return true if the CIDR is valid, false otherwise.
+     */
     private boolean isValidCIDR(String cidr) {
         Matcher matcher = pattern.matcher(cidr);
         return matcher.matches();
     }
     
+    /**
+     * Creates a visual card representation for a given CIDR.
+     * Adds the card to the UI and enables click-to-remove functionality,
+     * which also removes the CIDR from the list and updates the firewall rules.
+     *
+     * @param cidr The CIDR string to display.
+     */
     private void createCIDRCard(String cidr) {
         HBox card = new HBox();
         card.getStyleClass().add("cidr-card");
@@ -212,10 +231,19 @@ public class PeerInfoController {
         cidrCardsContainer.getChildren().add(card);
     }
     
+    /**
+     * Retrieves the text field used for CIDR input.
+     *
+     * @return The CIDR input text field.
+     */
     public TextField getCidrTextField() {
         return cidrTextField;
     }
 
+    /**
+     * Loads all permitted CIDRs for the current peer from the firewall rules.
+     * Populates the UI with CIDR cards for each retrieved CIDR.
+     */
     public void loadCIDRs(){
         String peerNameWithoutExtension = currentPeer.getName().contains(".") ? currentPeer.getName().substring(0, currentPeer.getName().lastIndexOf(".")) : currentPeer.getName();
         List<String> CIDRList = WFPManager.getAllCIDR_permit(defaultPeerPath, peerNameWithoutExtension);
