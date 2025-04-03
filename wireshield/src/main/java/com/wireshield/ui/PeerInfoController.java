@@ -64,8 +64,6 @@ public class PeerInfoController {
     private Peer peer;
     private String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
     
-
-    // Pattern regex per validare il formato CIDR (IP/subnet)
     private static final String CIDR_PATTERN = 
             "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$";
     private Pattern pattern = Pattern.compile(CIDR_PATTERN);
@@ -82,7 +80,6 @@ public class PeerInfoController {
 
         logger.debug("Inizializzazione del controller CIDR");
         
-        // Configurazione dell'evento keypress per il TextField
         cidrTextField.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 processCIDRInput();
@@ -113,7 +110,6 @@ public class PeerInfoController {
         //mtuValue.setText(currentPeer.getMTU());
         //presharedKeyValue.setText(currentPeer.getPresharedKey());
         allowedIPsValue.setText(currentPeer.getAllowedIps());
-        
         deletePeerBtn.setDisable(false);
         editPeerBtn.setDisable(false);
 
@@ -148,6 +144,9 @@ public class PeerInfoController {
                 
                 deletePeerBtn.setDisable(true);
                 editPeerBtn.setDisable(true);
+
+                cidrTextField.clear();
+                cidrTextField.setDisable(true);
                 
                 System.out.println("Peer deleted: " + currentPeer.getName());
             }
@@ -165,13 +164,10 @@ public class PeerInfoController {
         
         logger.debug("Processing CIDR input: {}", cidrInput);
         
-        // Verifica se l'input è valido
         if (!cidrInput.isEmpty() && isValidCIDR(cidrInput)) {
-            // Aggiungi il CIDR alla lista se non è già presente
             if (!cidrList.contains(cidrInput)) {
                 cidrList.add(cidrInput);
                 
-                // Crea una card per visualizzare il CIDR
                 createCIDRCard(cidrInput);
 
                 String peerNameWithoutExtension = currentPeer.getName().contains(".") ? currentPeer.getName().substring(0, currentPeer.getName().lastIndexOf(".")) : currentPeer.getName();
@@ -182,7 +178,6 @@ public class PeerInfoController {
                 logger.debug("CIDR già presente nella lista: {}", cidrInput);
             }
             
-            // Pulisci il campo di input
             cidrTextField.clear();
         } else {
             logger.warn("CIDR non valido: {}", cidrInput);
@@ -217,7 +212,6 @@ public class PeerInfoController {
         cidrLabel.setStyle("-fx-text-fill: #FFFFFF;");
         card.getChildren().add(cidrLabel);
         
-        // Aggiunge la possibilità di rimuovere il CIDR cliccando sulla card
         card.setOnMouseClicked(event -> {
             cidrCardsContainer.getChildren().remove(card);
             cidrList.remove(cidr);
