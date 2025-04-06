@@ -76,19 +76,18 @@ public class DownloadManager {
         String userHome = System.getProperty("user.home");
         String[] possibleFolders = {"Download", "Downloads", "Scaricati"};
 
-		
         // Checks if at least one folder exists
-		for (String folder : possibleFolders) {
+        for (String folder : possibleFolders) {
             File dir = new File(userHome, folder);
             if (dir.exists() && dir.isDirectory()) {
                 logger.info("Default download folder found: {}", dir.getAbsolutePath());
-				return dir.getAbsolutePath();
+                return dir.getAbsolutePath();
             }
         }
-		
+
         // L'inserimento di una cartella manualmente tramite console è temporanea, in quanto verrà implementata nel UI mediante una finestra
         // If no valid folder is found, ask the user to enter one
-		Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
         String userPath = null;
         int maxRetries = 3; // Limit the number of attempts to 3
         int attempts = 0;
@@ -96,23 +95,23 @@ public class DownloadManager {
         while (attempts < maxRetries) {
             try {
                 logger.warn("No default download folder found. Please enter a path:");
-				userPath = scanner.nextLine();
+                userPath = scanner.nextLine();
                 File userDir = new File(userPath);
 
                 // Check if the entered path is valid
-				if (userDir.exists() && userDir.isDirectory()) {
-					logger.info("User provided a valid download directory: {}", userPath);
+                if (userDir.exists() && userDir.isDirectory()) {
+                    logger.info("User provided a valid download directory: {}", userPath);
                     return userDir.getAbsolutePath();
                 }
             } catch (Exception e) {
                 logger.error("Error in user input. The program cannot continue.", e);
-				break; // Exits the loop or can perform other recovery actions
+                break; // Exits the loop or can perform other recovery actions
             }
             attempts++;
         }
 
         logger.error("Too many invalid attempts. Unable to proceed.");
-		return null; // Return null if no valid path is found after 3 attempts
+        return null; // Return null if no valid path is found after 3 attempts
     }
 
     /**
@@ -128,22 +127,22 @@ public class DownloadManager {
         }
 
         // Verifies that the download path is valid
-		String path = getDownloadPath(); // Get the path of the folder
+        String path = getDownloadPath(); // Get the path of the folder
         if (path == null) {
             logger.error("Download directory path is null. Cannot start monitoring.");
-			return; // Stops monitoring if the path is not valid
+            return; // Stops monitoring if the path is not valid
         }
 
         // Verifies that the download path is valid
         File downloadDir = new File(getDownloadPath());
         if (!downloadDir.exists() || !downloadDir.isDirectory()) {
             logger.error("Invalid download directory: {}", getDownloadPath());
-			return; // Stops monitoring if the path is not valid
+            return; // Stops monitoring if the path is not valid
         }
 
         monitorStatus = runningStates.UP; // Set monitoring status to active
         logger.info("Started monitoring directory: {}", getDownloadPath());
-		Path watchPath = Paths.get(path);
+        Path watchPath = Paths.get(path);
 
         // Create WatchService to monitor directory
         try {
@@ -152,7 +151,7 @@ public class DownloadManager {
             watchPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
         } catch (IOException e) {
-			logger.error("Error initializing WatchService.", e);
+            logger.error("Error initializing WatchService.", e);
             monitorStatus = runningStates.DOWN;
             return;
         }
@@ -185,12 +184,21 @@ public class DownloadManager {
                         if (!FileManager.isTemporaryFile(newFile) && FileManager.isFileStable(newFile)) {
                             String fileName = newFile.getAbsolutePath();
 
-                            // Check if file is already detected
                             if (!detectedFiles.contains(fileName)) {
                                 detectedFiles.add(fileName);
                                 logger.info("New file detected: {}", newFile.getName());
+                                // Rinominare il file appena viene rilevato
+                                FileManager.quarantineFile(newFile);
+                                // Bloccare il file appena viene rilevato
+                                boolean isBlocked = FileManager.blockFileExecution(newFile);
+                                if (isBlocked) {
+                                    logger.info("File {} is blocked from execution.", newFile.getName());
+                                } else {
+                                    logger.error("Failed to block the file: {}", newFile.getName());
+                                }
 
-                                antivirusManager.addFileToScanBuffer(newFile); // Add to antivirus queue
+                                // Ora possiamo inviarlo per la scansione antivirus
+                                antivirusManager.addFileToScanBuffer(newFile); // 🔬 Mandalo a ClamAV
                             }
                         }
                     }
