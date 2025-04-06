@@ -1,15 +1,18 @@
 package com.wireshield.av;
 
 import java.io.File;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Queue;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+import javax.swing.JOptionPane;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import com.wireshield.enums.runningStates;
 import com.wireshield.enums.warningClass;
-import javax.swing.JOptionPane;
 
 /**
  * Manages antivirus scanning tasks and orchestrates file analysis using ClamAV
@@ -23,14 +26,12 @@ public class AntivirusManager {
 	private static AntivirusManager instance;
 
 	private ClamAV clamAV;
-	private VirusTotal virusTotal;
 	private Queue<File> scanBuffer = new LinkedList<>();
 	private List<File> filesToRemove = new ArrayList<>();
 	private List<ScanReport> finalReports = new ArrayList<>();
 	private runningStates scannerStatus;
 
 	private Thread scanThread;
-	static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // Maximum file size for VirusTotal analysis (10 MB)
 
 	private AntivirusManager() {
 		logger.info("AntivirusManager initialized.");
@@ -130,21 +131,6 @@ public class AntivirusManager {
 			
 			if (clamAVReport != null) mergeReports(finalReport, clamAVReport);
 
-			// If a threat is detected and the file is small enough, use VirusTotal
-			if(virusTotal != null) {
-				if (finalReport.isThreatDetected() && fileToScan.length() <= MAX_FILE_SIZE) {
-					
-					virusTotal.analyze(fileToScan);
-					ScanReport virusTotalReport = virusTotal.getReport();
-					
-					if (virusTotalReport != null) mergeReports(finalReport, virusTotalReport);
-					
-				} else if (fileToScan.length() > MAX_FILE_SIZE) {
-					logger.warn("File {} is too large for VirusTotal analysis (>10 MB)", fileToScan.getName());
-					
-				}
-			}
-
 			// Add the final report to the results list
 			finalReports.add(finalReport);
 
@@ -184,15 +170,6 @@ public class AntivirusManager {
 	 */
 	public void setClamAV(ClamAV clamAV) {
 		this.clamAV = clamAV;
-	}
-
-	/**
-	 * Sets the VirusTotal engine for file analysis.
-	 *
-	 * @param virusTotal the VirusTotal instance.
-	 */
-	public void setVirusTotal(VirusTotal virusTotal) {
-		this.virusTotal = virusTotal;
 	}
 
 	/**
@@ -236,17 +213,7 @@ public class AntivirusManager {
 			if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
 				target.setWarningClass(source.getWarningClass());
 			}
-
-			target.setMaliciousCount(target.getMaliciousCount() + source.getMaliciousCount());
-			target.setHarmlessCount(target.getHarmlessCount() + source.getHarmlessCount());
-			target.setSuspiciousCount(target.getSuspiciousCount() + source.getSuspiciousCount());
-			target.setUndetectedCount(target.getUndetectedCount() + source.getUndetectedCount());
+		target.setValid(target.isValidReport() && (source.isValidReport()));
 		}
-
-		if (source != null && source.getSha256() != null && !source.getSha256().equals(target.getSha256())) {
-			target.setSha256(source.getSha256());
-		}
-
-		target.setValid(target.isValidReport() && (source != null && source.isValidReport()));
 	}
 }

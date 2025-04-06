@@ -1,22 +1,20 @@
 package com.wireshield.av;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import org.json.simple.parser.JSONParser;
-import org.json.simple.JSONObject;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -322,22 +320,6 @@ public class FileManagerTest {
 	}
 
 	/**
-	 * Tests the `calculateSHA256` method when a non-existent file is passed.
-	 * Verifies that the method returns null if the file cannot be found or read.
-	 */
-	@Test
-	public void testCalculateSHA256_Catch() {
-		// Create a non-existing file
-		nonExistingFile = new File("nonExistingFile.txt");
-
-		// Attempt to calculate SHA256 for the non-existent file
-		String result = FileManager.calculateSHA256(nonExistingFile);
-
-		// Assert that the result is null, indicating an error
-		assertNull("Il risultato dovrebbe essere null in caso di errore.", result);
-	}
-
-	/**
 	 * Tests the `getProjectFolder` method to verify that the project folder path is
 	 * correctly retrieved. Ensures that the method returns a valid path that exists
 	 * on the filesystem.
@@ -355,31 +337,6 @@ public class FileManagerTest {
 
 		// Assert that the project folder path exists
 		assertTrue("Project folder path should exist.", new File(projectFolder).exists());
-	}
-
-	/**
-	 * Tests the `calculateSHA256` method to verify that it correctly calculates the
-	 * SHA256 hash of a file. Ensures that the hash is calculated correctly and has
-	 * the expected length of 64 characters.
-	 */
-	@Test
-	public void testCalculateSHA256() {
-		// Create a test file and write content to it
-		FileManager.createFile(testFilePath);
-		String content = "Test SHA256 content";
-		FileManager.writeFile(testFilePath, content);
-
-		// Initialize validFile with the created file
-		validFile = new File(testFilePath);
-
-		// Calculate the SHA256 hash for the validFile
-		String sha256Hash = FileManager.calculateSHA256(validFile);
-
-		// Assertions Ensure the SHA256 hash is not null
-		assertNotNull("SHA256 hash should not be null", sha256Hash);
-
-		// Ensure the SHA256 hash has a length of 64 characters (expected for SHA256)
-		assertEquals("SHA256 hash should have 64 characters", 64, sha256Hash.length());
 	}
 
 	/**
