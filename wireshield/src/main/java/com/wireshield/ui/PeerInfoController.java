@@ -25,6 +25,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 
+
 public class PeerInfoController {
 
     private static final Logger logger = LogManager.getLogger(PeerInfoController.class);
@@ -61,7 +62,6 @@ public class PeerInfoController {
     private FlowPane cidrCardsContainer;
     
     private ObservableList<String> cidrList = FXCollections.observableArrayList();
-    private Peer peer;
     private String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
     
     private static final String CIDR_PATTERN = 
@@ -77,8 +77,6 @@ public class PeerInfoController {
     public void initialize() {
         deletePeerBtn.setOnAction(event -> handleDeletePeer());
         editPeerBtn.setOnAction(event -> handleEditPeer());
-
-        logger.debug("Inizializzazione del controller CIDR");
         
         cidrTextField.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER) {
@@ -173,14 +171,14 @@ public class PeerInfoController {
                 String peerNameWithoutExtension = currentPeer.getName().contains(".") ? currentPeer.getName().substring(0, currentPeer.getName().lastIndexOf(".")) : currentPeer.getName();
                 WFPManager.addCIDR_permit(defaultPeerPath, peerNameWithoutExtension, cidrInput);
                 
-                logger.info("CIDR aggiunto: {}", cidrInput);
+                logger.info("CIDR added: {}", cidrInput);
             } else {
-                logger.debug("CIDR già presente nella lista: {}", cidrInput);
+                logger.debug("CIDR already in list: {}", cidrInput);
             }
             
             cidrTextField.clear();
         } else {
-            logger.warn("CIDR non valido: {}", cidrInput);
+            logger.warn("CIDR not valid: {}", cidrInput);
         }
     }
     
@@ -219,7 +217,7 @@ public class PeerInfoController {
             String peerNameWithoutExtension = currentPeer.getName().contains(".") ? currentPeer.getName().substring(0, currentPeer.getName().lastIndexOf(".")) : currentPeer.getName();
             WFPManager.removeCIDR_permit(defaultPeerPath, peerNameWithoutExtension, cidr);
             
-            logger.debug("CIDR rimosso: {}", cidr);
+            logger.debug("CIDR removed: {}", cidr);
         });
         
         cidrCardsContainer.getChildren().add(card);

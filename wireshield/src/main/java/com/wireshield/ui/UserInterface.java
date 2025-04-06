@@ -445,7 +445,7 @@ public class UserInterface extends Application implements PeerOperationListener{
             }
             
         } catch (Exception e) {
-            logger.error("Errore nel caricamento del pannello informazioni peer: " + e.getMessage(), e);
+            logger.error("Error during peerInfo pannel initialization: " + e.getMessage(), e);
         }
     }
     
