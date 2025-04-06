@@ -5,30 +5,70 @@ import zipfile
 import sys
 import ctypes
 import requests
+import re
+from packaging import version
+from bs4 import BeautifulSoup
+import requests
+import sys
 import win32com.client
 from datetime import datetime, timedelta
 
-CLAMAV_URL = "https://www.clamav.net/downloads/production/clamav-1.4.2.win.x64.zip"
+CLAMAV_DOWNLOAD_PAGE = "https://www.clamav.net/downloads"
 CONF_BASE_URL = "https://raw.githubusercontent.com/LorenzoGallizioli/WireShield/110-gestione-automatica-degli-aggiornamenti-del-database-clamav-allavvio/wireshield/bin/clamAV/conf"
 CONFIG_FILES = ["clamd.conf", "freshclam.conf"]
 
+def get_latest_clamav_url():
+    print("Fetching latest ClamAV download URL...")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    response = requests.get(CLAMAV_DOWNLOAD_PAGE, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to access ClamAV downloads page. Status code: {response.status_code}")
+        sys.exit(1)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    links = soup.find_all("a", href=True)
+
+    candidates = []
+
+    for link in links:
+        href = link["href"]
+        match = re.search(r"clamav-(\d+\.\d+\.\d+)\.win\.x64\.zip$", href)
+        if match and "production" in href:
+            ver = match.group(1)
+            full_url = href if href.startswith("http") else f"https://www.clamav.net{href}"
+            candidates.append((version.parse(ver), full_url))
+
+    if not candidates:
+        print("Could not find any valid ClamAV Windows x64 version.")
+        sys.exit(1)
+
+    # Ordina per versione, dalla più recente
+    candidates.sort(reverse=True)
+    latest_version, latest_url = candidates[0]
+    print(f"Latest version found: {latest_version}")
+    return latest_url
+
 def download_clamav_zip(output_path):
-    print("🔽 Scaricando ClamAV dal sito ufficiale...")
-    response = requests.get(CLAMAV_URL, stream=True)
+    latest_url = get_latest_clamav_url()
+    print(f"Downloading ClamAV from: {latest_url}")
+    response = requests.get(latest_url, stream=True)
     if response.status_code == 200:
         with open(output_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-        print(f"✅ Download completato: {output_path}")
+        print(f"Download completed: {output_path}")
     else:
-        print("❌ Errore durante il download di ClamAV.")
+        print("Error downloading ClamAV.")
         sys.exit(1)
+
 
 def download_config_files(destination_folder):
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    print("⚙️ Scaricamento dei file di configurazione...")
+    print("Downloading configuration files...")
     for config_file in CONFIG_FILES:
         url = f"{CONF_BASE_URL}/{config_file}"
         dest_path = os.path.join(destination_folder, config_file)
@@ -36,22 +76,22 @@ def download_config_files(destination_folder):
         if response.status_code == 200:
             with open(dest_path, "wb") as f:
                 f.write(response.content)
-            print(f"✅ {config_file} scaricato.")
+            print(f"{config_file} downloaded.")
         else:
-            print(f"❌ Errore durante il download di {config_file}.")
+            print(f"Error downloading {config_file}.")
             sys.exit(1)
 
 def extract_clamav(zip_path, extract_to):
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
 
-    print("📂 Estrazione in corso...")
+    print("Extracting files...")
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
-    print("✅ Estrazione completata.")
+    print("Extraction completed.")
 
 def find_clamav_extracted_folder(extract_to):
-    """Trova la cartella clamav estratta dinamicamente"""
+    """Find the extracted ClamAV folder dynamically"""
     for item in os.listdir(extract_to):
         item_path = os.path.join(extract_to, item)
         if os.path.isdir(item_path) and item.startswith("clamav"):
@@ -59,18 +99,18 @@ def find_clamav_extracted_folder(extract_to):
     return None
 
 def move_clamav_folder(source_folder, destination_folder):
-    print("🚀 Spostando ClamAV nella cartella di installazione...")
+    print("Moving ClamAV to the installation folder...")
 
     if not os.path.exists(source_folder):
-        print("❌ Errore: la cartella ClamAV non è stata trovata dopo l'estrazione!")
+        print("Error: ClamAV folder not found after extraction!")
         sys.exit(1)
 
     if os.path.exists(destination_folder):
-        print("⚠️ La cartella di destinazione esiste già. Verrà rimossa.")
+        print("The destination folder already exists. It will be removed.")
         shutil.rmtree(destination_folder)
 
     shutil.move(source_folder, destination_folder)
-    print("✅ Spostamento completato.")
+    print("Move completed.")
 
 def remove_conf_examples_folder(install_folder):
     conf_examples_folder = os.path.join(install_folder, "conf_examples")
@@ -78,81 +118,42 @@ def remove_conf_examples_folder(install_folder):
     if os.path.exists(conf_examples_folder):
         try:
             shutil.rmtree(conf_examples_folder)
-            print("✅ Cartella 'conf_examples' rimossa.")
+            print("The 'conf_examples' folder has been removed.")
         except Exception as e:
-            print(f"❌ Errore durante la rimozione della cartella 'conf_examples': {e}")
+            print(f"Error removing the 'conf_examples' folder: {e}")
     else:
-        print("⚠️ La cartella 'conf_examples' non esiste.")
+        print("The 'conf_examples' folder does not exist.")
 
 def copy_config_files_to_installation(source_folder, destination_folder):
-    print("📝 Copia dei file di configurazione nella cartella di installazione...")
+    print("Copying configuration files to the installation folder...")
     for config_file in CONFIG_FILES:
         src = os.path.join(source_folder, config_file)
         dst = os.path.join(destination_folder, config_file)
         try:
             shutil.copy2(src, dst)
-            print(f"✅ {config_file} copiato in {destination_folder}")
+            print(f"{config_file} copied to {destination_folder}")
         except Exception as e:
-            print(f"❌ Errore durante la copia di {config_file}: {e}")
+            print(f"Error copying {config_file}: {e}")
             sys.exit(1)
 
 def install_clamav_service():
-    """Installa ClamAV come servizio Windows"""
-    print("🔧 Installazione di ClamAV come servizio Windows...")
+    """Installs ClamAV as a Windows service"""
+    print("Installing ClamAV as a Windows service...")
     clamav_exe = r"C:\Program Files\ClamAV\clamd.exe"
     try:
         subprocess.run([clamav_exe, "--install"], shell=True, check=True)
-        print("✅ ClamAV è stato installato come servizio.")
+        print("ClamAV has been installed as a service.")
     except subprocess.CalledProcessError:
-        print("❌ Errore durante l'installazione di ClamAV come servizio.")
+        print("Error installing ClamAV as a service.")
         sys.exit(1)
 
 def update_freshclam():
-    print("🔄 Aggiornamento database ClamAV in corso...")
+    print("Updating ClamAV database...")
     try:
         subprocess.run([r"C:\\Program Files\\ClamAV\\freshclam"], shell=True, check=True)
-        print("✅ Aggiornamento completato.")
+        print("Update completed.")
     except subprocess.CalledProcessError:
-        print("❌ Errore durante l'aggiornamento del database.")
-        sys.exit(1)
-
-def schedule_update():
-    print("📅 Creazione attività pianificata per aggiornamento giornaliero...")
-    task_name = "ClamAV_Update"
-    command = r"C:\\Program Files\\ClamAV\\freshclam"
-    
-    try:
-        scheduler = win32com.client.Dispatch('Schedule.Service')
-        scheduler.Connect()
-        rootFolder = scheduler.GetFolder("\\")
-
-        try:
-            rootFolder.DeleteTask(task_name, 0)
-        except:
-            pass
-
-        task_def = scheduler.NewTask(0)
-        task_def.RegistrationInfo.Description = "Aggiornamento ClamAV giornaliero"
-        task_def.Principal.LogonType = 3
-
-        trigger = task_def.Triggers.Create(2)
-        trigger.StartBoundary = (datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%S")
-        trigger.DaysInterval = 1
-
-        action = task_def.Actions.Create(0)
-        action.Path = command
-
-        rootFolder.RegisterTaskDefinition(
-            task_name,
-            task_def,
-            6,
-            None,
-            None,
-            3
-        )
-        print("✅ Attività pianificata creata con successo!")
-    except Exception as e:
-        print(f"❌ Errore nella creazione della task: {e}")
+        print("Error updating the database.")
         sys.exit(1)
 
 def is_admin():
@@ -163,65 +164,62 @@ def is_admin():
 
 def restart_as_admin():
     if not is_admin():
-        print("⚠️ Lo script deve essere eseguito come amministratore! Riavvio...")
+        print("The script needs to be run as administrator! Restarting...")
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
         sys.exit(0)
 
 def main():
-    """Flusso principale dello script"""
+    """Main script flow"""
     restart_as_admin()
 
-    # Percorsi per il download, estrazione e installazione
+    # Paths for download, extraction, and installation
     download_folder = os.path.join(os.path.expanduser("~"), "Downloads")
     download_path = os.path.join(download_folder, "ClamAV.zip")
     extract_to = os.path.join(download_folder, "ClamAV_Temp")
     config_folder = os.path.join(download_folder, "ClamAV_Config")
     install_path = r"C:\Program Files\ClamAV"
 
-    # Scarica ed estrai ClamAV
+    # Download and extract ClamAV
     download_clamav_zip(download_path)
     extract_clamav(download_path, extract_to)
 
-    # Trova la cartella ClamAV estratta (cerca una cartella che inizia con "clamav")
+    # Find the extracted ClamAV folder (search for a folder starting with "clamav")
     clamav_extracted_dir = find_clamav_extracted_folder(extract_to)
     if clamav_extracted_dir is None:
-        print("❌ Cartella ClamAV non trovata!")
+        print("ClamAV folder not found!")
         sys.exit(1)
 
     move_clamav_folder(clamav_extracted_dir, install_path)
 
-    # Rimuove la cartella 'conf_examples'
+    # Remove the 'conf_examples' folder
     remove_conf_examples_folder(install_path)
 
-    # Scarica e copia i file di configurazione
+    # Download and copy configuration files
     download_config_files(config_folder)
     copy_config_files_to_installation(config_folder, install_path)
 
-    # Installa ClamAV come servizio Windows
+    # Install ClamAV as a Windows service
     install_clamav_service()
 
-    # Aggiorna il database di ClamAV
+    # Update the ClamAV database
     update_freshclam()
 
-    # Pianifica l’aggiornamento giornaliero
-    schedule_update()
+    print("Installation completed successfully!")
 
-    print("🎉 Installazione completata con successo!")
-
-    # Pulizia sicura dei file creati dallo script
-    print("🧹 Pulizia dei file temporanei...")
+    # Clean up temporary files created by the script
+    print("Cleaning up temporary files...")
     try:
         if os.path.exists(download_path):
             os.remove(download_path)
-            print(f"🗑️ Rimosso {download_path}")
+            print(f"Removed {download_path}")
         if os.path.exists(extract_to) and "ClamAV_Temp" in extract_to:
             shutil.rmtree(extract_to)
-            print(f"🗑️ Rimossa {extract_to}")
+            print(f"Removed {extract_to}")
         if os.path.exists(config_folder) and "ClamAV_Config" in config_folder:
             shutil.rmtree(config_folder)
-            print(f"🗑️ Rimossa {config_folder}")
+            print(f"Removed {config_folder}")
     except Exception as e:
-        print(f"⚠️ Errore durante la pulizia: {e}")
+        print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
     main()
