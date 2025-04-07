@@ -3,16 +3,17 @@ package com.wireshield.av;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+
 
 /**
  * Utility class for managing files, including creation, reading, writing,
@@ -25,7 +26,7 @@ public class FileManager {
 	private static final Logger logger = LogManager.getLogger(FileManager.class);
 
 	// Path to the configuration file.
-	static String configPath = FileManager.getProjectFolder() + "\\config\\config.json";
+	static String configPath = FileManager.getProjectFolder() + "\\config\\config.properties";
 
 	/**
 	 * Private constructor to prevent instantiation of this utility class.
@@ -159,60 +160,22 @@ public class FileManager {
 	 * @return the value as a String, or null if the key does not exist
 	 */
 	public static String getConfigValue(String key) {
-		// Parse the JSON file
-		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader(configPath)) {
-			// Read the JSON object from the file
-			JSONObject jsonObject = (JSONObject) parser.parse(reader);
+		Properties prop = new Properties();
 
-			// Retrieve the value associated with the key
-			Object value = jsonObject.get(key);
-			if (value != null) {
-				return value.toString();
-			} else {
-				return null;
+        try (FileInputStream input = new FileInputStream(configPath)) {
+            
+			prop.load(input);
+            String data = prop.getProperty(key);
+
+			if (data != null) {
+				return data;
 			}
-		} catch (Exception e) {
 			return null;
-		}
-	}
 
-	/**
-	 * Writes a value to the JSON configuration file for the specified key.
-	 *
-	 * @param key   the key to add or update
-	 * @param value the value to set for the key
-	 * @return true if the value is successfully written, false otherwise
-	 */
-	public static boolean writeConfigValue(String key, String value) {
-		JSONParser parser = new JSONParser();
-		JSONObject jsonObject = null;
-
-		File file = new File(configPath);
-
-		// Load existing JSON data if the file exists
-		if (file.exists()) {
-			try (FileReader reader = new FileReader(file)) {
-				jsonObject = (JSONObject) parser.parse(reader);
-			} catch (Exception e) {
-				logger.error("Error during JSON");
-				return false;
-			}
-		} else {
-			// If the file does not exist, initialize a new JSON object
-			jsonObject = new JSONObject();
-		}
-
-		// Update or add the key-value pair
-		jsonObject.put(key, value);
-
-		// Write the updated JSON object back to the file
-		try (FileWriter writer = new FileWriter(file)) {
-			writer.write(jsonObject.toJSONString());
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
+        } catch (IOException ex) {
+            ex.printStackTrace();
+			return null;
+        }
+    }
 	
 }

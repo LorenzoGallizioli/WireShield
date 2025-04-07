@@ -24,9 +24,9 @@ public class WireguardManager {
 	private static final Logger logger = LogManager.getLogger(WireguardManager.class);
 
 	private static WireguardManager instance;
-	private String wireguardPath;
-	private String defaultPeerPath;
-	private String logDumpPath;
+	private static String wireguardPath;
+	private static String defaultPeerPath;
+	private static String logDumpPath;
 	private Connection connection;
 	private PeerManager peerManager;
 	private String logs;
@@ -40,8 +40,6 @@ public class WireguardManager {
 		this.wireguardPath = FileManager.getProjectFolder() + FileManager.getConfigValue("WIREGUARDEXE_STD_PATH");
 		this.defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 		this.logDumpPath = FileManager.getProjectFolder() + FileManager.getConfigValue("LOGDUMP_STD_PATH");
-
-		System.out.println(wireguardPath);
 
 		File file = new File(wireguardPath);
 		if (!file.exists() || !file.isFile()) {

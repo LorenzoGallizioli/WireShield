@@ -12,6 +12,8 @@ import com.wireshield.av.FileManager;
 
 public class WFPManager {
 
+    static String cmdPermitBase = FileManager.getProjectFolder() + FileManager.getConfigValue("WFP_PERMIT_BASE_CMD") + " ";
+
     public static boolean createCIDRFile(String defaultPeerPath, String peerName){
         
         Path filePath = Paths.get(defaultPeerPath + peerName + "_permits.csv");
@@ -108,7 +110,7 @@ public class WFPManager {
 
     public static String makeCommand(List<String> cidr){
 
-        String cmd = FileManager.getProjectFolder() + "\\bin\\main.exe -permit ";
+        String cmd = cmdPermitBase;
         for (String c : cidr) {
             cmd += c + " ";
         }

@@ -59,7 +59,7 @@ public class UserInterface extends Application implements PeerOperationListener{
     double peerInfo_leftAnchor = 320.0;
     double peerInfo_topAnchor = 145.0;
     
-    String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    static String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
     // FXML Controls
     @FXML
