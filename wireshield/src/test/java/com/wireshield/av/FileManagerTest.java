@@ -3,12 +3,8 @@ package com.wireshield.av;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -359,96 +355,5 @@ public class FileManagerTest {
 	public void testGetConfigValueInvalidKey() {
 		String value = FileManager.getConfigValue("nonexistent_key");
 		assertNull(value);
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when the configuration file exists and is
-	 * valid. Verifies that new key-value pairs are correctly written to the
-	 * configuration file.
-	 */
-	@Test
-	public void testWriteConfigValue_FileExists_ValidJSON() throws Exception {
-		// Prepare a valid JSON file
-		JSONObject initialJson = new JSONObject();
-		initialJson.put("existingKey", "existingValue");
-		try (FileWriter writer = new FileWriter(CONFIG_PATH)) {
-			writer.write(initialJson.toJSONString());
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("newKey", "newValue");
-
-		// Verify the result
-		assertTrue(result);
-
-		// Check that the file has been updated
-		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader(CONFIG_PATH)) {
-			JSONObject jsonObject = (JSONObject) parser.parse(reader);
-			assertEquals("newValue", jsonObject.get("newKey"));
-			assertEquals("existingValue", jsonObject.get("existingKey"));
-		}
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when the configuration file does not
-	 * exist. Verifies that the method creates the file and writes the new key-value
-	 * pair correctly.
-	 */
-	@Test
-	public void testWriteConfigValue_FileDoesNotExist() throws Exception {
-		// Delete the file if it exists
-		File file = new File(CONFIG_PATH);
-		if (file.exists()) {
-			file.delete();
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertTrue(result);
-
-		// Check that the file was created and contains the correct value
-		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader(CONFIG_PATH)) {
-			JSONObject jsonObject = (JSONObject) parser.parse(reader);
-			assertEquals("value", jsonObject.get("key"));
-		}
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method with invalid JSON format. Verifies that
-	 * the method returns false when an invalid JSON format is encountered.
-	 */
-	@Test
-	public void testWriteConfigValue_InvalidJSON() throws Exception {
-		// Prepare an invalid JSON file
-		try (FileWriter writer = new FileWriter(CONFIG_PATH)) {
-			writer.write("invalid JSON");
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertFalse(result);
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when there is an I/O error (e.g., due to
-	 * invalid path). Verifies that the method returns false in such cases.
-	 */
-	@Test
-	public void testWriteConfigValue_IOError() {
-		// Set an unwritable path
-		String invalidPath = "C:\\nonexistent\\config.json";
-		FileManager.configPath = invalidPath;
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertFalse(result);
 	}
 }

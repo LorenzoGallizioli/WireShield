@@ -41,8 +41,6 @@ public class WireguardManager {
 		this.defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 		this.logDumpPath = FileManager.getProjectFolder() + FileManager.getConfigValue("LOGDUMP_STD_PATH");
 
-		System.out.println(wireguardPath);
-
 		File file = new File(wireguardPath);
 		if (!file.exists() || !file.isFile()) {
 			logger.error("WireGuard executable not found");
