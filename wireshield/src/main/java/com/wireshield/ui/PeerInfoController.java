@@ -29,7 +29,7 @@ import javafx.scene.layout.HBox;
 public class PeerInfoController {
 
     private static final Logger logger = LogManager.getLogger(PeerInfoController.class);
-
+    
     @FXML
     private Label nameValue;
     @FXML

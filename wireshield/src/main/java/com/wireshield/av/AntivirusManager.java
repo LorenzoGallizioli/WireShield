@@ -89,6 +89,7 @@ public class AntivirusManager {
 	            
 		});
 
+		scanThread.setDaemon(true);
 		scanThread.start();
 	}
 
@@ -145,14 +146,14 @@ public class AntivirusManager {
 		scannerStatus = runningStates.DOWN;
 	}
 
-        /*
-         * Stops the ongoing antivirus scan process gracefully.
-         */
-        public void stopScan() {
-        	if (scannerStatus == runningStates.DOWN) {
-            		logger.warn("No scan process is running.");
-            		return;
-        	}
+    /*
+     * Stops the ongoing antivirus scan process gracefully.
+     */
+    public void stopScan() {
+    	if (scannerStatus == runningStates.DOWN) {
+        		logger.warn("No scan process is running.");
+        		return;
+    	}
 
 		if (scanThread != null && scanThread.isAlive()) {
 			scanThread.interrupt();
@@ -161,7 +162,7 @@ public class AntivirusManager {
 				scanThread.join(); // Wait for the thread to terminate
 			} catch (InterruptedException e) {}
 		}
-        }
+    }
 
 	/**
 	 * Sets the ClamAV engine for file analysis.
@@ -213,7 +214,7 @@ public class AntivirusManager {
 			if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
 				target.setWarningClass(source.getWarningClass());
 			}
-		target.setValid(target.isValidReport() && (source.isValidReport()));
+			target.setValid(target.isValidReport() && (source.isValidReport()));
 		}
 	}
 }

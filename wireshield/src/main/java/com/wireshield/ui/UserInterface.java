@@ -49,7 +49,9 @@ public class UserInterface extends Application implements PeerOperationListener{
     
     protected static SystemOrchestrator so;
     protected static WireguardManager wg;
+
     protected String selectedPeer;
+    private Thread logUpdateThread;
 
     private static double xOffset = 0;
     private static double yOffset = 0;
@@ -137,8 +139,8 @@ public class UserInterface extends Application implements PeerOperationListener{
         updatePeerList();
         
         // to be updated
+        setDynamicLogUpdate();
         startDynamicConnectionLogsUpdate();
-        startDynamicLogUpdate();
 
         if (vpnButton.getText().equals("Start VPN")) {
             vpnButton.setDisable(true);
@@ -206,16 +208,22 @@ public class UserInterface extends Application implements PeerOperationListener{
 
     @FXML
     public void viewHome() {
+        this.stopDynamicLogUpdate();
         homePane.toFront();
     }
 
     @FXML
     public void viewLogs() {
+        if(logUpdateThread != null && !logUpdateThread.isAlive()){
+            this.startDynamicLogUpdate();
+        }
         logsPane.toFront();
     }
 
     @FXML
     public void viewAv() {
+        this.stopDynamicLogUpdate();
+
         runningStates avStatus = so.getAVStatus();
         avStatusLabel.setText(avStatus.toString());
         if (avStatus == runningStates.UP) {
@@ -362,13 +370,26 @@ public class UserInterface extends Application implements PeerOperationListener{
      */
     public void onPeerModified(Peer peer) {
 	    File configFile = new File(defaultPeerPath + "/" + peer.getName());
-	       
-	    new Thread(() -> {
+
+        Thread editorThread = new Thread(() -> {
 	        try {
 	            ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());	            
 	            Process process = processBuilder.start();
+
+                // Create a shutdown hook
+                Thread hookThread = new Thread(() -> {
+                    if (process.isAlive()) {
+                        process.destroy();
+                    }
+                });
+
+                // Add a shutdown hook to ensure the process is terminated when the application exits.
+                // When process terminate, the ShutdownHook is removed (no more needed).
+                Runtime.getRuntime().addShutdownHook(hookThread);
 	            
-	            int exitCode = process.waitFor();
+	            process.waitFor();
+
+                Runtime.getRuntime().removeShutdownHook(hookThread);
 	            
 	            Platform.runLater(() -> {
 	            	loadPeersFromPath();
@@ -392,29 +413,27 @@ public class UserInterface extends Application implements PeerOperationListener{
 	                    }
 	                }
 	                
-	             // Find and re-apply the "selected" class to the peer card
                     for (javafx.scene.Node node : peerCardsContainer.getChildren()) {
                         if (node instanceof VBox peerCard) {
-                            // We need to find the right peer card by checking the label content
                             for (javafx.scene.Node cardChild : peerCard.getChildren()) {
                                 if (cardChild instanceof Label cardLabel && 
                                     cardLabel.getStyleClass().contains("peer-card-text-name") && 
                                     cardLabel.getText().equals(selectedPeer)) {
-                                    // This is the card we want to select
                                     peerCard.getStyleClass().add("selected");
                                     break;
                                 }
                             }
                         }
                     }
-                
-	                System.out.println("Editor closed with exit code: " + exitCode + ". UI refresh done.");
 	            });
 	            
 	        } catch (IOException | InterruptedException e) {
 	            e.printStackTrace();
 	        }
-	    }).start();
+	    });
+
+        editorThread.setDaemon(true);
+        editorThread.start();
 	}
     
     /**
@@ -547,18 +566,22 @@ public class UserInterface extends Application implements PeerOperationListener{
      * while preserving the current scroll position.
      * This thread runs as a daemon to ensure it's terminated when the application closes.
      */
-    protected void startDynamicLogUpdate() {
-        Runnable task = () -> {
+    protected void setDynamicLogUpdate() {
+
+        logUpdateThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     String logs = wg.getLog();
+
                     Platform.runLater(() -> {
                         double scrollPosition = logsArea.getScrollTop();
                         logsArea.clear();
                         logsArea.setText(logs);
                         logsArea.setScrollTop(scrollPosition);
                     });
+
                     Thread.sleep(1000);
+                    
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Dynamic log update thread interrupted.");
@@ -567,12 +590,25 @@ public class UserInterface extends Application implements PeerOperationListener{
                     logger.error("Error updating logs dynamically: ", e);
                 }
             }
-        };
+        });
 
-        Thread logUpdateThread = new Thread(task);
         logUpdateThread.setDaemon(true);
+    }
+
+    protected void startDynamicLogUpdate() {
+        if (logUpdateThread.isInterrupted()) {
+            setDynamicLogUpdate();
+        }
         logUpdateThread.start();
     }
+
+    protected void stopDynamicLogUpdate() {
+
+        if (logUpdateThread != null && logUpdateThread.isAlive()) {
+            logUpdateThread.interrupt();
+        }
+    }
+
 
     /**
      * Starts a background thread that periodically updates the connection information displayed in the UI.
@@ -586,7 +622,8 @@ public class UserInterface extends Application implements PeerOperationListener{
      * Updates occur at 1-second intervals to provide near real-time feedback.
      */
     protected void startDynamicConnectionLogsUpdate() {
-        Runnable task = () -> {
+
+        Thread connectionLogThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Platform.runLater(() -> {
@@ -621,9 +658,8 @@ public class UserInterface extends Application implements PeerOperationListener{
                     logger.error("Error updating connection logs: ", e);
                 }
             }
-        };
+        });
 
-        Thread connectionLogThread = new Thread(task);
         connectionLogThread.setDaemon(true);
         connectionLogThread.start();
     }
