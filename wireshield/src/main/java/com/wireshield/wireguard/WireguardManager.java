@@ -32,6 +32,11 @@ public class WireguardManager {
 	private String logs;
 	private Process WFPprocess;
 
+	Thread UpdateWireguardLogsThread;
+	Thread UpdateWireguardLogsThreadHook = new Thread(() -> {
+		UpdateWireguardLogsThread.interrupt();
+	});
+
 	/**
 	 * Private constructor for the WireguardManager class. Initializes paths and
 	 * starts log update thread.
@@ -224,7 +229,7 @@ public class WireguardManager {
 	 * iteration.
 	 */
 	public void startUpdateConnectionStats() {
-		Runnable task = () -> {
+		Thread thread = new Thread(() -> {
 			while (connection.getStatus() == connectionStates.CONNECTED && !Thread.currentThread().isInterrupted()) { // Check interface is up
 				try {
 					
@@ -242,9 +247,9 @@ public class WireguardManager {
 			connection.setLastHandshakeTime(0);
 			connection.setReceivedTraffic(0);
 			connection.setSentTraffic(0);
-		};
+		});
 
-		Thread thread = new Thread(task);
+		thread.setDaemon(true);
 		thread.start();
 	}
 	
@@ -259,7 +264,8 @@ public class WireguardManager {
 	private void updateWireguardLogs(String[] command) throws InterruptedException, IOException {
 		File logFile = new File(logDumpPath);
 	    if (logFile.exists() && logFile.isFile()) {
-	        	
+	        
+			logger.debug(command[0] + " " + command[1] + " " + command[2]);
 	        ProcessBuilder processBuilder = new ProcessBuilder(command);
 			processBuilder.redirectErrorStream(true);
 
@@ -268,6 +274,7 @@ public class WireguardManager {
 	        	
 	        String logDump = FileManager.readFile(logDumpPath);
 	        this.logs = logDump;
+
 	    } else {
 	        logger.error(logDumpPath + " not exits - Creating... ");
 	        if(FileManager.createFile(logDumpPath)) {
@@ -286,17 +293,19 @@ public class WireguardManager {
 	 * thread is interrupted, it stops and logs an error.
 	 */
 	public void startUpdateWireguardLogs() {
-		Runnable task = () -> {
+
+		String[] command = {"cmd.exe", "/c", wireguardPath + " /dumplog > " + logDumpPath};
+
+		UpdateWireguardLogsThread = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted() || connection.getStatus() == connectionStates.CONNECTED) {
 				
-				String[] command = {"cmd.exe", "/c", wireguardPath + " /dumplog > " + logDumpPath};
 				try {
 					
 					updateWireguardLogs(command);
 					Thread.sleep(500);
 					
 				} catch (InterruptedException e) {
-					logger.error("Log updater unexpecly interrupted (InterruptedException) - Stopping Thread...");
+					logger.info("Log updater interrupted (InterruptedException) - Stopping Thread...");
 					Thread.currentThread().interrupt();	
 					
 				} catch (IOException e) {
@@ -304,11 +313,13 @@ public class WireguardManager {
 					Thread.currentThread().interrupt();	
 				}
 			}
-			logger.info("startUpdateWireguardLogs() thread interrupted.");
-		};
+		});
 
-		Thread thread = new Thread(task);
-		thread.start();
+		Runtime.getRuntime().addShutdownHook(UpdateWireguardLogsThreadHook);
+
+		// Set the thread as not a Deamon to ensure log file remains in a consistent state
+		UpdateWireguardLogsThread.setDaemon(false);
+		UpdateWireguardLogsThread.start();
 	}
 
 	/**
@@ -320,9 +331,7 @@ public class WireguardManager {
  	 */
 	public void setUpWFPRules(String command) {
 
-		System.out.println("Command: " + command);
-
-		Runnable task = () -> {
+		Thread thread = new Thread(() -> {
 			try {
 				// Start process
 				WFPprocess = new ProcessBuilder(command.split(" ")).start();
@@ -349,9 +358,8 @@ public class WireguardManager {
 				Thread.currentThread().interrupt();	
 			}
 			logger.info("setUpWFPRules() thread and service interrupted.");
-		};
+		});
 		
-		Thread thread = new Thread(task);
 		thread.setDaemon(true);
 		thread.start();
 	}

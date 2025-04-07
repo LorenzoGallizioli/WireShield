@@ -309,7 +309,8 @@ public class SystemOrchestrator {
      * The thread terminates gracefully when interrupted or when the guardian state changes.
      */
     public void statesGuardian() {
-    	Runnable task = () -> {
+		
+    	Thread thread = new Thread(() -> {
             while (guardianState == runningStates.UP && !Thread.currentThread().isInterrupted()) { // Check interface is up
             	if(wireguardManager.getConnectionStatus() == connectionStates.CONNECTED) {
             		if(antivirusManager.getScannerStatus() == runningStates.DOWN || downloadManager.getMonitorStatus() == runningStates.DOWN) {
@@ -345,11 +346,12 @@ public class SystemOrchestrator {
                 }
             }
             logger.info("startComponentStatesGuardian() thread stopped");
-        };
+        });
         
-        Thread thread = new Thread(task);
         guardianState = runningStates.UP;
-        thread.start();
+        
+		thread.setDaemon(true);
+		thread.start();
     }
     
     /**

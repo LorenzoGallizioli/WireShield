@@ -1,16 +1,23 @@
 package com.wireshield.localfileutils;
 
-import com.wireshield.av.AntivirusManager;
-import com.wireshield.av.FileManager;
-import com.wireshield.enums.runningStates;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.HashSet;
-import java.util.Set;
+import com.wireshield.av.AntivirusManager;
+import com.wireshield.av.FileManager;
+import com.wireshield.enums.runningStates;
 
 /**
  * The DownloadManager class is responsible for: 
@@ -150,6 +157,7 @@ public class DownloadManager {
 			monitorStatus = runningStates.DOWN;
 		});
 
+		monitorThread.setDaemon(true);
 		monitorThread.start(); // Begin monitoring
 	}
 
