@@ -29,7 +29,7 @@ public class Connection {
 
 	// Active interface and path to WireGuard executable
 	private String activeInterface;
-	private String wgPath;
+	private static String wgPath;
 
 	private static final long BYTE = 1L;
     private static final long KILOBYTE = 1024L;

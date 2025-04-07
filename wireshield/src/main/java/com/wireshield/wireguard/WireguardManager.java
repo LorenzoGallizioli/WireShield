@@ -24,9 +24,9 @@ public class WireguardManager {
 	private static final Logger logger = LogManager.getLogger(WireguardManager.class);
 
 	private static WireguardManager instance;
-	private String wireguardPath;
-	private String defaultPeerPath;
-	private String logDumpPath;
+	private static String wireguardPath;
+	private static String defaultPeerPath;
+	private static String logDumpPath;
 	private Connection connection;
 	private PeerManager peerManager;
 	private String logs;
