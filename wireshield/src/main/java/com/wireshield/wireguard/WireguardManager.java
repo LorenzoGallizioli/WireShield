@@ -90,7 +90,10 @@ public class WireguardManager {
 	 * @return True if the interface is successfully started, false otherwise.
 	 */
 	public Boolean setInterfaceUp(String configFileName) {
+
+		logger.info("Starting WireGuard interface with config: " + configFileName);
 		String activeInterface = connection.getActiveInterface();
+
 		if (activeInterface != null) {
 			logger.warn("WireGuard interface is already up.");
 			return false; // Interface is up
@@ -265,7 +268,7 @@ public class WireguardManager {
 		File logFile = new File(logDumpPath);
 	    if (logFile.exists() && logFile.isFile()) {
 	        
-			logger.debug(command[0] + " " + command[1] + " " + command[2]);
+			//logger.debug(command[0] + " " + command[1] + " " + command[2]);
 	        ProcessBuilder processBuilder = new ProcessBuilder(command);
 			processBuilder.redirectErrorStream(true);
 

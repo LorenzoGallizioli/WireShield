@@ -30,12 +30,14 @@ public class AntivirusManager {
 	private List<File> filesToRemove = new ArrayList<>();
 	private List<ScanReport> finalReports = new ArrayList<>();
 	private runningStates scannerStatus;
+	private runningStates clamdStatus;
 
 	private Thread scanThread;
 
 	private AntivirusManager() {
 		logger.info("AntivirusManager initialized.");
 		scannerStatus = runningStates.DOWN;
+		clamAV = ClamAV.getInstance();
 	}
 
 	/**
@@ -80,13 +82,19 @@ public class AntivirusManager {
 			return;
 		}
 
-		scannerStatus = runningStates.UP;
-		logger.info("Starting antivirus scan process...");
-
 		scanThread = new Thread(() -> {
-			
+			scannerStatus = runningStates.UP;
+
+			while(clamdStatus == runningStates.DOWN){
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			};
+
 			performScan();
-	            
+			scannerStatus = runningStates.DOWN;
 		});
 
 		scanThread.setDaemon(true);
@@ -143,7 +151,6 @@ public class AntivirusManager {
 				filesToRemove.add(fileToScan);
 			}
 		}
-		scannerStatus = runningStates.DOWN;
 	}
 
     /*
@@ -164,13 +171,33 @@ public class AntivirusManager {
 		}
     }
 
+
+
 	/**
 	 * Sets the ClamAV engine for file analysis.
 	 *
-	 * @param clamAV the ClamAV instance.
+	 * @param ClamAV the ClamAV instance.
 	 */
 	public void setClamAV(ClamAV clamAV) {
 		this.clamAV = clamAV;
+	}
+
+	/**
+	 * return the ClamAV object.
+	 *
+	 * @return the ClamAV object.
+	 */
+	public ClamAV getClamAV() {
+		return this.clamAV;
+	}
+
+	/**
+	 * Retrieves the current status of the ClamAV service.
+	 *
+	 * @return the clamd service status.
+	 */
+	public runningStates getClamdStatus() {
+		return clamdStatus;
 	}
 
 	/**

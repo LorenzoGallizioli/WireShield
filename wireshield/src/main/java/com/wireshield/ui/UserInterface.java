@@ -172,39 +172,6 @@ public class UserInterface extends Application implements PeerOperationListener{
         
         System.exit(0);
     }
-    
-    /**
-     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
-     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
-     * selected peer configuration.
-     * Updates the UI to reflect the current state.
-     */
-    @FXML
-    public void changeVPNState() {
-        if (so.getConnectionStatus() == connectionStates.CONNECTED) {
-            so.setGuardianState(runningStates.DOWN);
-            so.manageDownload(runningStates.DOWN);
-            so.manageAV(runningStates.DOWN);
-            so.manageVPN(vpnOperations.STOP, null);
-            vpnButton.setText("Start VPN");
-            logger.info("All services are stopped.");
-            
-            // Disable vpnButton if selected peer is been deleted
-            Peer[] peers = wg.getPeerManager().getPeers();
-            Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
-            if(!Arrays.asList(peers).contains(p)) {
-            	vpnButton.setDisable(true);
-            }
-            
-        } else {
-            so.manageVPN(vpnOperations.START, selectedPeer);
-            so.manageAV(runningStates.UP);
-            so.manageDownload(runningStates.UP);
-            so.statesGuardian();
-            vpnButton.setText("Stop VPN");
-            logger.info("All services started successfully.");
-        }
-    }
 
     @FXML
     public void viewHome() {
@@ -224,9 +191,10 @@ public class UserInterface extends Application implements PeerOperationListener{
     public void viewAv() {
         this.stopDynamicLogUpdate();
 
-        runningStates avStatus = so.getAVStatus();
-        avStatusLabel.setText(avStatus.toString());
-        if (avStatus == runningStates.UP) {
+        runningStates scannerStatus = so.getScannerStatus();
+        avStatusLabel.setText(scannerStatus.toString());
+
+        if (scannerStatus == runningStates.UP) {
             List<ScanReport> reports = so.getAntivirusManager().getFinalReports();
             avFilesListView.getItems().clear();
             for (ScanReport report : reports) {
@@ -236,6 +204,41 @@ public class UserInterface extends Application implements PeerOperationListener{
             }
         }
         avPane.toFront();
+    }
+    
+    /**
+     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
+     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
+     * selected peer configuration.
+     * Updates the UI to reflect the current state.
+     */
+    @FXML
+    public void changeVPNState() {
+        if (so.getConnectionStatus() == connectionStates.CONNECTED) {
+            so.setGuardianState(runningStates.DOWN);
+            so.manageDownload(runningStates.DOWN);
+            so.manageAV(runningStates.DOWN);
+            so.manageClamdService(runningStates.DOWN);
+            so.manageVPN(vpnOperations.STOP, null);
+            vpnButton.setText("Start VPN");
+            logger.info("All services stopped successfully.");
+            
+            // Disable vpnButton if selected peer is been deleted
+            Peer[] peers = wg.getPeerManager().getPeers();
+            Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
+            if(!Arrays.asList(peers).contains(p)) {
+            	vpnButton.setDisable(true);
+            }
+            
+        } else {
+            so.manageVPN(vpnOperations.START, selectedPeer);
+            so.manageClamdService(runningStates.UP);
+            so.manageAV(runningStates.UP);
+            so.manageDownload(runningStates.UP);
+            so.statesGuardian();
+            vpnButton.setText("Stop VPN");
+            logger.info("All services started successfully.");
+        }
     }
 
     /**
