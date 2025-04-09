@@ -20,7 +20,7 @@ public class ServicesUtils {
             process.waitFor();
 
             String output = new String(process.getInputStream().readAllBytes());
-            return output.contains("10  WIN32_OWN_PROCESS");
+            return output.contains("WIN32_OWN_PROCESS");
         } catch (Exception e) {
             return false;
         }
@@ -42,9 +42,6 @@ public class ServicesUtils {
             if (exitCode == 0) {
                 return true;
             } else {
-                String errorOutput = new String(process.getErrorStream().readAllBytes());
-                logger.severe(errorOutput);
-
 			    return false;
             }
         } catch (Exception e) {
@@ -88,8 +85,6 @@ public class ServicesUtils {
             if (exitCode == 0) {
                 return true;
             } else {
-                String errorOutput = new String(process.getErrorStream().readAllBytes());
-                logger.severe(errorOutput);
                 return false;
             }
         } catch (Exception e) {

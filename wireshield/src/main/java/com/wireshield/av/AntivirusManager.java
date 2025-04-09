@@ -30,14 +30,13 @@ public class AntivirusManager {
 	private List<File> filesToRemove = new ArrayList<>();
 	private List<ScanReport> finalReports = new ArrayList<>();
 	private runningStates scannerStatus;
-	private runningStates clamdStatus;
 
 	private Thread scanThread;
 
 	private AntivirusManager() {
 		logger.info("AntivirusManager initialized.");
-		scannerStatus = runningStates.DOWN;
-		clamAV = ClamAV.getInstance();
+		this.scannerStatus = runningStates.DOWN;
+		this.clamAV = ClamAV.getInstance();
 	}
 
 	/**
@@ -77,15 +76,15 @@ public class AntivirusManager {
 	 * running, it logs a warning and exits.
 	 */
 	public void startScan() {
-		if (scannerStatus == runningStates.UP) {
+		if (this.scannerStatus == runningStates.UP) {
 			logger.warn("Scan process is already running.");
 			return;
 		}
 
 		scanThread = new Thread(() -> {
-			scannerStatus = runningStates.UP;
+			this.scannerStatus = runningStates.UP;
 
-			while(clamdStatus == runningStates.DOWN){
+			while(clamAV.getClamdState() == runningStates.DOWN){
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e) {
@@ -94,7 +93,7 @@ public class AntivirusManager {
 			};
 
 			performScan();
-			scannerStatus = runningStates.DOWN;
+			this.scannerStatus = runningStates.DOWN;
 		});
 
 		scanThread.setDaemon(true);
@@ -105,12 +104,12 @@ public class AntivirusManager {
 		while (!Thread.currentThread().isInterrupted()) {
 			File fileToScan;
 
-			if (clamAV == null) {
+			if (this.clamAV == null) {
 				logger.error("ClamAV object not exists - Shutting down AV scanner"); 
 				Thread.currentThread().interrupt();		
 			}
 
-			synchronized (scanBuffer) {
+			synchronized (this.scanBuffer) {
 				fileToScan = scanBuffer.poll();
 			}
 
@@ -150,12 +149,12 @@ public class AntivirusManager {
      * Stops the ongoing antivirus scan process gracefully.
      */
     public void stopScan() {
-    	if (scannerStatus == runningStates.DOWN) {
+    	if (this.scannerStatus == runningStates.DOWN) {
         		logger.warn("No scan process is running.");
         		return;
     	}
 
-		if (scanThread != null && scanThread.isAlive()) {
+		if (this.scanThread != null && scanThread.isAlive()) {
 			scanThread.interrupt();
 			
 			try {
@@ -190,7 +189,7 @@ public class AntivirusManager {
 	 * @return the clamd service status.
 	 */
 	public runningStates getClamdStatus() {
-		return clamdStatus;
+		return clamAV.getClamdState();
 	}
 
 	/**
@@ -199,7 +198,7 @@ public class AntivirusManager {
 	 * @return the scanner status.
 	 */
 	public runningStates getScannerStatus() {
-		return scannerStatus;
+		return this.scannerStatus;
 	}
 
 	/**
@@ -208,7 +207,7 @@ public class AntivirusManager {
 	 * @return the list of scan reports.
 	 */
 	public List<ScanReport> getFinalReports() {
-		return finalReports;
+		return this.finalReports;
 	}
 
 	/**
@@ -217,7 +216,7 @@ public class AntivirusManager {
 	 * @return a copy of the scan buffer.
 	 */
 	public synchronized List<File> getScanBuffer() {
-		return new ArrayList<>(scanBuffer);
+		return new ArrayList<>(this.scanBuffer);
 	}
 
 	/**

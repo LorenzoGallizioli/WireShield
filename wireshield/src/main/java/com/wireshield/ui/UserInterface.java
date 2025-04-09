@@ -172,62 +172,6 @@ public class UserInterface extends Application implements PeerOperationListener{
         
         System.exit(0);
     }
-    
-    /**
-     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
-     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
-     * selected peer configuration.
-     * Updates the UI to reflect the current state.
-     */
-    @FXML
-    public void changeVPNState() {
-        if (so.getConnectionStatus() == connectionStates.CONNECTED) {
-            
-            so.setGuardianState(runningStates.DOWN);
-            so.manageDownload(runningStates.DOWN);
-            so.manageAV(runningStates.DOWN);
-
-            so.manageVPN(vpnOperations.STOP, null);
-            while (so.getConnectionStatus() == connectionStates.CONNECTED) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN disconnection.");
-                }
-            }
-
-            vpnButton.setText("Start VPN");
-            logger.info("All services are stopped.");
-            
-            // Disable vpnButton if selected peer is been deleted
-            Peer[] peers = wg.getPeerManager().getPeers();
-            Peer p = wg.getPeerManager().getPeerByName(this.selectedPeer);
-            if(!Arrays.asList(peers).contains(p)) {
-            	vpnButton.setDisable(true);
-            }
-            
-        } else {
-            vpnButton.setDisable(true);
-
-            so.manageVPN(vpnOperations.START, this.selectedPeer);
-            while (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN connection.");
-                }
-            }
-            so.getWireguardManager().startUpdateConnectionStats();
-
-            so.manageAV(runningStates.UP);
-            so.manageDownload(runningStates.UP);
-            so.statesGuardian();
-
-            vpnButton.setDisable(false);
-            vpnButton.setText("Stop VPN");
-            logger.info("All services started successfully.");
-        }
-    }
 
     @FXML
     public void viewHome() {
@@ -260,6 +204,82 @@ public class UserInterface extends Application implements PeerOperationListener{
             }
         }
         avPane.toFront();
+    }
+    
+    /**
+     * Toggles the VPN connection state. If the VPN is currently connected, stops all services
+     * (VPN, antivirus, and download manager). If disconnected, starts all services using the
+     * selected peer configuration.
+     * Updates the UI to reflect the current state.
+     */
+    @FXML
+    public void changeVPNState() {
+        if (so.getConnectionStatus() == connectionStates.CONNECTED) 
+        {    
+            so.setGuardianState(runningStates.DOWN);
+            so.manageDownload(runningStates.DOWN);
+            so.manageAV(runningStates.DOWN);
+
+            so.manageClamdService(runningStates.DOWN);
+            while (so.getAntivirusManager().getClamdStatus() == runningStates.UP) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN connection.");
+                }
+            }
+
+            so.manageVPN(vpnOperations.STOP, null);
+            while (so.getConnectionStatus() == connectionStates.CONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN disconnection.");
+                }
+            }
+
+            vpnButton.setText("Start VPN");
+            logger.info("All services are stopped.");
+            
+            // Disable vpnButton if selected peer is been deleted
+            Peer[] peers = wg.getPeerManager().getPeers();
+            Peer p = wg.getPeerManager().getPeerByName(this.selectedPeer);
+            if(!Arrays.asList(peers).contains(p)) {
+            	vpnButton.setDisable(true);
+            }
+            
+        } 
+        else 
+        {
+            vpnButton.setDisable(true);
+
+            so.manageVPN(vpnOperations.START, this.selectedPeer);
+            while (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN connection.");
+                }
+            }
+            so.getWireguardManager().startUpdateConnectionStats();
+
+            so.manageClamdService(runningStates.UP);
+            while (so.getAntivirusManager().getClamdStatus() == runningStates.DOWN) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN connection.");
+                }
+            }
+
+            so.manageAV(runningStates.UP);
+            so.manageDownload(runningStates.UP);
+            so.statesGuardian();
+
+            vpnButton.setDisable(false);
+            vpnButton.setText("Stop VPN");
+            logger.info("All services started successfully.");
+        }
     }
     
     /**
@@ -678,11 +698,11 @@ public class UserInterface extends Application implements PeerOperationListener{
 
                             connInterfaceLabel.setText("interface: --");
 
-                            if (!sentTrafficLable.getText().equals("0")){
-                                sentTrafficLable.setText("0");
+                            if (!sentTrafficLable.getText().equals("0 B")){
+                                sentTrafficLable.setText("0 B");
                             }
-                            if (!receivedTrafficLabel.getText().equals("0")){
-                                receivedTrafficLabel.setText("0");
+                            if (!receivedTrafficLabel.getText().equals("0 B")){
+                                receivedTrafficLabel.setText("0 B");
                             }
                             if (!lastHandshakeTimeLabel.getText().equals("--")){
                                 lastHandshakeTimeLabel.setText("--");

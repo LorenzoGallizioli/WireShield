@@ -214,9 +214,8 @@ public class SystemOrchestrator {
 	 * @return The current VPN connection status.
 	 */
 	public connectionStates getConnectionStatus() {
-		connectionStates connectionStatus = wireguardManager.getConnectionStatus();
-		logger.debug("Retrieving connection status: {}", connectionStatus);
-		return connectionStatus;
+		//logger.debug("Retrieving connection status: {}", connectionStatus);
+		return wireguardManager.getConnectionStatus();
 	}
 
 	/**
@@ -235,7 +234,7 @@ public class SystemOrchestrator {
 	 * @return The current antivirus status.
 	 */
 	public runningStates getScannerStatus() {
-		logger.debug("Retrieving antivirus status: {}", antivirusManager.getScannerStatus());
+		//logger.debug("Retrieving antivirus status: {}", antivirusManager.getScannerStatus());
 		return antivirusManager.getScannerStatus();
 	}
 	/**
