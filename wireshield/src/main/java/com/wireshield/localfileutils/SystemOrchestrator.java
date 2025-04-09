@@ -175,16 +175,16 @@ public class SystemOrchestrator {
             } else {
                 logger.info("Antivirus service is already stopped.");
             }
-        }
-
-		List<ScanReport> finalReports = antivirusManager.getFinalReports();
-		if (finalReports.isEmpty()) {} 
-		else {
-			logger.info("Printing final scan reports:");
-			for (ScanReport report : finalReports) {
-				report.printReport();
+			
+			List<ScanReport> finalReports = antivirusManager.getFinalReports();
+			if (finalReports.isEmpty()) {} 
+			else {
+				logger.info("Printing final scan reports:");
+				for (ScanReport report : finalReports) {
+					report.printReport();
+				}
 			}
-		}
+        }
 	}
 
 	/**
