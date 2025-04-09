@@ -65,11 +65,11 @@ public class ClamAV implements AVInterface {
 
 		// Check if the file is null or does not exist
 		if (file == null || !file.exists()) {
-			clamavReport = new ScanReport(); // Initialize an error scan report
-			clamavReport.setFile(file); // Associate the (invalid) file with the report
-			clamavReport.setValid(false); // Mark the report as invalid
-			clamavReport.setThreatDetails("File does not exist."); // Add error details
-			clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threat)
+			this.clamavReport = new ScanReport(); // Initialize an error scan report
+			this.clamavReport.setFile(file); // Associate the (invalid) file with the report
+			this.clamavReport.setValid(false); // Mark the report as invalid
+			this.clamavReport.setThreatDetails("File does not exist."); // Add error details
+			this.clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threat)
 
 			// Log appropriate warnings based on file validity
 			if (file == null) {
@@ -119,22 +119,22 @@ public class ClamAV implements AVInterface {
 					break;
 				}
 				
-				clamavReport = new ScanReport();
-				clamavReport.setFile(file);
-				clamavReport.setValid(true);
-				clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
+				this.clamavReport = new ScanReport();
+				this.clamavReport.setFile(file);
+				this.clamavReport.setValid(true);
+				this.clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
 				
 				if (threatDetected) {
-					clamavReport.setThreatDetails(threatDetails);
-					clamavReport.setWarningClass(warningClass.DANGEROUS);
+					this.clamavReport.setThreatDetails(threatDetails);
+					this.clamavReport.setWarningClass(warningClass.DANGEROUS);
 					logger.warn("Threat found, marking as dangerous.");
 				} else if (suspiciousDetected) {
-					clamavReport.setThreatDetails("Suspicious activity detected");
-					clamavReport.setWarningClass(warningClass.SUSPICIOUS);
+					this.clamavReport.setThreatDetails("Suspicious activity detected");
+					this.clamavReport.setWarningClass(warningClass.SUSPICIOUS);
 					logger.warn("Suspicious activity detected, marking as suspicious.");
 				} else {
-					clamavReport.setThreatDetails("No threat detected");
-					clamavReport.setWarningClass(warningClass.CLEAR);
+					this.clamavReport.setThreatDetails("No threat detected");
+					this.clamavReport.setWarningClass(warningClass.CLEAR);
 					logger.info("No threat detected.");
 				}
 				
@@ -142,11 +142,11 @@ public class ClamAV implements AVInterface {
 			}
 				
 		} catch (IOException e) {
-			clamavReport = new ScanReport();
-			clamavReport.setFile(file);
-			clamavReport.setValid(false);
-			clamavReport.setThreatDetails("Error during scan: " + e.getMessage());
-			clamavReport.setWarningClass(warningClass.CLEAR);
+			this.clamavReport = new ScanReport();
+			this.clamavReport.setFile(file);
+			this.clamavReport.setValid(false);
+			this.clamavReport.setThreatDetails("Error during scan: " + e.getMessage());
+			this.clamavReport.setWarningClass(warningClass.CLEAR);
 			logger.error("Error during scan: {}", e.getMessage(), e);
 		}
 	}
@@ -164,6 +164,13 @@ public class ClamAV implements AVInterface {
 			try {
 
 				if (ServicesUtils.serviceExists(serviceName)) {
+
+					if(ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already running.");
+						this.clamdState = runningStates.UP;
+						return;
+					}
+
 					if(ServicesUtils.startService(serviceName)){
 
 						while(!ServicesUtils.isServiceRunning("clamd")){
@@ -175,19 +182,22 @@ public class ClamAV implements AVInterface {
 							}
 						}
 
-						clamdState = runningStates.UP;
+						this.clamdState = runningStates.UP;
 						logger.info("Service " + serviceName + " started successfully.");
 
 					} else {
-						logger.info("Failed to start service " + serviceName + ".");
+						logger.info("Failed to start service " + serviceName);
 					}
+
 				} else {
 					logger.info("Service " + serviceName + " not found.");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+
 			}
 		};
+		
 		Thread clamdServiceThread = new Thread(clamdServiceTask);
 		clamdServiceThread.setDaemon(false);
 		clamdServiceThread.start();
@@ -204,25 +214,28 @@ public class ClamAV implements AVInterface {
 
 			try {
                 if (ServicesUtils.serviceExists(serviceName)) {
-                    if (ServicesUtils.isServiceRunning(serviceName)) {
-
-                        ServicesUtils.stopService(serviceName);
-
-						while(ServicesUtils.isServiceRunning("clamd")){
-							try {
-								Thread.sleep(200);
-							} catch (InterruptedException e) {
-								logger.error("Error while waiting for clamd service to start: {}", e.getMessage());
-								Thread.currentThread().interrupt();
-							}
-						}
-						
-						clamdState = runningStates.DOWN;
-						logger.info("Service " + serviceName + " stopped successfully.");
+                    
+					if (!ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already not running.");
+						this.clamdState = runningStates.DOWN;
+						return;
 					}
+
+                    ServicesUtils.stopService(serviceName);
+
+					while(ServicesUtils.isServiceRunning("clamd")){
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException e) {
+							logger.error("Error while waiting for clamd service to start: {}", e.getMessage());
+							Thread.currentThread().interrupt();
+						}
+					}
+						
+					this.clamdState = runningStates.DOWN;
+					logger.info("Service " + serviceName + " stopped successfully.");
 				}
-				else 
-				{
+				else {
                     logger.info("Service " + serviceName + " not found.");
                 }
             } catch (Exception e) {
@@ -241,6 +254,10 @@ public class ClamAV implements AVInterface {
 	 * @return The scan report, or null if no scan has been performed.
 	 */
 	public ScanReport getReport() {
-		return clamavReport; // Return the most recent scan report
+		return this.clamavReport; // Return the most recent scan report
+	}
+
+	public runningStates getClamdState() {
+		return this.clamdState; // Return the current state of the ClamAV service
 	}
 }
