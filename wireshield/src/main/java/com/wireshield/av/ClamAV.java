@@ -27,7 +27,6 @@ public class ClamAV implements AVInterface {
 	private static ClamAV instance;
 	private ScanReport clamavReport;
 	private runningStates clamdState = runningStates.DOWN; // State of ClamAV service
-	private boolean stopRequestedFlag = false; // Flag for inconsistent state
 
 	/**
 	 * Private constructor to enforce Singleton pattern. Initializes ClamAV and logs
@@ -63,6 +62,7 @@ public class ClamAV implements AVInterface {
 	 *             appropriate error report.
 	 */
 	public void analyze(File file) {
+
 		// Check if the file is null or does not exist
 		if (file == null || !file.exists()) {
 			clamavReport = new ScanReport(); // Initialize an error scan report
@@ -82,77 +82,75 @@ public class ClamAV implements AVInterface {
 		}
 
 		try {
-			// Define the path to the ClamAV executable
-			String clamavPath = "C:\\Program Files\\ClamAV\\clamdscan.exe";
-			logger.info("ClamAV path: {}", clamavPath); // Log the path for debugging purposes
 
-			// Create a ProcessBuilder to execute the ClamAV scan
-			ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
-			processBuilder.redirectErrorStream(true); // Redirect error stream to standard output
-			Process process = processBuilder.start(); // Start the ClamAV process
-
-			// BufferedReader to capture ClamAV's output
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line; // Holds each line of output from ClamAV
-			boolean threatDetected = false; // Flag for detected threats
-			boolean suspiciousDetected = false; // Flag for detected suspicious activity
-			String threatDetails = ""; // To store detailed information about threats
-
-			// Process each line of ClamAV's output
-			while ((line = reader.readLine()) != null) {
-				logger.debug("ClamAV output: {}", line); // Log each line for debugging
-
-				// Check for threats in the output
-				if (line.contains("FOUND")) {
-					threatDetected = true; // Set the threat flag to true
-
-					// Extract threat details from the output line
-					threatDetails = line.substring(line.indexOf(":") + 2, line.lastIndexOf("FOUND")).trim();
-					logger.info("Threat detected: {}", threatDetails); // Log the detected threat
-					break; // Stop processing further lines
-
-				} else if (line.contains("suspicious")) { // Check for suspicious activity
-					suspiciousDetected = true; // Set the suspicious flag to true
-					// Extract details about the suspicious activity
-					threatDetails = line.substring(line.indexOf(":") + 2).trim();
-					logger.info("Suspicious activity detected: {}", threatDetails); // Log suspicious activity
-					break; // Stop processing further lines
-				}
-			}
-
-			// Create and populate the scan report
-			clamavReport = new ScanReport();
-			clamavReport.setFile(file); // Associate the scanned file with the report
-			clamavReport.setValid(true); // Mark the report as valid
-			clamavReport.setThreatDetected(threatDetected || suspiciousDetected); // Set the detection flag
-
-			// Populate the scan report based on the analysis results
-			if (threatDetected) {
-				clamavReport.setThreatDetails(threatDetails); // Add threat details
-				clamavReport.setWarningClass(warningClass.DANGEROUS); // Classify the file as dangerous
-				logger.warn("Threat found, marking as dangerous."); // Log the classification
-			} else if (suspiciousDetected) {
-				clamavReport.setThreatDetails("Suspicious activity detected"); // Add suspicious details
-				clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Classify the file as suspicious
-				logger.warn("Suspicious activity detected, marking as suspicious."); // Log the classification
+			String clamavPath = FileManager.getConfigValue("CLAMAV_STD_PATH");
+			File folder = new File(clamavPath);
+			if (folder.exists() && folder.isDirectory()) {
+				clamavPath += File.separator + "clamdscan.exe";
 			} else {
-				clamavReport.setThreatDetails("No threat detected"); // Indicate no threats
-				clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
-				logger.info("No threat detected."); // Log the result
+				logger.error("ClamAV path is not a directory: {}", clamavPath);
+				return;
 			}
 
-			reader.close(); // Close the reader after processing output
+			ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
+			processBuilder.redirectErrorStream(true);
+			Process process = processBuilder.start();
 
+			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			String line;
+			boolean threatDetected = false;
+			boolean suspiciousDetected = false;
+			String threatDetails = "";
+
+			while ((line = reader.readLine()) != null) {
+				logger.debug("ClamAV output: {}", line);
+
+				if (line.contains("FOUND")) {
+					threatDetected = true;
+
+					threatDetails = line.substring(line.indexOf(":") + 2, line.lastIndexOf("FOUND")).trim();
+					logger.info("Threat detected: {}", threatDetails);
+					break;
+
+				} else if (line.contains("suspicious")) {
+					suspiciousDetected = true;
+					threatDetails = line.substring(line.indexOf(":") + 2).trim();
+					logger.info("Suspicious activity detected: {}", threatDetails);
+					break;
+				}
+				
+				clamavReport = new ScanReport();
+				clamavReport.setFile(file);
+				clamavReport.setValid(true);
+				clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
+				
+				if (threatDetected) {
+					clamavReport.setThreatDetails(threatDetails);
+					clamavReport.setWarningClass(warningClass.DANGEROUS);
+					logger.warn("Threat found, marking as dangerous.");
+				} else if (suspiciousDetected) {
+					clamavReport.setThreatDetails("Suspicious activity detected");
+					clamavReport.setWarningClass(warningClass.SUSPICIOUS);
+					logger.warn("Suspicious activity detected, marking as suspicious.");
+				} else {
+					clamavReport.setThreatDetails("No threat detected");
+					clamavReport.setWarningClass(warningClass.CLEAR);
+					logger.info("No threat detected.");
+				}
+				
+				reader.close();
+			}
+				
 		} catch (IOException e) {
-			// Handle exceptions during the scanning process
-			clamavReport = new ScanReport(); // Create an error scan report
-			clamavReport.setFile(file); // Associate the file with the report
-			clamavReport.setValid(false); // Mark the report as invalid
-			clamavReport.setThreatDetails("Error during scan: " + e.getMessage()); // Add error details
-			clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threats due to error)
-			logger.error("Error during scan: {}", e.getMessage(), e); // Log the exception details
+			clamavReport = new ScanReport();
+			clamavReport.setFile(file);
+			clamavReport.setValid(false);
+			clamavReport.setThreatDetails("Error during scan: " + e.getMessage());
+			clamavReport.setWarningClass(warningClass.CLEAR);
+			logger.error("Error during scan: {}", e.getMessage(), e);
 		}
 	}
+					
 
 	/**
      * Starts the "clamd" service in a daemon thread if it exists.
@@ -177,15 +175,6 @@ public class ClamAV implements AVInterface {
 							}
 						}
 
-						// Start comment block
-						if (stopRequestedFlag){
-							logger.warn("Stop requested during starting");
-							ServicesUtils.stopService(serviceName);
-							stopRequestedFlag = false;
-							return;
-						}
-						// End comment block
-
 						clamdState = runningStates.UP;
 						logger.info("Service " + serviceName + " started successfully.");
 
@@ -209,9 +198,6 @@ public class ClamAV implements AVInterface {
      * Checks for service existence and running state before attempting to stop it.
      */
 	public void stopClamdService(){
-		// Start comment block
-		stopRequestedFlag = true;
-		// End comment block
 
 		Runnable clamdServiceTask = () -> {
 			String serviceName = "clamd";

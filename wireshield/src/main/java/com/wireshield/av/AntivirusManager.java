@@ -110,12 +110,10 @@ public class AntivirusManager {
 				Thread.currentThread().interrupt();		
 			}
 
-			// Retrieve the next file to scan from the buffer
 			synchronized (scanBuffer) {
 				fileToScan = scanBuffer.poll();
 			}
 
-			// Wait for new files if the buffer is empty
 			if (fileToScan == null) {
 				synchronized (this) {
 					try {
@@ -123,27 +121,22 @@ public class AntivirusManager {
 						wait();
 						
 					} catch (InterruptedException e) {
-						// error occurred - Shut down service
 						Thread.currentThread().interrupt();
 					}
 				}
 				continue;
 			}
 						
-			// Create a new scan report for the file
 			ScanReport finalReport = new ScanReport();
 			finalReport.setFile(fileToScan);
 
-			// Analyze the file using ClamAV
 			clamAV.analyze(fileToScan);
 			ScanReport clamAVReport = clamAV.getReport();
 			
 			if (clamAVReport != null) mergeReports(finalReport, clamAVReport);
 
-			// Add the final report to the results list
 			finalReports.add(finalReport);
 
-			// If the file is dangerous or suspicious, take action
 			if (finalReport.getWarningClass() == warningClass.DANGEROUS || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
 				logger.warn("Threat detected in file: {}", fileToScan.getName());
 				
