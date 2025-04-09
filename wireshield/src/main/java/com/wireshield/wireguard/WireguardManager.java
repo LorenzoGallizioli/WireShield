@@ -1,9 +1,7 @@
 package com.wireshield.wireguard;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -89,57 +87,17 @@ public class WireguardManager {
 	 * @param configFileName The name of the configuration file (including extension).
 	 * @return True if the interface is successfully started, false otherwise.
 	 */
-	public Boolean setInterfaceUp(String configFileName) {
-
-		logger.info("Starting WireGuard interface with config: " + configFileName);
+	public void setInterfaceUp(String configFileName) {
 		String activeInterface = connection.getActiveInterface();
 
 		if (activeInterface != null) {
 			logger.warn("WireGuard interface is already up.");
-			return false; // Interface is up
 		}
 
 		String peerNameWithoutExtension = configFileName.contains(".") ? configFileName.substring(0, configFileName.lastIndexOf(".")) : configFileName;
 		setUpWFPRules(WFPManager.makeCommand(WFPManager.getAllCIDR_permit(defaultPeerPath, peerNameWithoutExtension)));
 		
-		int exitCode;
-		
-		try {
-			// Command to start WireGuard interface
-			ProcessBuilder processBuilder = new ProcessBuilder(wireguardPath, "/installtunnelservice", defaultPeerPath + configFileName);
-			Process process = processBuilder.start();
-
-			// Reads the output.
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			
-			String line;
-			while ((line = reader.readLine()) != null) {
-				logger.info(line);
-			}
-
-			// Checks the exit code of the process.
-			exitCode = process.waitFor();
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-			
-		} catch (InterruptedException e) {
-			logger.error("Thread was interrupted while stopping the WireGuard interface.");
-			return false;
-			
-		}
-		
-		if (exitCode == 0) {
-			connection.setStatus(connectionStates.CONNECTED);
-			logger.info("WireGuard interface started.");
-			return true;
-			
-		} else {
-			logger.error("Error starting WireGuard interface.");
-			return false;
-			
-		}
+		connection.setUp(configFileName); // Set the connection with the given config file name
 	}
 
 	/**
@@ -147,54 +105,17 @@ public class WireguardManager {
 	 * 
 	 * @return True if the interface was stopped successfully, false otherwise.
 	 */
-	public Boolean setInterfaceDown() {
+	public void setInterfaceDown() {
 		String interfaceName = connection.getActiveInterface();
 
 		if (interfaceName == null) {
 			logger.info("No active WireGuard interface.");
-			connection.setStatus(connectionStates.DISCONNECTED);
-			return false;
+			return;
 		}
 		
 		setDownWFPRules();
 
-		int exitCode;
-
-		try {
-			// Command to stop WireGuard interface
-			ProcessBuilder processBuilder = new ProcessBuilder(wireguardPath, "/uninstalltunnelservice", interfaceName);
-			Process process = processBuilder.start();
-
-			// Reads the output.
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				logger.info(line);
-			}
-			
-			// Checks the exit code of the process.
-			exitCode = process.waitFor();
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-			
-		} catch (InterruptedException e) {
-			logger.error("Thread was interrupted while stopping the WireGuard interface.");
-			return false;
-			
-		}
-		
-		if (exitCode == 0) {
-			connection.setStatus(connectionStates.DISCONNECTED);
-			logger.info("WireGuard interface stopped.");
-			return true;
-			
-		} else {
-			logger.error("Error stopping WireGuard interface.");
-			return false;
-			
-		}
+		connection.setDown(interfaceName);
 	}
 
 	/**
@@ -238,7 +159,7 @@ public class WireguardManager {
 					
 					// Update connection stats
 					updateConnectionStats();
-					Thread.sleep(1000); // wait
+					Thread.sleep(350); // wait
 					
 				} catch (InterruptedException e) {
 					logger.error("Log updater unexpecly interrupted - Stopping Thread...");

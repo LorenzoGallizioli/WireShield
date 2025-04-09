@@ -87,16 +87,18 @@ public class SystemOrchestrator {
 
 		switch (operation) {
 		case START:
+
+			// waiting staring while loop must be implemented in Userinterface -> on connection state variable
 			wireguardManager.setInterfaceUp(peer);
-			wireguardManager.startUpdateConnectionStats();
 			break;
 
 		case STOP:
+
+			// waiting stopping while loop must be implemented in Userinterface -> on connection state variable
 			wireguardManager.setInterfaceDown();
 			break;
 
 		default:
-			logger.error("Unsupported operation: {}", operation);
 			break;
 		}
 	}
