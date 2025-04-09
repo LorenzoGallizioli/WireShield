@@ -182,25 +182,48 @@ public class UserInterface extends Application implements PeerOperationListener{
     @FXML
     public void changeVPNState() {
         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
+            
             so.setGuardianState(runningStates.DOWN);
             so.manageDownload(runningStates.DOWN);
             so.manageAV(runningStates.DOWN);
+
             so.manageVPN(vpnOperations.STOP, null);
+            while (so.getConnectionStatus() == connectionStates.CONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN disconnection.");
+                }
+            }
+
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
             
             // Disable vpnButton if selected peer is been deleted
             Peer[] peers = wg.getPeerManager().getPeers();
-            Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
+            Peer p = wg.getPeerManager().getPeerByName(this.selectedPeer);
             if(!Arrays.asList(peers).contains(p)) {
             	vpnButton.setDisable(true);
             }
             
         } else {
-            so.manageVPN(vpnOperations.START, selectedPeer);
+            vpnButton.setDisable(true);
+
+            so.manageVPN(vpnOperations.START, this.selectedPeer);
+            while (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN connection.");
+                }
+            }
+            so.getWireguardManager().startUpdateConnectionStats();
+
             so.manageAV(runningStates.UP);
             so.manageDownload(runningStates.UP);
             so.statesGuardian();
+
+            vpnButton.setDisable(false);
             vpnButton.setText("Stop VPN");
             logger.info("All services started successfully.");
         }
@@ -627,35 +650,56 @@ public class UserInterface extends Application implements PeerOperationListener{
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Platform.runLater(() -> {
-                    	
-                        // Connected Interface
-                    	connInterfaceLabel.setText("interface: " + wg.getConnection().getActiveInterface());
-                    	
-                    	// Connection Status
+                    	                    	
                     	connStatusLabel.setText("");
-                    	if(wg.getConnection().getStatus() == connectionStates.CONNECTED) {
+                    	if(so.getConnectionStatus() == connectionStates.CONNECTED) {
+
                     		connStatusLabel.setText("● Connected");
                     		connStatusLabel.setStyle("-fx-text-fill: #DAF7A6");
+
+                            String interf = so.getWireguardManager().getConnection().getActiveInterface();
+                            if(interf == null) {
+                            	connInterfaceLabel.setText("interface: --");
+                            } else {
+                            	connInterfaceLabel.setText("interface: " + interf);
+                            }
+                            
+                            // Transmission                    	
+                    	    sentTrafficLable.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getSentTraffic()));
+                    	    receivedTrafficLabel.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getReceivedTraffic()));
+                    	
+                    	    // HandShake
+                    	    lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(so.getWireguardManager().getConnection().getLastHandshakeTime()));
+
                     	} else {
                     		connStatusLabel.setText("● Disconnected");
                     		connStatusLabel.setStyle("-fx-text-fill: #FF5733");
+
+                            connInterfaceLabel.setText("interface: --");
+
+                            if (!sentTrafficLable.getText().equals("0")){
+                                sentTrafficLable.setText("0");
+                            }
+                            if (!receivedTrafficLabel.getText().equals("0")){
+                                receivedTrafficLabel.setText("0");
+                            }
+                            if (!lastHandshakeTimeLabel.getText().equals("--")){
+                                lastHandshakeTimeLabel.setText("--");
+                            }
                     	}
-                    	
-                        // Transmission                    	
-                    	sentTrafficLable.setText(Connection.formatBytes(wg.getConnection().getSentTraffic()));
-                    	receivedTrafficLabel.setText(Connection.formatBytes(wg.getConnection().getReceivedTraffic()));
-                    	
-                    	// HandShake
-                    	lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(wg.getConnection().getLastHandshakeTime()));
-                        
+
                     });
-                    Thread.sleep(1000);
+
+                    Thread.sleep(500);
+
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Dynamic connection logs update thread interrupted.");
+
                 } catch (Exception e) {
                     Thread.currentThread().interrupt();
                     logger.error("Error updating connection logs: ", e);
+
                 }
             }
         });
