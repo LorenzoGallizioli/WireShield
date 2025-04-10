@@ -177,5 +177,20 @@ public class FileManager {
 			return null;
         }
     }
+
+	public static Boolean setConfigValue(String key, String value) {
+		Properties prop = new Properties();
+		try (FileInputStream input = new FileInputStream(configPath)) {
+			prop.load(input);
+			prop.setProperty(key, value);
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(configPath))) {
+				prop.store(writer, null);
+				return true;
+			}
+		} catch (IOException e) {
+			logger.error("Error setting config value: {}", e.getMessage(), e);
+			return false;
+		}
+	}
 	
 }
