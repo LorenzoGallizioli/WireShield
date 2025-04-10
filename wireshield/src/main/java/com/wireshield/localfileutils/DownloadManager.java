@@ -187,18 +187,12 @@ public class DownloadManager {
                             if (!detectedFiles.contains(fileName)) {
                                 detectedFiles.add(fileName);
                                 logger.info("New file detected: {}", newFile.getName());
-                                // Rinominare il file appena viene rilevato
-                                FileManager.quarantineFile(newFile);
-                                // Bloccare il file appena viene rilevato
-                                boolean isBlocked = FileManager.blockFileExecution(newFile);
-                                if (isBlocked) {
-                                    logger.info("File {} is blocked from execution.", newFile.getName());
+                                File quarantinedFile = antivirusManager.moveToQuarantine(newFile);
+                                if (quarantinedFile != null) {
+                                    antivirusManager.addFileToScanBuffer(quarantinedFile);  // Invii già la versione bloccata e spostata
                                 } else {
-                                    logger.error("Failed to block the file: {}", newFile.getName());
+                                    logger.error("Failed to quarantine the file: {}", newFile.getName());
                                 }
-
-                                // Ora possiamo inviarlo per la scansione antivirus
-                                antivirusManager.addFileToScanBuffer(newFile); // 🔬 Mandalo a ClamAV
                             }
                         }
                     }

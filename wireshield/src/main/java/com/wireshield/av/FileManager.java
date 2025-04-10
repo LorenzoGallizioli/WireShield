@@ -247,64 +247,55 @@ public class FileManager {
         }
     }
 
-    // Other methods (createFile, writeFile, readFile, etc.) remain unchanged.
     /**
-     * Mette un file in quarantena rinominandolo e bloccandone l'esecuzione. Il
-     * file sarà rinominato con un suffisso che lo identifica chiaramente come
-     * in quarantena.
+     * Blocca l'esecuzione automatica di un file rinominandolo e impedendone
+     * l'esecuzione tramite permessi. Il file sarà rinominato con un suffisso
+     * che lo identifica chiaramente come bloccato.
      *
-     * @param file il file da mettere in quarantena
+     * @param file il file da bloccare
      * @return il file rinominato, oppure null in caso di errore
      */
-    public static File quarantineFile(File file) {
+    public static File blockFileExecution(File file) {
         if (file == null || !file.exists()) {
-            logger.warn("File non valido per la quarantena: {}", file);
+            logger.warn("File non valido per il blocco esecuzione: {}", file);
             return null;
         }
 
-        // Rinominare il file con un suffisso ".quarantine" per indicare che è sotto analisi.
-        String quarantinedFileName = file.getName() + ".quarantine";
-        File quarantinedFile = new File(file.getParent(), quarantinedFileName);
+        // Rinominare il file con un suffisso ".blocked" per indicare che l'esecuzione è disabilitata.
+        String blockedFileName = file.getName() + ".blocked";
+        File blockedFile = new File(file.getParent(), blockedFileName);
 
-        if (file.renameTo(quarantinedFile)) {
-            logger.info("File spostato in quarantena: {}", quarantinedFile.getAbsolutePath());
-
-            // Bloccare l'esecuzione del file, impedendo l'accesso e l'esecuzione.
-            if (blockFileExecution(quarantinedFile)) {
-                logger.info("File messo in quarantena e l'esecuzione è stata bloccata.");
-            } else {
-                logger.error("Impossibile bloccare l'esecuzione del file in quarantena.");
-            }
-            return quarantinedFile;
+        if (file.renameTo(blockedFile)) {
+            logger.info("File rinominato per bloccare l'esecuzione: {}", blockedFile.getAbsolutePath());
+            return blockedFile;
         } else {
-            logger.error("Impossibile spostare il file in quarantena: {}", file.getAbsolutePath());
+            logger.error("Impossibile rinominare il file per il blocco dell'esecuzione: {}", file.getAbsolutePath());
             return null;
         }
     }
 
     /**
-     * Ripristina un file precedentemente messo in quarantena. Il suffisso
-     * ".quarantine" viene rimosso per ripristinare il nome originale del file.
+     * Ripristina un file precedentemente bloccato, rimuovendo il suffisso
+     * ".blocked" e sbloccandone l'esecuzione.
      *
-     * @param quarantinedFile il file con estensione .quarantine
+     * @param blockedFile il file con estensione .blocked
      * @return il file ripristinato, oppure null in caso di errore
      */
-    public static File releaseFromQuarantine(File quarantinedFile) {
-        if (quarantinedFile == null || !quarantinedFile.exists() || !quarantinedFile.getName().endsWith(".quarantine")) {
-            logger.warn("File non valido o non in quarantena: {}", quarantinedFile);
+    public static File unblockFileExecution(File blockedFile) {
+        if (blockedFile == null || !blockedFile.exists() || !blockedFile.getName().endsWith(".blocked")) {
+            logger.warn("File non valido o non bloccato: {}", blockedFile);
             return null;
         }
 
-        // Ripristinare il nome del file rimuovendo il suffisso ".quarantine"
-        String originalName = quarantinedFile.getName().replaceFirst("\\.quarantine$", "");
-        File restoredFile = new File(quarantinedFile.getParent(), originalName);
+        // Ripristinare il nome originale del file rimuovendo il suffisso ".blocked"
+        String originalName = blockedFile.getName().replaceFirst("\\.blocked$", "");
+        File restoredFile = new File(blockedFile.getParent(), originalName);
 
-        if (quarantinedFile.renameTo(restoredFile)) {
-            unblockFileExecution(restoredFile);
-            logger.info("File ripristinato dalla quarantena: {}", restoredFile.getAbsolutePath());
+        if (blockedFile.renameTo(restoredFile)) {
+            logger.info("File ripristinato al suo nome originale: {}", restoredFile.getAbsolutePath());
             return restoredFile;
         } else {
-            logger.error("Errore nel ripristino del file: {}", quarantinedFile.getAbsolutePath());
+            logger.error("Errore nel ripristino del file bloccato: {}", blockedFile.getAbsolutePath());
             return null;
         }
     }
@@ -316,7 +307,7 @@ public class FileManager {
      * @param file il file da bloccare
      * @return true se il blocco ha successo, false altrimenti
      */
-    public static boolean blockFileExecution(File file) {
+    public static boolean blockFileAccess(File file) {
         if (file == null || !file.exists()) {
             logger.warn("File non esistente o nullo: {}", file);
             return false;
@@ -328,14 +319,14 @@ public class FileManager {
             int exitCode = process.waitFor();
 
             if (exitCode == 0) {
-                logger.info("Esecuzione bloccata per il file: {}", file.getAbsolutePath());
+                logger.info("Permessi di esecuzione negati per il file: {}", file.getAbsolutePath());
                 return true;
             } else {
-                logger.error("Errore nel blocco esecuzione (codice {}): {}", exitCode, file.getAbsolutePath());
+                logger.error("Errore durante il blocco dei permessi (codice {}): {}", exitCode, file.getAbsolutePath());
             }
         } catch (IOException | InterruptedException e) {
-            logger.error("Errore durante il blocco del file: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt(); // buona pratica per InterruptedException
+            logger.error("Eccezione durante il blocco del file: {}", e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
 
         return false;
@@ -347,7 +338,7 @@ public class FileManager {
      * @param file il file da sbloccare
      * @return true se lo sblocco ha successo, false altrimenti
      */
-    public static boolean unblockFileExecution(File file) {
+    public static boolean unblockFileAccess(File file) {
         if (file == null || !file.exists()) {
             logger.warn("File non esistente o nullo: {}", file);
             return false;
@@ -359,13 +350,13 @@ public class FileManager {
             int exitCode = process.waitFor();
 
             if (exitCode == 0) {
-                logger.info("Esecuzione sbloccata per il file: {}", file.getAbsolutePath());
+                logger.info("Permessi di esecuzione ripristinati per il file: {}", file.getAbsolutePath());
                 return true;
             } else {
-                logger.error("Errore nello sblocco esecuzione (codice {}): {}", exitCode, file.getAbsolutePath());
+                logger.error("Errore durante lo sblocco dei permessi (codice {}): {}", exitCode, file.getAbsolutePath());
             }
         } catch (IOException | InterruptedException e) {
-            logger.error("Errore durante lo sblocco del file: {}", e.getMessage(), e);
+            logger.error("Eccezione durante lo sblocco del file: {}", e.getMessage(), e);
             Thread.currentThread().interrupt();
         }
 
@@ -373,12 +364,13 @@ public class FileManager {
     }
 
     /**
-     * Verifica se un file è stato messo in quarantena.
+     * Verifica se un file ha l'estensione ".blocked", quindi è bloccato per
+     * l'esecuzione.
      *
      * @param file il file da verificare
-     * @return true se il file è in quarantena, false altrimenti
+     * @return true se il file è bloccato, false altrimenti
      */
-    public static boolean isInQuarantine(File file) {
-        return file != null && file.getName().endsWith(".quarantine");
+    public static boolean isExecutionBlocked(File file) {
+        return file != null && file.getName().endsWith(".blocked");
     }
 }
