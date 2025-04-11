@@ -92,6 +92,7 @@ public class ClamAV implements AVInterface {
 				return;
 			}
 
+			logger.info("cmd: {}", clamavPath + " " + file.getAbsolutePath());
 			ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
 			processBuilder.redirectErrorStream(true);
 			Process process = processBuilder.start();
@@ -118,29 +119,29 @@ public class ClamAV implements AVInterface {
 					logger.info("Suspicious activity detected: {}", threatDetails);
 					break;
 				}
-				
-				this.clamavReport = new ScanReport();
-				this.clamavReport.setFile(file);
-				this.clamavReport.setValid(true);
-				this.clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
-				
-				if (threatDetected) {
-					this.clamavReport.setThreatDetails(threatDetails);
-					this.clamavReport.setWarningClass(warningClass.DANGEROUS);
-					logger.warn("Threat found, marking as dangerous.");
-				} else if (suspiciousDetected) {
-					this.clamavReport.setThreatDetails("Suspicious activity detected");
-					this.clamavReport.setWarningClass(warningClass.SUSPICIOUS);
-					logger.warn("Suspicious activity detected, marking as suspicious.");
-				} else {
-					this.clamavReport.setThreatDetails("No threat detected");
-					this.clamavReport.setWarningClass(warningClass.CLEAR);
-					logger.info("No threat detected.");
-				}
-				
-				reader.close();
 			}
 				
+			this.clamavReport = new ScanReport();
+			this.clamavReport.setFile(file);
+			this.clamavReport.setValid(true);
+			this.clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
+			
+			if (threatDetected) {
+				this.clamavReport.setThreatDetails(threatDetails);
+				this.clamavReport.setWarningClass(warningClass.DANGEROUS);
+				logger.warn("Threat found, marking as dangerous.");
+			} else if (suspiciousDetected) {
+				this.clamavReport.setThreatDetails("Suspicious activity detected");
+				this.clamavReport.setWarningClass(warningClass.SUSPICIOUS);
+				logger.warn("Suspicious activity detected, marking as suspicious.");
+			} else {
+				this.clamavReport.setThreatDetails("No threat detected");
+				this.clamavReport.setWarningClass(warningClass.CLEAR);
+				logger.info("No threat detected.");
+			}
+
+			reader.close();
+
 		} catch (IOException e) {
 			this.clamavReport = new ScanReport();
 			this.clamavReport.setFile(file);
@@ -200,6 +201,18 @@ public class ClamAV implements AVInterface {
 		
 		Thread clamdServiceThread = new Thread(clamdServiceTask);
 		clamdServiceThread.setDaemon(false);
+
+		// add shutdown hook to stop the service when the application exits
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
+
+			logger.info("shook: clamd service is not running");
+			if(ServicesUtils.isServiceRunning("clamd")){
+				logger.info("Shutdown hook triggered. Stopping clamd service.");
+				stopClamdService();
+			}
+		}));
+
 		clamdServiceThread.start();
 	}
 
