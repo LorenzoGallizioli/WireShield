@@ -301,69 +301,6 @@ public class FileManager {
     }
 
     /**
-     * Blocca l'esecuzione di un file tramite icacls negando i permessi di Read
-     * ed Execute.
-     *
-     * @param file il file da bloccare
-     * @return true se il blocco ha successo, false altrimenti
-     */
-    public static boolean blockFileAccess(File file) {
-        if (file == null || !file.exists()) {
-            logger.warn("File non esistente o nullo: {}", file);
-            return false;
-        }
-
-        try {
-            ProcessBuilder builder = new ProcessBuilder("icacls", file.getAbsolutePath(), "/deny", "Everyone:RX");
-            Process process = builder.start();
-            int exitCode = process.waitFor();
-
-            if (exitCode == 0) {
-                logger.info("Permessi di esecuzione negati per il file: {}", file.getAbsolutePath());
-                return true;
-            } else {
-                logger.error("Errore durante il blocco dei permessi (codice {}): {}", exitCode, file.getAbsolutePath());
-            }
-        } catch (IOException | InterruptedException e) {
-            logger.error("Eccezione durante il blocco del file: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        }
-
-        return false;
-    }
-
-    /**
-     * Sblocca l'esecuzione di un file rimuovendo il deny con icacls.
-     *
-     * @param file il file da sbloccare
-     * @return true se lo sblocco ha successo, false altrimenti
-     */
-    public static boolean unblockFileAccess(File file) {
-        if (file == null || !file.exists()) {
-            logger.warn("File non esistente o nullo: {}", file);
-            return false;
-        }
-
-        try {
-            ProcessBuilder builder = new ProcessBuilder("icacls", file.getAbsolutePath(), "/remove:d", "Everyone");
-            Process process = builder.start();
-            int exitCode = process.waitFor();
-
-            if (exitCode == 0) {
-                logger.info("Permessi di esecuzione ripristinati per il file: {}", file.getAbsolutePath());
-                return true;
-            } else {
-                logger.error("Errore durante lo sblocco dei permessi (codice {}): {}", exitCode, file.getAbsolutePath());
-            }
-        } catch (IOException | InterruptedException e) {
-            logger.error("Eccezione durante lo sblocco del file: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        }
-
-        return false;
-    }
-
-    /**
      * Verifica se un file ha l'estensione ".blocked", quindi è bloccato per
      * l'esecuzione.
      *

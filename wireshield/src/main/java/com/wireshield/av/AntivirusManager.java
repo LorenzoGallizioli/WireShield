@@ -4,11 +4,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -287,9 +295,48 @@ public class AntivirusManager {
         try {
             if (!Files.exists(quarantineDir)) {
                 Files.createDirectories(quarantineDir);
+
                 // Rendi la cartella nascosta in Windows
                 Files.setAttribute(quarantineDir, "dos:hidden", true);
                 logger.info("Creata cartella di quarantena: {}", quarantineDir);
+
+                try {
+                    AclFileAttributeView aclAttrView = Files.getFileAttributeView(quarantineDir, AclFileAttributeView.class);
+
+                    if (aclAttrView != null) {
+                        // Servizio per ottenere l'utente dal sistema
+                        UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+
+                        // Ottenere l'utente corrente (che è amministratore perché il programma è eseguito con privilegi di amministratore)
+                        UserPrincipal currentUser = lookupService.lookupPrincipalByName(System.getProperty("user.name"));
+
+                        // Permessi completi per il programma (amministratore) – lettura, scrittura, cancellazione
+                        AclEntry fullAccess = AclEntry.newBuilder()
+                                .setType(AclEntryType.ALLOW)
+                                .setPrincipal(currentUser) // Il programma amministratore
+                                .setPermissions(AclEntryPermission.values()) // Permessi completi
+                                .build();
+
+                        // Sola lettura per **tutti** gli altri utenti (sia locali che non locali)
+                        AclEntry readOnlyAccess = AclEntry.newBuilder()
+                                .setType(AclEntryType.ALLOW)
+                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone")) // Applica la lettura a tutti gli utenti
+                                .setPermissions(
+                                        AclEntryPermission.READ_DATA,
+                                        AclEntryPermission.READ_ATTRIBUTES,
+                                        AclEntryPermission.READ_ACL
+                                )
+                                .build();
+
+                        // Imposta le ACL per la cartella di quarantena:
+                        // - Permessi completi per il programma (amministratore)
+                        // - Sola lettura per **tutti** gli altri utenti
+                        aclAttrView.setAcl(Arrays.asList(fullAccess, readOnlyAccess));
+                        logger.info("ACL impostate: accesso completo per il programma (amministratore), sola lettura per tutti gli utenti.");
+                    }
+                } catch (IOException e) {
+                    logger.warn("Errore nell'impostazione degli ACL sulla quarantena", e);
+                }
             }
 
             // Genera un nome file univoco
@@ -372,7 +419,7 @@ public class AntivirusManager {
         }
     }
 
-    public File restoreToQuarantine(File quarantinedFile) {
+    public File restoreFromQuarantine(File quarantinedFile) {
         if (quarantinedFile == null || !quarantinedFile.exists()) {
             logger.warn("File non valido per il ripristino dalla quarantena: {}", quarantinedFile);
             return null;
@@ -397,29 +444,19 @@ public class AntivirusManager {
                 return null;
             }
 
-            // 2. Costruisci il nome ripristinato (rimuove .blocked)
-            String originalFileName = quarantinedFile.getName().replaceFirst("\\.blocked$", "");
-            Path targetPath = Paths.get(originalPath).getParent().resolve(originalFileName);
-
-            // 3. Sposta il file nella posizione originale
+            //2. Sposta il file nella posizione originale
+            Path targetPath = Paths.get(originalPath);
             Files.createDirectories(targetPath.getParent()); // assicura esistenza cartella
             Files.move(quarantinedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             File restoredFile = targetPath.toFile();
 
-            // 4. Sblocca esecuzione e accesso
-            boolean accessUnblocked = FileManager.unblockFileAccess(restoredFile);
-            File unblockedFile = FileManager.unblockFileExecution(restoredFile);
-
-            // 5. Elimina metadati
+            // 3. Elimina metadati
             Files.deleteIfExists(metadataPath);
 
-            logger.info("File ripristinato dalla quarantena e sbloccato: {} (accesso: {}, esecuzione: {})",
-                    unblockedFile != null ? unblockedFile.getAbsolutePath() : restoredFile.getAbsolutePath(),
-                    accessUnblocked,
-                    unblockedFile != null);
+            logger.info("File ripristinato dalla quarantena: {}", restoredFile.getAbsolutePath());
 
-            return unblockedFile != null ? unblockedFile : restoredFile;
+            return restoredFile;
 
         } catch (IOException e) {
             logger.error("Errore durante il ripristino del file dalla quarantena", e);

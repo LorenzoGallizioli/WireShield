@@ -17,7 +17,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.wireshield.av.AntivirusManager;
+import com.wireshield.av.ClamAV;
 import com.wireshield.av.FileManager;
+import com.wireshield.av.ScanReport;
 import com.wireshield.enums.runningStates;
 
 /**
@@ -56,7 +58,7 @@ public class DownloadManager {
      * Returns the singleton instance of DownloadManager.
      *
      * @param antivirusManager The AntivirusManager instance (only required for
-     * first initialization).
+     *                         first initialization).
      * @return The single instance of DownloadManager.
      */
     public static synchronized DownloadManager getInstance(AntivirusManager antivirusManager) {
@@ -74,7 +76,7 @@ public class DownloadManager {
      */
     public String getDefaultDownloadPath() {
         String userHome = System.getProperty("user.home");
-        String[] possibleFolders = {"Download", "Downloads", "Scaricati"};
+        String[] possibleFolders = { "Download", "Downloads", "Scaricati" };
 
         // Checks if at least one folder exists
         for (String folder : possibleFolders) {
@@ -85,7 +87,8 @@ public class DownloadManager {
             }
         }
 
-        // L'inserimento di una cartella manualmente tramite console è temporanea, in quanto verrà implementata nel UI mediante una finestra
+        // L'inserimento di una cartella manualmente tramite console è temporanea, in
+        // quanto verrà implementata nel UI mediante una finestra
         // If no valid folder is found, ask the user to enter one
         Scanner scanner = new Scanner(System.in);
         String userPath = null;
@@ -189,7 +192,7 @@ public class DownloadManager {
                                 logger.info("New file detected: {}", newFile.getName());
                                 File quarantinedFile = antivirusManager.moveToQuarantine(newFile);
                                 if (quarantinedFile != null) {
-                                    antivirusManager.addFileToScanBuffer(quarantinedFile);  // Invii già la versione bloccata e spostata
+                                    antivirusManager.addFileToScanBuffer(quarantinedFile);
                                 } else {
                                     logger.error("Failed to quarantine the file: {}", newFile.getName());
                                 }
@@ -206,6 +209,7 @@ public class DownloadManager {
         });
 
         monitorThread.start(); // Begin monitoring
+
     }
 
     /**
@@ -263,17 +267,35 @@ public class DownloadManager {
         return downloadPath;
     }
 
+    /**
+     * Esegue un test del flusso di lavoro completo del DownloadManager,
+     * dall'avvio del monitoraggio alla scansione di un file scaricato,
+     * fino alla gestione delle azioni successive in base ai risultati
+     * dell'analisi. Verranno visualizzati messaggi per l'utente che
+     * indicheranno come procedere durante il test.
+     */
+
     public static void main(String[] args) {
-        // Crea un'istanza di AntivirusManager
-        AntivirusManager antivirusManager = AntivirusManager.getInstance();
+        try {
 
-        // Ottieni l'istanza di DownloadManager
-        DownloadManager downloadManager = DownloadManager.getInstance(antivirusManager);
+            // Ottieni l'istanza di ClamAV
+            ClamAV clamAV = ClamAV.getInstance();
 
-        // Forziamo il percorso di download a un percorso non valido per simulare l'errore
-        // String invalidPath = "C:/CartellaNonEsistente/Downloads";
-        // downloadManager.downloadPath = invalidPath;
-        // Avvia il monitoraggio della cartella di download (questo farà il check della cartella)
-        downloadManager.startMonitoring();
+            // Ottieni l'istanza di AntivirusManager
+            AntivirusManager antivirusManager = AntivirusManager.getInstance();
+            antivirusManager.setClamAV(clamAV); // <-- imposta l'istanza da usare
+
+            // Ottieni l'istanza di DownloadManager
+            DownloadManager downloadManager = DownloadManager.getInstance(antivirusManager);
+
+            // Avvia lo scanner antivirus
+            antivirusManager.startScan();
+
+            // Avvia il monitoraggio della cartella
+            downloadManager.startMonitoring();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
