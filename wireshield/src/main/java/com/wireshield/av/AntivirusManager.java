@@ -35,7 +35,8 @@ public class AntivirusManager {
 
 	private AntivirusManager() {
 		logger.info("AntivirusManager initialized.");
-		scannerStatus = runningStates.DOWN;
+		this.scannerStatus = runningStates.DOWN;
+		this.clamAV = ClamAV.getInstance();
 	}
 
 	/**
@@ -75,18 +76,24 @@ public class AntivirusManager {
 	 * running, it logs a warning and exits.
 	 */
 	public void startScan() {
-		if (scannerStatus == runningStates.UP) {
+		if (this.scannerStatus == runningStates.UP) {
 			logger.warn("Scan process is already running.");
 			return;
 		}
 
-		scannerStatus = runningStates.UP;
-		logger.info("Starting antivirus scan process...");
-
 		scanThread = new Thread(() -> {
-			
+			this.scannerStatus = runningStates.UP;
+
+			while(clamAV.getClamdState() == runningStates.DOWN){
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			};
+
 			performScan();
-	            
+			this.scannerStatus = runningStates.DOWN;
 		});
 
 		scanThread.setDaemon(true);
@@ -97,17 +104,15 @@ public class AntivirusManager {
 		while (!Thread.currentThread().isInterrupted()) {
 			File fileToScan;
 
-			if (clamAV == null) {
+			if (this.clamAV == null) {
 				logger.error("ClamAV object not exists - Shutting down AV scanner"); 
 				Thread.currentThread().interrupt();		
 			}
 
-			// Retrieve the next file to scan from the buffer
-			synchronized (scanBuffer) {
+			synchronized (this.scanBuffer) {
 				fileToScan = scanBuffer.poll();
 			}
 
-			// Wait for new files if the buffer is empty
 			if (fileToScan == null) {
 				synchronized (this) {
 					try {
@@ -115,27 +120,22 @@ public class AntivirusManager {
 						wait();
 						
 					} catch (InterruptedException e) {
-						// error occurred - Shut down service
 						Thread.currentThread().interrupt();
 					}
 				}
 				continue;
 			}
 						
-			// Create a new scan report for the file
 			ScanReport finalReport = new ScanReport();
 			finalReport.setFile(fileToScan);
 
-			// Analyze the file using ClamAV
 			clamAV.analyze(fileToScan);
 			ScanReport clamAVReport = clamAV.getReport();
 			
 			if (clamAVReport != null) mergeReports(finalReport, clamAVReport);
 
-			// Add the final report to the results list
 			finalReports.add(finalReport);
 
-			// If the file is dangerous or suspicious, take action
 			if (finalReport.getWarningClass() == warningClass.DANGEROUS || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
 				logger.warn("Threat detected in file: {}", fileToScan.getName());
 				
@@ -143,19 +143,18 @@ public class AntivirusManager {
 				filesToRemove.add(fileToScan);
 			}
 		}
-		scannerStatus = runningStates.DOWN;
 	}
 
     /*
      * Stops the ongoing antivirus scan process gracefully.
      */
     public void stopScan() {
-    	if (scannerStatus == runningStates.DOWN) {
+    	if (this.scannerStatus == runningStates.DOWN) {
         		logger.warn("No scan process is running.");
         		return;
     	}
 
-		if (scanThread != null && scanThread.isAlive()) {
+		if (this.scanThread != null && scanThread.isAlive()) {
 			scanThread.interrupt();
 			
 			try {
@@ -164,13 +163,33 @@ public class AntivirusManager {
 		}
     }
 
+
+
 	/**
 	 * Sets the ClamAV engine for file analysis.
 	 *
-	 * @param clamAV the ClamAV instance.
+	 * @param ClamAV the ClamAV instance.
 	 */
 	public void setClamAV(ClamAV clamAV) {
 		this.clamAV = clamAV;
+	}
+
+	/**
+	 * return the ClamAV object.
+	 *
+	 * @return the ClamAV object.
+	 */
+	public ClamAV getClamAV() {
+		return this.clamAV;
+	}
+
+	/**
+	 * Retrieves the current status of the ClamAV service.
+	 *
+	 * @return the clamd service status.
+	 */
+	public runningStates getClamdStatus() {
+		return clamAV.getClamdState();
 	}
 
 	/**
@@ -179,7 +198,7 @@ public class AntivirusManager {
 	 * @return the scanner status.
 	 */
 	public runningStates getScannerStatus() {
-		return scannerStatus;
+		return this.scannerStatus;
 	}
 
 	/**
@@ -188,7 +207,7 @@ public class AntivirusManager {
 	 * @return the list of scan reports.
 	 */
 	public List<ScanReport> getFinalReports() {
-		return finalReports;
+		return this.finalReports;
 	}
 
 	/**
@@ -197,7 +216,7 @@ public class AntivirusManager {
 	 * @return a copy of the scan buffer.
 	 */
 	public synchronized List<File> getScanBuffer() {
-		return new ArrayList<>(scanBuffer);
+		return new ArrayList<>(this.scanBuffer);
 	}
 
 	/**

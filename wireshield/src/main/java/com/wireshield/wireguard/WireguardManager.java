@@ -89,6 +89,7 @@ public class WireguardManager {
 	 */
 	public void setInterfaceUp(String configFileName) {
 		String activeInterface = connection.getActiveInterface();
+
 		if (activeInterface != null) {
 			logger.warn("WireGuard interface is already up.");
 		}
