@@ -1,15 +1,4 @@
 package com.wireshield.ui;
-import com.wireshield.av.FileManager;
-import com.wireshield.av.ScanReport;
-import com.wireshield.enums.connectionStates;
-import com.wireshield.enums.runningStates;
-import com.wireshield.enums.vpnOperations;
-import com.wireshield.localfileutils.SystemOrchestrator;
-import com.wireshield.wireguard.Connection;
-import com.wireshield.wireguard.Peer;
-import com.wireshield.wireguard.PeerManager;
-import com.wireshield.wireguard.WireguardManager;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,34 +13,55 @@ import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.wireshield.av.FileManager;
+import com.wireshield.av.ScanReport;
+import com.wireshield.enums.connectionStates;
+import com.wireshield.enums.runningStates;
+import com.wireshield.enums.vpnOperations;
+import com.wireshield.localfileutils.SystemOrchestrator;
+import com.wireshield.windows.WFPManager;
+import com.wireshield.wireguard.Connection;
+import com.wireshield.wireguard.Peer;
+import com.wireshield.wireguard.PeerManager;
+import com.wireshield.wireguard.WireguardManager;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
-import javafx.scene.control.ListView;
 
 public class UserInterface extends Application implements PeerOperationListener{
 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
+    
     protected static SystemOrchestrator so;
     protected static WireguardManager wg;
+
     protected String selectedPeer;
+    private Thread logUpdateThread;
+
     private static double xOffset = 0;
     private static double yOffset = 0;
+
+    double peerInfo_xOffset = 740.0;
+    double peerInfo_yOffset = 470.0;
+    double peerInfo_leftAnchor = 320.0;
+    double peerInfo_topAnchor = 145.0;
     
-    String peerFolderPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+    static String defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
 
     // FXML Controls
     @FXML
@@ -82,6 +92,8 @@ public class UserInterface extends Application implements PeerOperationListener{
     protected ListView<String> avFilesListView;
     @FXML
     protected VBox peerCardsContainer;
+    @FXML
+    protected AnchorPane CIDRPane;
 
     @Override
     public void start(Stage primaryStage) {
@@ -127,8 +139,8 @@ public class UserInterface extends Application implements PeerOperationListener{
         updatePeerList();
         
         // to be updated
+        setDynamicLogUpdate();
         startDynamicConnectionLogsUpdate();
-        startDynamicLogUpdate();
 
         if (vpnButton.getText().equals("Start VPN")) {
             vpnButton.setDisable(true);
@@ -170,25 +182,48 @@ public class UserInterface extends Application implements PeerOperationListener{
     @FXML
     public void changeVPNState() {
         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
+            
             so.setGuardianState(runningStates.DOWN);
             so.manageDownload(runningStates.DOWN);
             so.manageAV(runningStates.DOWN);
+
             so.manageVPN(vpnOperations.STOP, null);
+            while (so.getConnectionStatus() == connectionStates.CONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN disconnection.");
+                }
+            }
+
             vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
             
             // Disable vpnButton if selected peer is been deleted
             Peer[] peers = wg.getPeerManager().getPeers();
-            Peer p = wg.getPeerManager().getPeerByName(selectedPeer);
+            Peer p = wg.getPeerManager().getPeerByName(this.selectedPeer);
             if(!Arrays.asList(peers).contains(p)) {
             	vpnButton.setDisable(true);
             }
             
         } else {
-            so.manageVPN(vpnOperations.START, selectedPeer);
+            vpnButton.setDisable(true);
+
+            so.manageVPN(vpnOperations.START, this.selectedPeer);
+            while (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted while waiting for VPN connection.");
+                }
+            }
+            so.getWireguardManager().startUpdateConnectionStats();
+
             so.manageAV(runningStates.UP);
             so.manageDownload(runningStates.UP);
             so.statesGuardian();
+
+            vpnButton.setDisable(false);
             vpnButton.setText("Stop VPN");
             logger.info("All services started successfully.");
         }
@@ -196,16 +231,22 @@ public class UserInterface extends Application implements PeerOperationListener{
 
     @FXML
     public void viewHome() {
+        this.stopDynamicLogUpdate();
         homePane.toFront();
     }
 
     @FXML
     public void viewLogs() {
+        if(logUpdateThread != null && !logUpdateThread.isAlive()){
+            this.startDynamicLogUpdate();
+        }
         logsPane.toFront();
     }
 
     @FXML
     public void viewAv() {
+        this.stopDynamicLogUpdate();
+
         runningStates avStatus = so.getAVStatus();
         avStatusLabel.setText(avStatus.toString());
         if (avStatus == runningStates.UP) {
@@ -241,10 +282,13 @@ public class UserInterface extends Application implements PeerOperationListener{
 
         if (selectedFile != null) {
             try {
-                Path targetPath = Path.of(peerFolderPath, selectedFile.getName());
+                Path targetPath = Path.of(defaultPeerPath, selectedFile.getName());
                 Files.createDirectories(targetPath.getParent());
                 Files.copy(selectedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
                 logger.debug("File copied to: {}", targetPath.toAbsolutePath());
+
+                String peerNameWithoutExtension = selectedFile.getName().contains(".") ? selectedFile.getName().substring(0, selectedFile.getName().lastIndexOf(".")) : selectedFile.getName();
+                WFPManager.createCIDRFile(defaultPeerPath, peerNameWithoutExtension);
                 
                 // Update list and peerContainer
                 loadPeersFromPath();
@@ -269,8 +313,10 @@ public class UserInterface extends Application implements PeerOperationListener{
      * Peer objects are created based on the parsed configuration data.
      */
     private void loadPeersFromPath() {
-        File directory = new File(peerFolderPath);
+        File directory = new File(defaultPeerPath);
         
+        System.out.println("Loading peers from path: " + defaultPeerPath);
+
         wg.getPeerManager().resetPeerList();
         
         if (directory.exists() && directory.isDirectory()) {
@@ -278,7 +324,7 @@ public class UserInterface extends Application implements PeerOperationListener{
             
             if (files != null) {
                 for (File file : files) {
-                    if (file.isFile() && file.length() > 0) {
+                    if (file.isFile() && file.length() > 0 && file.getName().toLowerCase().endsWith(".conf")) {
                     	
                         Scanner scanner = null;
                         String data = "";
@@ -301,7 +347,7 @@ public class UserInterface extends Application implements PeerOperationListener{
         }
         else
         {
-        	logger.warn("Peer directory does not exist or is not a directory: {}", peerFolderPath);
+        	logger.warn("Peer directory does not exist or is not a directory: {}", defaultPeerPath);
         }
     	
     }
@@ -315,11 +361,18 @@ public class UserInterface extends Application implements PeerOperationListener{
      */
 	public void onPeerDeleted(Peer peer) {
 		wg.getPeerManager().removePeer(peer.getId());
+
+        String peerName = peer.getName();
 		
-		File file = new File(peerFolderPath + "/" + peer.getName());		
+		File file = new File(defaultPeerPath + "/" + peerName);		
 		if (file.isFile()) {
 			file.delete();
 		}
+
+
+        System.out.println("Peer deleted: " + peerName);
+        String peerNameWithoutExtension = peerName.contains(".") ? peerName.substring(0, peerName.lastIndexOf(".")) : peerName;
+        WFPManager.deleteCIDRFile(defaultPeerPath, peerNameWithoutExtension);
 
         Platform.runLater(() -> {
             
@@ -339,14 +392,27 @@ public class UserInterface extends Application implements PeerOperationListener{
      * @param peer The peer object that needs to be modified
      */
     public void onPeerModified(Peer peer) {
-	    File configFile = new File(peerFolderPath + "/" + peer.getName());
-	       
-	    new Thread(() -> {
+	    File configFile = new File(defaultPeerPath + "/" + peer.getName());
+
+        Thread editorThread = new Thread(() -> {
 	        try {
 	            ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());	            
 	            Process process = processBuilder.start();
+
+                // Create a shutdown hook
+                Thread hookThread = new Thread(() -> {
+                    if (process.isAlive()) {
+                        process.destroy();
+                    }
+                });
+
+                // Add a shutdown hook to ensure the process is terminated when the application exits.
+                // When process terminate, the ShutdownHook is removed (no more needed).
+                Runtime.getRuntime().addShutdownHook(hookThread);
 	            
-	            int exitCode = process.waitFor();
+	            process.waitFor();
+
+                Runtime.getRuntime().removeShutdownHook(hookThread);
 	            
 	            Platform.runLater(() -> {
 	            	loadPeersFromPath();
@@ -370,30 +436,27 @@ public class UserInterface extends Application implements PeerOperationListener{
 	                    }
 	                }
 	                
-	             // Find and re-apply the "selected" class to the peer card
                     for (javafx.scene.Node node : peerCardsContainer.getChildren()) {
                         if (node instanceof VBox peerCard) {
-                            // We need to find the right peer card by checking the label content
                             for (javafx.scene.Node cardChild : peerCard.getChildren()) {
                                 if (cardChild instanceof Label cardLabel && 
                                     cardLabel.getStyleClass().contains("peer-card-text-name") && 
                                     cardLabel.getText().equals(selectedPeer)) {
-                                    // This is the card we want to select
                                     peerCard.getStyleClass().add("selected");
                                     break;
                                 }
                             }
                         }
                     }
-                
-	            	
-	                System.out.println("Editor closed with exit code: " + exitCode + ". UI refresh done.");
 	            });
 	            
 	        } catch (IOException | InterruptedException e) {
 	            e.printStackTrace();
 	        }
-	    }).start();
+	    });
+
+        editorThread.setDaemon(true);
+        editorThread.start();
 	}
     
     /**
@@ -411,10 +474,11 @@ public class UserInterface extends Application implements PeerOperationListener{
             
             FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
-            
+
             PeerInfoController controller = loader.getController();
             controller.setPeer(peer);
             controller.setOperationListener(this);
+            controller.loadCIDRs();
             
             peerInfoContainer.getChildren().add(newContent);
 
@@ -423,24 +487,26 @@ public class UserInterface extends Application implements PeerOperationListener{
             }
             
         } catch (Exception e) {
-            logger.error("Errore nel caricamento del pannello informazioni peer: " + e.getMessage(), e);
+            logger.error("Error during peerInfo pannel initialization: " + e.getMessage(), e);
         }
     }
     
+    /**
+     * Creates a new VBox container for displaying peer information.
+     * Sets its style class and preferred dimensions.
+     * Anchors it to the specified position within the home pane.
+     * 
+     * @return VBox The newly created VBox container for peer information
+     */
     private VBox createPeerInfoContainer() {
-    	
-    	double xOffset = 740.0;
-    	double yOffset = 400.0;
-    	double leftAnchor = 320.0;
-    	double topAnchor = 165.0;
     	
     	VBox peerInfo = new VBox();
     	
     	peerInfo.getStyleClass().add("peerInfo-container");
-    	peerInfo.setPrefWidth(xOffset);
-    	peerInfo.setPrefHeight(yOffset);
-    	AnchorPane.setLeftAnchor(peerInfo, leftAnchor);
-        AnchorPane.setTopAnchor(peerInfo, topAnchor);
+    	peerInfo.setPrefWidth(peerInfo_xOffset);
+    	peerInfo.setPrefHeight(peerInfo_yOffset);
+    	AnchorPane.setLeftAnchor(peerInfo, peerInfo_leftAnchor);
+        AnchorPane.setTopAnchor(peerInfo, peerInfo_topAnchor);
         
         return peerInfo;
     }
@@ -523,18 +589,22 @@ public class UserInterface extends Application implements PeerOperationListener{
      * while preserving the current scroll position.
      * This thread runs as a daemon to ensure it's terminated when the application closes.
      */
-    protected void startDynamicLogUpdate() {
-        Runnable task = () -> {
+    protected void setDynamicLogUpdate() {
+
+        logUpdateThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     String logs = wg.getLog();
+
                     Platform.runLater(() -> {
                         double scrollPosition = logsArea.getScrollTop();
                         logsArea.clear();
                         logsArea.setText(logs);
                         logsArea.setScrollTop(scrollPosition);
                     });
+
                     Thread.sleep(1000);
+                    
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Dynamic log update thread interrupted.");
@@ -543,12 +613,25 @@ public class UserInterface extends Application implements PeerOperationListener{
                     logger.error("Error updating logs dynamically: ", e);
                 }
             }
-        };
+        });
 
-        Thread logUpdateThread = new Thread(task);
         logUpdateThread.setDaemon(true);
+    }
+
+    protected void startDynamicLogUpdate() {
+        if (logUpdateThread.isInterrupted()) {
+            setDynamicLogUpdate();
+        }
         logUpdateThread.start();
     }
+
+    protected void stopDynamicLogUpdate() {
+
+        if (logUpdateThread != null && logUpdateThread.isAlive()) {
+            logUpdateThread.interrupt();
+        }
+    }
+
 
     /**
      * Starts a background thread that periodically updates the connection information displayed in the UI.
@@ -562,44 +645,65 @@ public class UserInterface extends Application implements PeerOperationListener{
      * Updates occur at 1-second intervals to provide near real-time feedback.
      */
     protected void startDynamicConnectionLogsUpdate() {
-        Runnable task = () -> {
+
+        Thread connectionLogThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Platform.runLater(() -> {
-                    	
-                        // Connected Interface
-                    	connInterfaceLabel.setText("interface: " + wg.getConnection().getActiveInterface());
-                    	
-                    	// Connection Status
+                    	                    	
                     	connStatusLabel.setText("");
-                    	if(wg.getConnection().getStatus() == connectionStates.CONNECTED) {
+                    	if(so.getConnectionStatus() == connectionStates.CONNECTED) {
+
                     		connStatusLabel.setText("● Connected");
                     		connStatusLabel.setStyle("-fx-text-fill: #DAF7A6");
+
+                            String interf = so.getWireguardManager().getConnection().getActiveInterface();
+                            if(interf == null) {
+                            	connInterfaceLabel.setText("interface: --");
+                            } else {
+                            	connInterfaceLabel.setText("interface: " + interf);
+                            }
+                            
+                            // Transmission                    	
+                    	    sentTrafficLable.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getSentTraffic()));
+                    	    receivedTrafficLabel.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getReceivedTraffic()));
+                    	
+                    	    // HandShake
+                    	    lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(so.getWireguardManager().getConnection().getLastHandshakeTime()));
+
                     	} else {
                     		connStatusLabel.setText("● Disconnected");
                     		connStatusLabel.setStyle("-fx-text-fill: #FF5733");
+
+                            connInterfaceLabel.setText("interface: --");
+
+                            if (!sentTrafficLable.getText().equals("0")){
+                                sentTrafficLable.setText("0");
+                            }
+                            if (!receivedTrafficLabel.getText().equals("0")){
+                                receivedTrafficLabel.setText("0");
+                            }
+                            if (!lastHandshakeTimeLabel.getText().equals("--")){
+                                lastHandshakeTimeLabel.setText("--");
+                            }
                     	}
-                    	
-                        // Transmission                    	
-                    	sentTrafficLable.setText(Connection.formatBytes(wg.getConnection().getSentTraffic()));
-                    	receivedTrafficLabel.setText(Connection.formatBytes(wg.getConnection().getReceivedTraffic()));
-                    	
-                    	// HandShake
-                    	lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(wg.getConnection().getLastHandshakeTime()));
-                        
+
                     });
-                    Thread.sleep(1000);
+
+                    Thread.sleep(500);
+
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Dynamic connection logs update thread interrupted.");
+
                 } catch (Exception e) {
                     Thread.currentThread().interrupt();
                     logger.error("Error updating connection logs: ", e);
+
                 }
             }
-        };
+        });
 
-        Thread connectionLogThread = new Thread(task);
         connectionLogThread.setDaemon(true);
         connectionLogThread.start();
     }

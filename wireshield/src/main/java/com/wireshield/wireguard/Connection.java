@@ -3,8 +3,10 @@ package com.wireshield.wireguard;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import com.wireshield.av.FileManager;
 import com.wireshield.enums.connectionStates;
 
@@ -27,7 +29,9 @@ public class Connection {
 
 	// Active interface and path to WireGuard executable
 	private String activeInterface;
-	private String wgPath;
+	private static String wgPath;
+	private static String wireguardPath;
+	private static String defaultPeerPath;
 
 	private static final long BYTE = 1L;
     private static final long KILOBYTE = 1024L;
@@ -40,12 +44,15 @@ public class Connection {
 	 * and determines the path to the WireGuard executable.
 	 */
 	private Connection() {
-		wgPath = FileManager.getProjectFolder() + FileManager.getConfigValue("WGEXE_STD_PATH");
-		status = connectionStates.DISCONNECTED;
-		sentTraffic = 0;
-		receivedTraffic = 0;
-		lastHandshakeTime = 0;
-		activeInterface = "";
+		this.wgPath = FileManager.getProjectFolder() + FileManager.getConfigValue("WGEXE_STD_PATH");
+		this.wireguardPath = FileManager.getProjectFolder() + FileManager.getConfigValue("WIREGUARDEXE_STD_PATH");
+		this.defaultPeerPath = FileManager.getProjectFolder() + FileManager.getConfigValue("PEER_STD_PATH");
+
+		this.status = connectionStates.DISCONNECTED;
+		this.sentTraffic = 0L;
+		this.receivedTraffic = 0L;
+		this.lastHandshakeTime = 0;
+		this.activeInterface = "";
 	}
 
 	/**
@@ -60,6 +67,97 @@ public class Connection {
 		}
 		return instance;
 	}
+
+	public void setUp(String configFileName) {
+
+		Runnable WireGuardInterfaceUpTask = () -> {
+			int exitCode = -1;
+		
+			try {
+				ProcessBuilder processBuilder = new ProcessBuilder(this.wireguardPath, "/installtunnelservice", this.defaultPeerPath + configFileName);
+				Process process = processBuilder.start();
+	
+				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					logger.info(line);
+				}
+	
+				exitCode = process.waitFor();
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+				
+			} catch (InterruptedException e) {
+				logger.error("Thread was interrupted while starting the WireGuard interface.");
+
+			}
+			
+			if (exitCode == 0) {
+
+				while (getActiveInterface() == null) {
+					try {
+						Thread.sleep(200); // Wait for 1 second before checking again
+					} catch (InterruptedException e) {
+						logger.error("Error while waiting for WireGuard interface to starts: {}", e.getMessage());
+					}
+				}
+				this.status = connectionStates.CONNECTED;
+
+			} else {
+				logger.error("Error starting WireGuard interface -> exit code: {}", exitCode);
+			}
+		
+		};
+
+		Thread wireGuardInterfaceThread = new Thread(WireGuardInterfaceUpTask);
+		wireGuardInterfaceThread.start();
+	}
+
+	public void setDown(String interfaceName){
+
+		Runnable WireGuardInterfaceDownTask = () -> {
+			int exitCode = -1;
+
+			try {
+				ProcessBuilder processBuilder = new ProcessBuilder(this.wireguardPath, "/uninstalltunnelservice", interfaceName);
+				Process process = processBuilder.start();
+	
+				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					logger.info(line);
+				}
+				
+				exitCode = process.waitFor();
+				
+			} catch (IOException e) {
+				e.printStackTrace();		
+
+			} catch (InterruptedException e) {
+				logger.error("Thread was interrupted while stopping the WireGuard interface.");
+
+			}
+			
+			if (exitCode == 0) {
+
+				while (getActiveInterface() != null) {
+					try {
+						Thread.sleep(200); // Wait for 1 second before checking again
+					} catch (InterruptedException e) {
+						logger.error("Error while waiting for WireGuard interface to stpos: {}", e.getMessage());
+					}
+				}
+				this.status = connectionStates.DISCONNECTED;
+
+			} else {
+				logger.error("Error stopping WireGuard interface -> exit code: {}", exitCode);	
+			}
+		};
+
+		Thread wireGuardInterfaceThread = new Thread(WireGuardInterfaceDownTask);
+		wireGuardInterfaceThread.start();
+	}
 	
 	/**
 	 * Executes the `wg show` command to retrieve specific connection parameters.
@@ -70,12 +168,12 @@ public class Connection {
 	 * @return
 	 */
 	protected String wgShow(String param) {
-		activeInterface = this.getActiveInterface();
-		if (activeInterface == null || param == null)
-			return null;
+		this.activeInterface = this.getActiveInterface();
+		if (this.activeInterface == null || param == null) return null;
 
 		try {
-			ProcessBuilder processBuilder = new ProcessBuilder(wgPath, "show", activeInterface, param);
+
+			ProcessBuilder processBuilder = new ProcessBuilder(this.wgPath, "show", this.activeInterface, param);
 			Process process = processBuilder.start();
 
 			// Read command output
@@ -85,9 +183,11 @@ public class Connection {
 				return line.split("=")[1].trim();
 			}
 			return null;
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
+
 		}
 	}
 
@@ -140,7 +240,7 @@ public class Connection {
 
 		Process process = null;
 		try {
-			ProcessBuilder processBuilder = new ProcessBuilder(wgPath, "show", "interfaces");
+			ProcessBuilder processBuilder = new ProcessBuilder(this.wgPath, "show", "interfaces");
 			process = processBuilder.start();
 
 			// Read output to find the first active interface
@@ -186,7 +286,7 @@ public class Connection {
 	}
 
 	/**
-	 * Updates the connection status.
+	 * Sets the connection status.
 	 *
 	 * @param status The new connection state.
 	 */
@@ -210,7 +310,7 @@ public class Connection {
 	 * @return The last handshake time in seconds.
 	 */
 	public Long getLastHandshakeTime() {
-		this.updateLastHandshakeTime();
+		//this.updateLastHandshakeTime();
 		return this.lastHandshakeTime;
 	}
 	
@@ -224,8 +324,9 @@ public class Connection {
 		String interfaceName = this.activeInterface == null ? "None" : this.activeInterface;
 
 		return String.format(
-				"[INFO] Interface: %s%n[INFO] Status: %s%n[INFO] Last handshake time: %s%n[INFO] Received traffic: %s%n[INFO] Sent traffic: %s",
-				interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic);
+			"[INFO] Interface: %s%n[INFO] Status: %s%n[INFO] Last handshake time: %s%n[INFO] Received traffic: %s%n[INFO] Sent traffic: %s",
+			interfaceName, this.status, this.lastHandshakeTime, this.receivedTraffic, this.sentTraffic
+		);
 	}
 	
 	

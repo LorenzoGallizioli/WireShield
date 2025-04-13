@@ -220,7 +220,7 @@
 /* Stile per le etichette */
 .peer-info-label {
     -fx-font-weight: bold;
-	-fx-text-fill: #bebebe; /* More white than other text */
+	-fx-text-fill: #ffffff; /* More white than other text */
 }
 
 /* Stile per i valori */
@@ -275,6 +275,23 @@
 
 .small-button:hover {
     -fx-background-color: #404040;
+}
+
+
+/* Stile per il campo di gestione cidr */
+
+.input-field {
+    -fx-background-color: #404040;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.cidr-info-label {
+    -fx-font-weight: bold;
+	-fx-text-fill: #bebebe; /* More white than other text */
+    -fx-font-size: 14px;
 }
 
 
