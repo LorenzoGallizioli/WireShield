@@ -28,7 +28,6 @@ import com.wireshield.windows.WFPManager;
 import com.wireshield.wireguard.Connection;
 import com.wireshield.wireguard.Peer;
 import com.wireshield.wireguard.PeerManager;
-import com.wireshield.wireguard.WireguardManager;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -56,10 +55,11 @@ public class UserInterface extends Application implements PeerOperationListener 
     private static final Logger logger = LogManager.getLogger(UserInterface.class);
 
     protected static SystemOrchestrator so;
-    protected static WireguardManager wg;
 
     protected String selectedPeer;
     private Thread logUpdateThread;
+    private Thread connectionInfoUpdateThread;
+    private Process notepadProcess;
 
     private static double xOffset = 0;
     private static double yOffset = 0;
@@ -142,27 +142,25 @@ public class UserInterface extends Application implements PeerOperationListener 
     @FXML
     public void initialize() {
 
-        viewHome();
-        loadPeersFromPath();
-        updatePeerList();
+        this.loadPeersFromPath();
+        this.viewHome();
+        this.setDynamicLogUpdate();
 
-        // to be updated
-        setDynamicLogUpdate();
-        startDynamicConnectionLogsUpdate();
+        this.startDynamicConnectionInfoUpdate();
+        if(FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")){
+            this.so.manageClamdService(runningStates.UP);
+        }
 
-        if (vpnButton.getText().equals("Start VPN")) {
-            vpnButton.setDisable(true);
+        if (this.vpnButton.getText().equals("Start VPN")) {
+            this.vpnButton.setDisable(true);
         }
 
         logger.info("UI initialized successfully");
     }
 
     public static void main(String[] args) {
-
-        //System.setProperty("prism.lcdtext", "true");
-        //System.setProperty("prism.text", "gray");
+        
         so = SystemOrchestrator.getInstance();
-        wg = so.getWireguardManager();
 
         so.manageVPN(vpnOperations.STOP, null);
 
@@ -171,26 +169,54 @@ public class UserInterface extends Application implements PeerOperationListener 
 
     @FXML
     public void closeWindow(WindowEvent windowevent) {
-        so.manageDownload(runningStates.DOWN);
-        so.manageAV(runningStates.DOWN);
-        so.manageVPN(vpnOperations.STOP, null);
+        this.so.manageDownload(runningStates.DOWN);
 
-        // add function to wait all threads stops
+        this.so.manageClamdService(runningStates.DOWN);
+        this.so.manageAV(runningStates.DOWN);
+        this.so.manageVPN(vpnOperations.STOP, null);
+
+        while(this.so.getConnectionStatus() == connectionStates.CONNECTED || this.so.getAntivirusManager().getClamdStatus() == runningStates.UP) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
+        }
+
+        // manca da aggiungere il print con logger di chiusra su tutti i thread (in modo da eseguire il debug e verifica)
+        // verficare che i thread siano stati chiusi correttamente e che non ne restanino di attivi
+        this.stopAllThreads();
+
         System.exit(0);
     }
 
     @FXML
     public void viewHome() {
         this.stopDynamicLogUpdate();
-        homePane.toFront();
+        this.stopAVInfoUpdate();
+
+        this.updatePeerList();
+        this.startDynamicConnectionInfoUpdate();
+
+        this.homePane.toFront();
     }
 
     @FXML
     public void viewLogs() {
-        if (logUpdateThread != null && !logUpdateThread.isAlive()) {
-            this.startDynamicLogUpdate();
-        }
-        logsPane.toFront();
+        this.stopAVInfoUpdate();
+        this.stopDynamicConnectionLogsUpdate();
+
+        this.startDynamicLogUpdate();
+
+        this.logsPane.toFront();
+    }
+
+    @FXML
+    public void viewAv() {
+        this.stopDynamicLogUpdate();
+        this.stopDynamicConnectionLogsUpdate();
+
+        this.startUpdateAVInfo();
+
+        this.avPane.toFront();
     }
 
     /*@FXML
@@ -211,6 +237,8 @@ public class UserInterface extends Application implements PeerOperationListener 
         }
         avPane.toFront();
     }*/
+
+
     /**
      * Toggles the VPN connection state. If the VPN is currently connected,
      * stops all services (VPN, antivirus, and download manager). If
@@ -219,67 +247,46 @@ public class UserInterface extends Application implements PeerOperationListener 
      */
     @FXML
     public void changeVPNState() {
-        if (so.getConnectionStatus() == connectionStates.CONNECTED) {
-            so.setGuardianState(runningStates.DOWN);
-            so.manageDownload(runningStates.DOWN);
-            so.manageAV(runningStates.DOWN);
+        if (this.so.getConnectionStatus() == connectionStates.CONNECTED) 
+        {
+            this.so.setGuardianState(runningStates.DOWN);
+            this.so.manageDownload(runningStates.DOWN);
+            this.so.manageAV(runningStates.DOWN);
 
-            so.manageClamdService(runningStates.DOWN);
-            while (so.getAntivirusManager().getClamdStatus() == runningStates.UP) {
+            this.so.manageVPN(vpnOperations.STOP, null);
+            while (this.so.getConnectionStatus() == connectionStates.CONNECTED) {
                 try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN connection.");
-                }
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {}
             }
 
-            so.manageVPN(vpnOperations.STOP, null);
-            while (so.getConnectionStatus() == connectionStates.CONNECTED) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN disconnection.");
-                }
-            }
-
-            vpnButton.setText("Start VPN");
+            this.vpnButton.setText("Start VPN");
             logger.info("All services are stopped.");
 
-            // Disable vpnButton if selected peer is been deleted
-            Peer[] peers = wg.getPeerManager().getPeers();
-            Peer p = wg.getPeerManager().getPeerByName(this.selectedPeer);
+            Peer[] peers = so.getWireguardManager().getPeerManager().getPeers();
+            Peer p = so.getWireguardManager().getPeerManager().getPeerByName(this.selectedPeer);
             if (!Arrays.asList(peers).contains(p)) {
                 vpnButton.setDisable(true);
             }
 
         } else {
-            vpnButton.setDisable(true);
+            this.vpnButton.setDisable(true);
 
-            so.manageVPN(vpnOperations.START, this.selectedPeer);
-            while (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+            this.so.manageVPN(vpnOperations.START, this.selectedPeer);
+            while (this.so.getConnectionStatus() == connectionStates.DISCONNECTED) {
                 try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN connection.");
-                }
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {}
             }
-            so.getWireguardManager().startUpdateConnectionStats();
+            this.so.getWireguardManager().startUpdateConnectionStats();
 
-            so.manageClamdService(runningStates.UP);
-            while (so.getAntivirusManager().getClamdStatus() == runningStates.DOWN) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for VPN connection.");
-                }
-            }
 
-            so.manageAV(runningStates.UP);
-            so.manageDownload(runningStates.UP);
-            so.statesGuardian();
+            this.so.manageAV(runningStates.UP);
+            this.so.manageDownload(runningStates.UP);
+            this.so.statesGuardian();
 
-            vpnButton.setDisable(false);
-            vpnButton.setText("Stop VPN");
+            this.vpnButton.setDisable(false);
+            this.vpnButton.setText("Stop VPN");
             logger.info("All services started successfully.");
         }
     }
@@ -311,7 +318,7 @@ public class UserInterface extends Application implements PeerOperationListener 
                 logger.debug("File copied to: {}", targetPath.toAbsolutePath());
 
                 String peerNameWithoutExtension = selectedFile.getName().contains(".") ? selectedFile.getName().substring(0, selectedFile.getName().lastIndexOf(".")) : selectedFile.getName();
-                WFPManager.createCIDRFile(defaultPeerPath, peerNameWithoutExtension);
+                WFPManager.createCIDRFile(this.defaultPeerPath, peerNameWithoutExtension);
 
                 // Update list and peerContainer
                 loadPeersFromPath();
@@ -339,7 +346,7 @@ public class UserInterface extends Application implements PeerOperationListener 
 
         System.out.println("Loading peers from path: " + defaultPeerPath);
 
-        wg.getPeerManager().resetPeerList();
+        this.so.getWireguardManager().getPeerManager().resetPeerList();
 
         if (directory.exists() && directory.isDirectory()) {
             File[] files = directory.listFiles();
@@ -361,7 +368,7 @@ public class UserInterface extends Application implements PeerOperationListener 
                         }
 
                         Map<String, Map<String, String>> dataMap = PeerManager.parsePeerConfig(data);
-                        wg.getPeerManager().createPeer(dataMap, file.getName());
+                        this.so.getWireguardManager().getPeerManager().createPeer(dataMap, file.getName());
                     }
                 }
                 logger.info("Peer cards updated successfully");
@@ -380,25 +387,25 @@ public class UserInterface extends Application implements PeerOperationListener 
      * @param peer The peer object that needs to be deleted
      */
     public void onPeerDeleted(Peer peer) {
-        wg.getPeerManager().removePeer(peer.getId());
+        this.so.getWireguardManager().getPeerManager().removePeer(peer.getId());
 
         String peerName = peer.getName();
 
-        File file = new File(defaultPeerPath + "/" + peerName);
+        File file = new File(this.defaultPeerPath + "/" + peerName);
         if (file.isFile()) {
             file.delete();
         }
 
         System.out.println("Peer deleted: " + peerName);
         String peerNameWithoutExtension = peerName.contains(".") ? peerName.substring(0, peerName.lastIndexOf(".")) : peerName;
-        WFPManager.deleteCIDRFile(defaultPeerPath, peerNameWithoutExtension);
+        WFPManager.deleteCIDRFile(this.defaultPeerPath, peerNameWithoutExtension);
 
         Platform.runLater(() -> {
 
-            updatePeerList();
+            this.updatePeerList();
 
-            if (so.getConnectionStatus() == connectionStates.DISCONNECTED) {
-                vpnButton.setDisable(true);
+            if (this.so.getConnectionStatus() == connectionStates.DISCONNECTED) {
+                this.vpnButton.setDisable(true);
             }
         });
     }
@@ -411,39 +418,49 @@ public class UserInterface extends Application implements PeerOperationListener 
      * @param peer The peer object that needs to be modified
      */
     public void onPeerModified(Peer peer) {
-        File configFile = new File(defaultPeerPath + "/" + peer.getName());
+        File configFile = new File(this.defaultPeerPath + "/" + peer.getName());
 
         Thread editorThread = new Thread(() -> {
+
+            ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());
+
             try {
-                ProcessBuilder processBuilder = new ProcessBuilder("notepad.exe", configFile.getAbsolutePath());
-                Process process = processBuilder.start();
+
+                this.notepadProcess = processBuilder.start();
 
                 // Create a shutdown hook
-                Thread hookThread = new Thread(() -> {
+                /*Thread hookThread = new Thread(() -> {
                     if (process.isAlive()) {
                         process.destroy();
                     }
-                });
+                });*/
 
                 // Add a shutdown hook to ensure the process is terminated when the application exits.
                 // When process terminate, the ShutdownHook is removed (no more needed).
-                Runtime.getRuntime().addShutdownHook(hookThread);
+                //Runtime.getRuntime().addShutdownHook(hookThread);
 
-                process.waitFor();
+                this.notepadProcess.waitFor();
 
-                Runtime.getRuntime().removeShutdownHook(hookThread);
+            }catch (InterruptedException e) {
+                if (this.notepadProcess.isAlive()) {
+                    this.notepadProcess.destroy();
+                }
+            } catch (IOException e) {}
 
+
+                //Runtime.getRuntime().removeShutdownHook(hookThread);
+                
                 Platform.runLater(() -> {
-                    loadPeersFromPath();
-                    updatePeerList();
+                    this.loadPeersFromPath();
+                    this.updatePeerList();
 
-                    selectedPeer = peer.getName();
+                    this.selectedPeer = peer.getName();
 
-                    Peer updatedPeer = wg.getPeerManager().getPeerByName(peer.getName());
+                    Peer updatedPeer = this.so.getWireguardManager().getPeerManager().getPeerByName(peer.getName());
                     if (updatedPeer != null) {
 
                         VBox existingContainer = null;
-                        for (javafx.scene.Node node : homePane.getChildren()) {
+                        for (javafx.scene.Node node : this.homePane.getChildren()) {
                             if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
                                 existingContainer = (VBox) node;
                                 break;
@@ -451,16 +468,16 @@ public class UserInterface extends Application implements PeerOperationListener 
                         }
 
                         if (existingContainer != null) {
-                            fillPeerInfoContainer(updatedPeer, existingContainer);
+                            this.fillPeerInfoContainer(updatedPeer, existingContainer);
                         }
                     }
 
-                    for (javafx.scene.Node node : peerCardsContainer.getChildren()) {
+                    for (javafx.scene.Node node : this.peerCardsContainer.getChildren()) {
                         if (node instanceof VBox peerCard) {
                             for (javafx.scene.Node cardChild : peerCard.getChildren()) {
                                 if (cardChild instanceof Label cardLabel
                                         && cardLabel.getStyleClass().contains("peer-card-text-name")
-                                        && cardLabel.getText().equals(selectedPeer)) {
+                                        && cardLabel.getText().equals(this.selectedPeer)) {
                                     peerCard.getStyleClass().add("selected");
                                     break;
                                 }
@@ -469,9 +486,7 @@ public class UserInterface extends Application implements PeerOperationListener 
                     }
                 });
 
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
+                logger.info("Thread stopped - [onPeerModified()] peer modify thread terminated.");
         });
 
         editorThread.setDaemon(true);
@@ -502,8 +517,8 @@ public class UserInterface extends Application implements PeerOperationListener 
 
             peerInfoContainer.getChildren().add(newContent);
 
-            if (!homePane.getChildren().contains(peerInfoContainer)) {
-                homePane.getChildren().add(peerInfoContainer);
+            if (!this.homePane.getChildren().contains(peerInfoContainer)) {
+                this.homePane.getChildren().add(peerInfoContainer);
             }
 
         } catch (Exception e) {
@@ -542,14 +557,14 @@ public class UserInterface extends Application implements PeerOperationListener 
      */
     private void onClickOperation(Peer peer, VBox peerCard) {
 
-        peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
+        this.peerCardsContainer.getChildren().forEach(node -> node.getStyleClass().remove("selected"));
         peerCard.getStyleClass().add("selected");
 
         // Connection Container Logic
-        selectedPeer = peer.getName();
+        this.selectedPeer = peer.getName();
 
-        if (vpnButton.getText().equals("Start VPN")) {
-            vpnButton.setDisable(false);
+        if (this.vpnButton.getText().equals("Start VPN")) {
+            this.vpnButton.setDisable(false);
         }
 
         // PeerInfo Container Logic
@@ -563,9 +578,9 @@ public class UserInterface extends Application implements PeerOperationListener 
 
         VBox peerInfoContainer = existingContainer != null ? existingContainer : createPeerInfoContainer();
 
-        fillPeerInfoContainer(peer, peerInfoContainer);
+        this.fillPeerInfoContainer(peer, peerInfoContainer);
 
-        logger.info("Selected peer file: {}", selectedPeer);
+        logger.info("Selected peer file: {}", this.selectedPeer);
     }
 
     /**
@@ -576,14 +591,14 @@ public class UserInterface extends Application implements PeerOperationListener 
      */
     protected void updatePeerList() {
 
-        if (peerCardsContainer == null) {
+        if (this.peerCardsContainer == null) {
             logger.error("peerCardsContainer is null");
             return;
         }
 
-        peerCardsContainer.getChildren().clear();
+        this.peerCardsContainer.getChildren().clear();
 
-        for (Peer peer : wg.getPeerManager().getPeers()) {
+        for (Peer peer : this.so.getWireguardManager().getPeerManager().getPeers()) {
             VBox peerCard = new VBox();
             peerCard.getStyleClass().add("peer-card");
 
@@ -598,7 +613,7 @@ public class UserInterface extends Application implements PeerOperationListener 
 
             peerCard.setOnMouseClicked(event -> onClickOperation(peer, peerCard));
 
-            peerCardsContainer.getChildren().add(peerCard);
+            this.peerCardsContainer.getChildren().add(peerCard);
 
             logger.debug("Added peer card for file: {}", peer.getName());
         }
@@ -612,44 +627,49 @@ public class UserInterface extends Application implements PeerOperationListener 
      */
     protected void setDynamicLogUpdate() {
 
-        logUpdateThread = new Thread(() -> {
+        this.logUpdateThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    String logs = wg.getLog();
+                    String logs = this.so.getWireguardManager().getLog();
 
                     Platform.runLater(() -> {
-                        double scrollPosition = logsArea.getScrollTop();
-                        logsArea.clear();
-                        logsArea.setText(logs);
-                        logsArea.setScrollTop(scrollPosition);
+                        double scrollPosition = this.logsArea.getScrollTop();
+                        this.logsArea.clear();
+                        this.logsArea.setText(logs);
+                        this.logsArea.setScrollTop(scrollPosition);
                     });
 
                     Thread.sleep(1000);
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    logger.error("Dynamic log update thread interrupted.");
-                } catch (Exception e) {
-                    Thread.currentThread().interrupt();
-                    logger.error("Error updating logs dynamically: ", e);
                 }
             }
+            logger.info("Thread stopped - [setDynamicLogUpdate()] logUpdateThread thread terminated.");
         });
 
-        logUpdateThread.setDaemon(true);
+        this.logUpdateThread.setDaemon(true);
     }
 
     protected void startDynamicLogUpdate() {
-        if (logUpdateThread.isInterrupted()) {
+        
+        if (this.logUpdateThread != null && this.logUpdateThread.isAlive()) {
+            return;
+        }
+
+        if (this.logUpdateThread.isInterrupted()) {
             setDynamicLogUpdate();
         }
-        logUpdateThread.start();
+        this.logUpdateThread.start();
     }
 
     protected void stopDynamicLogUpdate() {
 
-        if (logUpdateThread != null && logUpdateThread.isAlive()) {
-            logUpdateThread.interrupt();
+        if (this.logUpdateThread != null && this.logUpdateThread.isAlive()) {
+            this.logUpdateThread.interrupt();
+            try{
+                this.logUpdateThread.join();
+            }catch (InterruptedException e) {}
         }
     }
 
@@ -664,47 +684,51 @@ public class UserInterface extends Application implements PeerOperationListener 
      * application closes. Updates occur at 1-second intervals to provide near
      * real-time feedback.
      */
-    protected void startDynamicConnectionLogsUpdate() {
+    protected void startDynamicConnectionInfoUpdate() {
 
-        Thread connectionLogThread = new Thread(() -> {
+        if (this.connectionInfoUpdateThread != null && this.connectionInfoUpdateThread.isAlive()) {
+            return;
+        }
+
+        this.connectionInfoUpdateThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Platform.runLater(() -> {
 
-                        connStatusLabel.setText("");
+                        this.connStatusLabel.setText("");
                         if (so.getConnectionStatus() == connectionStates.CONNECTED) {
 
-                            connStatusLabel.setText("● Connected");
-                            connStatusLabel.setStyle("-fx-text-fill: #DAF7A6");
+                            this.connStatusLabel.setText("● Connected");
+                            this.connStatusLabel.setStyle("-fx-text-fill: #DAF7A6");
 
                             String interf = so.getWireguardManager().getConnection().getActiveInterface();
                             if (interf == null) {
-                                connInterfaceLabel.setText("interface: --");
+                                this.connInterfaceLabel.setText("interface: --");
                             } else {
-                                connInterfaceLabel.setText("interface: " + interf);
+                                this.connInterfaceLabel.setText("interface: " + interf);
                             }
 
                             // Transmission                    	
-                            sentTrafficLable.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getSentTraffic()));
-                            receivedTrafficLabel.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getReceivedTraffic()));
+                            this.sentTrafficLable.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getSentTraffic()));
+                            this.receivedTrafficLabel.setText(Connection.formatBytes(so.getWireguardManager().getConnection().getReceivedTraffic()));
 
                             // HandShake
-                            lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(so.getWireguardManager().getConnection().getLastHandshakeTime()));
+                            this.lastHandshakeTimeLabel.setText(TimeUtil.getTimeSinceHandshake(so.getWireguardManager().getConnection().getLastHandshakeTime()));
 
                         } else {
-                            connStatusLabel.setText("● Disconnected");
-                            connStatusLabel.setStyle("-fx-text-fill: #FF5733");
+                            this.connStatusLabel.setText("● Disconnected");
+                            this.connStatusLabel.setStyle("-fx-text-fill: #FF5733");
 
-                            connInterfaceLabel.setText("interface: --");
+                            this.connInterfaceLabel.setText("interface: --");
 
-                            if (!sentTrafficLable.getText().equals("0 B")) {
-                                sentTrafficLable.setText("0 B");
+                            if (!this.sentTrafficLable.getText().equals("0 B")) {
+                                this.sentTrafficLable.setText("0 B");
                             }
-                            if (!receivedTrafficLabel.getText().equals("0 B")) {
-                                receivedTrafficLabel.setText("0 B");
+                            if (!this.receivedTrafficLabel.getText().equals("0 B")) {
+                                this.receivedTrafficLabel.setText("0 B");
                             }
-                            if (!lastHandshakeTimeLabel.getText().equals("--")) {
-                                lastHandshakeTimeLabel.setText("--");
+                            if (!this.lastHandshakeTimeLabel.getText().equals("--")) {
+                                this.lastHandshakeTimeLabel.setText("--");
                             }
                         }
 
@@ -722,15 +746,26 @@ public class UserInterface extends Application implements PeerOperationListener 
 
                 }
             }
+
+            logger.info("Thread stopped - [startDynamicConnectionLogsUpdate()] UI update connection info thread terminated.");
         });
 
-        connectionLogThread.setDaemon(true);
-        connectionLogThread.start();
+        this.connectionInfoUpdateThread.setDaemon(true);
+        this.connectionInfoUpdateThread.start();
     }
 
+    private void stopDynamicConnectionLogsUpdate() {
+        if (this.connectionInfoUpdateThread != null && this.connectionInfoUpdateThread.isAlive()) {
+            this.connectionInfoUpdateThread.interrupt();
+            try {
+                this.connectionInfoUpdateThread.join();
+            } catch (InterruptedException e) {}
+        }
+    }
+
+
+
     /* AntiVirus */
-
-
     @FXML
     private Circle statusIndicator;
     @FXML
@@ -746,57 +781,77 @@ public class UserInterface extends Application implements PeerOperationListener 
     @FXML
     private VBox fileCardsContainer;
 
+    Thread updateAVInfoThread;
+
     private List<FileCardComponent> fileCards = new ArrayList<>();
 
-    @FXML
-    public void viewAv() {
-        this.stopDynamicLogUpdate();
-        
-        // Add AV allow|disable control
-
-        startUpdateAVInfo();
-
-        avPane.toFront();
-    }
-
+    /**
+     * Avvia il thread che aggiorna le informazioni sull'antivirus e sullo stato del servizio ogni secondo.
+     * Il thread viene eseguito in background e continua a eseguire l'aggiornamento fino a quando non viene interrotto.
+     */
     private void startUpdateAVInfo(){
+
+        if (this.updateAVInfoThread != null && this.updateAVInfoThread.isAlive()) {
+            return;
+        }
+        
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
 
-                runningStates scannerStatus = so.getAntivirusManager().getScannerStatus();
+                runningStates scannerStatus = this.so.getScannerStatus();
 
-                clamdAtStartupSelector();
+                this.clamdAtStartupSelector();
 
                 Platform.runLater(() -> {
-                    updateAVInfo(scannerStatus);
-                    updateServiceStatus(scannerStatus, so.getScannerStatus());
+                    this.updateAVInfo(scannerStatus);
+                    this.updateServiceStatus(scannerStatus, this.so.getAntivirusManager().getClamdStatus());
                 });
 
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    logger.error("Thread interrupted while waiting for scan to finish.");
+                    Thread.currentThread().interrupt();
                 }
             }
-            
+            logger.info("Thread interrupted - [startUpdateAVInfo()] AV info update thread interrupted.");    
         };
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
+
+        this.updateAVInfoThread = new Thread(task);
+        this.updateAVInfoThread.setDaemon(true);
+        this.updateAVInfoThread.start();
     }
 
+    /**
+     * Ferma l'aggiornamento delle informazioni sull'antivirus interrompendo il thread associato e aspettando il suo completamento.
+     */
+    private void stopAVInfoUpdate() {
+        if (this.updateAVInfoThread != null && this.updateAVInfoThread.isAlive()) {
+            this.updateAVInfoThread.interrupt();
+            try {
+                this.updateAVInfoThread.join();
+            } catch (InterruptedException e) {}
+        }
+    }
+
+    /**
+     * Aggiorna le informazioni sull'antivirus in base allo stato dello scanner.
+     * Se lo scanner è attivo, mostra i report finali, il numero di minacce rilevate e le informazioni sui file scansionati.
+     * Se lo scanner non è attivo, resetta le etichette e le card.
+     *
+     * @param scannerStatus Lo stato attuale dello scanner antivirus.
+     */
     private void updateAVInfo(runningStates scannerStatus){
 
         if (scannerStatus == runningStates.UP) {
 
             List<ScanReport> reports = so.getAntivirusManager().getFinalReports();
-            totalScannedLabel.setText(String.valueOf(reports.size()));
+            this.totalScannedLabel.setText(String.valueOf(reports.size()));
 
             long threatCount = reports.stream().filter(report -> !report.getWarningClass().equals(com.wireshield.enums.warningClass.CLEAR)).count();
-            threatsDetectedLabel.setText(String.valueOf(threatCount));
+            this.threatsDetectedLabel.setText(String.valueOf(threatCount));
 
-            fileCardsContainer.getChildren().clear();
-            fileCards.clear();
+            this.fileCardsContainer.getChildren().clear();
+            this.fileCards.clear();
 
             for (ScanReport report : reports) {
                 String fileName = report.getFile().getName();
@@ -809,37 +864,42 @@ public class UserInterface extends Application implements PeerOperationListener 
 
                 addScannedFile(fileName, filePath, status, scanTime, warningClass);
             }
+
         } else {
-            totalScannedLabel.setText("0");
-            threatsDetectedLabel.setText("0");
-            fileCardsContainer.getChildren().clear();
-            fileCards.clear();
+            this.totalScannedLabel.setText("0");
+            this.threatsDetectedLabel.setText("0");
+            this.fileCardsContainer.getChildren().clear();
+            this.fileCards.clear();
         }
     }
 
     /**
-     * Aggiorna lo stato visivo del servizio nell'interfaccia
+     * Aggiorna lo stato visivo del servizio nell'interfaccia utente.
+     * Modifica il colore dell'indicatore di stato e il testo dei label in base allo stato dello scanner e del servizio antivirus.
+     *
+     * @param scannerStatus Lo stato attuale dello scanner antivirus.
+     * @param avStatus Lo stato del servizio antivirus.
      */
-    private void updateServiceStatus(runningStates scannerStatus, runningStates avStatus) {
-        // Rimuovi tutte le classi di stato precedenti
+    private void updateServiceStatus(runningStates scannerStatus, runningStates clamdStatus) {
+
         statusIndicator.getStyleClass().removeAll("inactive", "active");
 
-        switch (scannerStatus) {
+        switch (clamdStatus) {
             case UP:
-                statusIndicator.getStyleClass().add("active");
-                avStatusLabel.setText("Servizio antivirus attivo");
+                this.statusIndicator.getStyleClass().add("active");
+                this.avStatusLabel.setText("Servizio antivirus attivo");
 
-                if (avStatus == runningStates.UP) {
-                    currentStatusLabel.setText("In esecuzione");
+                if (scannerStatus == runningStates.UP) {
+                    this.currentStatusLabel.setText("In esecuzione");
                 } else {
-                    currentStatusLabel.setText("In attesa");
+                    this.currentStatusLabel.setText("In attesa");
                 }
                 break;
 
             case DOWN:
-                statusIndicator.getStyleClass().add("inactive");
-                avStatusLabel.setText("Servizio antivirus non attivo");
-                currentStatusLabel.setText("Non disponibile");
+                this.statusIndicator.getStyleClass().add("inactive");
+                this.avStatusLabel.setText("Servizio antivirus non attivo");
+                this.currentStatusLabel.setText("Non disponibile");
                 break;
 
             // Aggiungi altri stati se necessario
@@ -849,10 +909,13 @@ public class UserInterface extends Application implements PeerOperationListener 
     }
 
     /**
-     * Converte la classe di avviso del report in uno stato per la card
+     * Converte una classe di avviso di un report in uno stato stringa da visualizzare.
+     * Gli stati possibili sono "Clean", "Warning" e "Threat".
+     *
+     * @param warningClass La classe di avviso del report da convertire.
+     * @return Lo stato corrispondente alla classe di avviso.
      */
     private String convertWarningClassToStatus(warningClass warningClass) {
-        // Personalizza questa logica in base alle tue classi di avviso
         if (warningClass.equals(warningClass.CLEAR)) {
             return "Clean";
         } else if (warningClass.equals(warningClass.SUSPICIOUS)) {
@@ -863,46 +926,55 @@ public class UserInterface extends Application implements PeerOperationListener 
     }
 
     /**
-     * Aggiunge una card per un file scansionato
+     * Aggiunge una card alla lista dei file scansionati nell'interfaccia utente.
+     *
+     * @param fileName Il nome del file scansionato.
+     * @param filePath Il percorso del file scansionato.
+     * @param status Lo stato del file scansionato ("Clean", "Warning", "Threat").
+     * @param scanTime Il tempo in cui è stata eseguita la scansione.
+     * @param detectedThreats La minaccia rilevata durante la scansione del file.
      */
     private void addScannedFile(String fileName, String filePath, String status, LocalDateTime scanTime, warningClass detectedThreats) {
-        FileCardComponent card = new FileCardComponent(fileName, filePath, status, scanTime, convertWarningClassToStatus(detectedThreats).toUpperCase());
-        fileCards.add(card);
-        fileCardsContainer.getChildren().add(card);
+        FileCardComponent card = new FileCardComponent(fileName, filePath, status, scanTime, this.convertWarningClassToStatus(detectedThreats).toUpperCase());
+        this.fileCards.add(card);
+        this.fileCardsContainer.getChildren().add(card);
     }
 
     /**
-     * Metodo per filtrare le card dei file
+     * Filtra le card dei file scansionati in base al testo di ricerca.
+     * Mostra solo le card che contengono il testo di ricerca nel nome del file.
+     *
+     * @param searchText Il testo da cercare nel nome dei file scansionati.
      */
     private void filterFileCards(String searchText) {
         if (searchText == null || searchText.isEmpty()) {
-            // Mostra tutte le card
-            fileCardsContainer.getChildren().clear();
-            fileCardsContainer.getChildren().addAll(fileCards);
+            this.fileCardsContainer.getChildren().clear();
+            this.fileCardsContainer.getChildren().addAll(this.fileCards);
         } else {
-            // Filtra le card
-            fileCardsContainer.getChildren().clear();
+            this.fileCardsContainer.getChildren().clear();
             searchText = searchText.toLowerCase();
 
-            for (FileCardComponent card : fileCards) {
+            for (FileCardComponent card : this.fileCards) {
                 // Nota: questo è un po' hacky, dovresti migliorare la classe FileCardComponent
                 // aggiungendo un metodo per ottenere il nome del file
                 String fileName = extractFileNameFromCard(card);
 
                 if (fileName.toLowerCase().contains(searchText)) {
-                    fileCardsContainer.getChildren().add(card);
+                    this.fileCardsContainer.getChildren().add(card);
                 }
             }
         }
     }
 
     /**
-     * Estrae il nome del file da una card Nota: questo è un approccio
-     * temporaneo, dovresti migliorare la classe FileCardComponent
+     * Estrae il nome del file da una card di file.
+     * Questo è un metodo temporaneo che dovrebbe essere migliorato nella classe `FileCardComponent`.
+     *
+     * @param card La card di file da cui estrarre il nome del file.
+     * @return Il nome del file estratto dalla card.
      */
     private String extractFileNameFromCard(FileCardComponent card) {
         try {
-            // Questo è un metodo rudimentale basato sulla struttura DOM della card
             HBox mainRow = (HBox) card.getChildren().get(0);
             VBox fileInfo = (VBox) mainRow.getChildren().get(1);
             Label fileNameLabel = (Label) fileInfo.getChildren().get(0);
@@ -912,19 +984,24 @@ public class UserInterface extends Application implements PeerOperationListener 
         }
     }
 
+    /**
+     * Gestisce l'avvio automatico del servizio antivirus al momento dell'avvio del programma.
+     * Imposta il testo e l'icona del pulsante in base al valore della configurazione "CLAMD_SERVICE_AUTOMATIC_STARTUP".
+     * Inoltre, definisce il comportamento del pulsante per abilitare o disabilitare l'avvio automatico del servizio.
+     */
     private void clamdAtStartupSelector(){
 
         Platform.runLater(() -> {
             if (FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")) {
-                startScanButton.setText("Service enabled");
-                ((FontIcon)startScanButton.getGraphic()).setIconLiteral("fas-pause");
+                this.startScanButton.setText("Service enabled");
+                ((FontIcon)this.startScanButton.getGraphic()).setIconLiteral("fas-pause");
             } else {
-                startScanButton.setText("Service disabled");
-                ((FontIcon)startScanButton.getGraphic()).setIconLiteral("fas-play");
+                this.startScanButton.setText("Service disabled");
+                ((FontIcon)this.startScanButton.getGraphic()).setIconLiteral("fas-play");
             }
         });
 
-        startScanButton.setOnAction(event -> {
+        this.startScanButton.setOnAction(event -> {
             if (FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")) {
                 FileManager.setConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP", "false");
                 clamdAtStartupSelector();
@@ -934,4 +1011,35 @@ public class UserInterface extends Application implements PeerOperationListener 
             }
         });
     }
+
+
+
+
+    /* GENERAL PURPOSE METHODS */
+
+    private void stopAllThreads(){
+
+        try{
+            // SystemOrchestrator
+            this.so.interruptAllThreads();
+
+            // WireguardManager
+            this.so.getWireguardManager().interruptAllThreads();
+
+            // Connection
+            this.so.getWireguardManager().getConnection().interruptAllThreads();
+
+            // AntivirusManager
+            this.so.getAntivirusManager().interruptAllThreads();
+
+            // ClamAV
+            this.so.getAntivirusManager().getClamAV().interruptAllThreads();
+
+            // DownloadManager
+            this.so.getDownloadManager().interruptAllThreads();
+
+        }catch (InterruptedException e) {
+            logger.error("Error stopping all threads: ", e);
+        }
+    } 
 }
