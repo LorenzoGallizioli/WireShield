@@ -177,5 +177,27 @@ public class FileManager {
 			return null;
         }
     }
+
+	/**
+	 * Sets a configuration value in the properties file specified by {@code configPath}.
+	 *
+	 * @param key   the property key to add or update
+	 * @param value the value to associate with the key
+	 * @return {@code true} if the configuration was successfully updated, {@code false} if an error occurred
+	 */
+	public static Boolean setConfigValue(String key, String value) {
+		Properties prop = new Properties();
+		try (FileInputStream input = new FileInputStream(configPath)) {
+			prop.load(input);
+			prop.setProperty(key, value);
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(configPath))) {
+				prop.store(writer, null);
+				return true;
+			}
+		} catch (IOException e) {
+			logger.error("Error setting config value: {}", e.getMessage(), e);
+			return false;
+		}
+	}
 	
 }

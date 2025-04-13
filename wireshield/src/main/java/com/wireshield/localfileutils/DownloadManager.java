@@ -90,30 +90,27 @@ public class DownloadManager {
 	 * @throws IOException If an error occurs while setting up the WatchService.
 	 */
 	public void startMonitoring() {
-		if (monitorStatus == runningStates.UP) {
+		if (this.monitorStatus == runningStates.UP) {
 			logger.warn("Already monitoring the download directory.");
-			return; // Already monitoring
+			return;
 		}
 
-		monitorStatus = runningStates.UP; // Set monitoring status to active
+		this.monitorStatus = runningStates.UP;
 		logger.info("Monitoring directory: {}", getDownloadPath());
 
 		Path path = Paths.get(getDownloadPath());
 		
-		// Create WatchService to monitor directory
 		try {
-			// Register the directory for creation events
-			watchService = FileSystems.getDefault().newWatchService();
-		        path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+			this.watchService = FileSystems.getDefault().newWatchService();
+		    path.register(this.watchService, StandardWatchEventKinds.ENTRY_CREATE);
 		    
 		} catch (IOException e) {
-			monitorStatus = runningStates.DOWN;
+			this.monitorStatus = runningStates.DOWN;
 			return;
 		}
 
-		// Start monitoring in a new thread
-		monitorThread = new Thread(() -> {
-			// Loop to monitor the directory as long as the status is UP
+		this.monitorThread = new Thread(() -> {
+
 			while (!Thread.currentThread().isInterrupted()) {
 					
 				WatchKey key;
@@ -123,13 +120,16 @@ public class DownloadManager {
 					key = watchService.take(); // Wait for events
 						
 				} catch (InterruptedException e) {
-						// Handle interruption gracefully, but don't stop the monitoring thread
 					Thread.currentThread().interrupt();
 					continue;
 				}
 
 				// Process events
 				for (WatchEvent<?> event : key.pollEvents()) {
+
+					if(!Thread.currentThread().isInterrupted()) {
+						break;
+					}
 							
 					if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 								
@@ -154,11 +154,12 @@ public class DownloadManager {
 				
 			}
 			
-			monitorStatus = runningStates.DOWN;
+			this.monitorStatus = runningStates.DOWN;
+			logger.info("Thread stopped - [startMonitoring()] Download monitoring service thread terminated.");
 		});
 
-		monitorThread.setDaemon(true);
-		monitorThread.start(); // Begin monitoring
+		this.monitorThread.setDaemon(false);
+		this.monitorThread.start(); // Begin monitoring
 	}
 
 	/**
@@ -167,27 +168,25 @@ public class DownloadManager {
 	public void forceStopMonitoring() {
 		if (monitorStatus == runningStates.DOWN) {
 			logger.warn("Monitoring is already stopped.");
-			return; // Already stopped
+			return;
 			
 		}
 		
-		if (monitorThread != null && monitorThread.isAlive()) {
+		if (this.monitorThread != null && this.monitorThread.isAlive()) {
 			
-			// Set monitorThread's termination flag UP
-			monitorThread.interrupt();
+			this.monitorThread.interrupt();
 			try {
-				// Wait for the thread to finish
-				monitorThread.join();
+				this.monitorThread.join();
 					
 			} catch (InterruptedException e) {
 				logger.error("Thread interrupted while stopping monitoring.");
 			}
 		}
 
-		if (watchService != null) {
+		if (this.watchService != null) {
 			try {
 					
-				watchService.close(); // Close WatchService
+				this.watchService.close(); // Close WatchService
 				
 			} catch (IOException e) {
 				logger.error("Error stopping monitoring due to IO issue: {}", e.getMessage(), e);
@@ -203,7 +202,7 @@ public class DownloadManager {
 	 * @return The current monitoring status.
 	 */
 	public runningStates getMonitorStatus() {
-		return monitorStatus;
+		return this.monitorStatus;
 	}
 
 	/**
@@ -212,6 +211,17 @@ public class DownloadManager {
 	 * @return The monitored download directory path.
 	 */
 	public String getDownloadPath() {
-		return downloadPath;
+		return this.downloadPath;
+	}
+
+	/**
+	 * Interrupts `monitorThread` thread, if is active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.monitorThread != null && this.monitorThread.isAlive()){
+			this.monitorThread.interrupt();
+			this.monitorThread.join();
+		}
 	}
 }

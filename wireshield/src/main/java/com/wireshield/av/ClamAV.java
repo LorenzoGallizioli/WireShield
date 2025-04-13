@@ -1,14 +1,16 @@
 package com.wireshield.av;
 
-import java.io.File;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.wireshield.enums.runningStates;
 import com.wireshield.enums.warningClass;
+import com.wireshield.windows.ServicesUtils;
 
 /**
  * Implements antivirus scanning functionality using ClamAV. This class uses the
@@ -22,10 +24,12 @@ public class ClamAV implements AVInterface {
 	// Logger for logging ClamAV-related information and errors.
 	private static final Logger logger = LogManager.getLogger(ClamAV.class);
 
-	// Singleton instance of ClamAV.
 	private static ClamAV instance;
-	// Scan report generated after the most recent file analysis.
 	private ScanReport clamavReport;
+	private runningStates clamdState = runningStates.DOWN; // State of ClamAV service
+
+	Thread clamdServiceStartThread;
+	Thread clamdServiceStopThread;
 
 	/**
 	 * Private constructor to enforce Singleton pattern. Initializes ClamAV and logs
@@ -61,95 +65,198 @@ public class ClamAV implements AVInterface {
 	 *             appropriate error report.
 	 */
 	public void analyze(File file) {
-		// Check if the file is null or does not exist
-		if (file == null || !file.exists()) {
-			clamavReport = new ScanReport(); // Initialize an error scan report
-			clamavReport.setFile(file); // Associate the (invalid) file with the report
-			clamavReport.setValid(false); // Mark the report as invalid
-			clamavReport.setThreatDetails("File does not exist."); // Add error details
-			clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threat)
 
-			// Log appropriate warnings based on file validity
+		if (file == null || !file.exists()) {
+			this.clamavReport = new ScanReport();
+			this.clamavReport.setFile(file);
+			this.clamavReport.setValid(false);
+			this.clamavReport.setThreatDetails("File does not exist.");
+			this.clamavReport.setWarningClass(warningClass.CLEAR);
+
 			if (file == null) {
-				logger.warn("il file è nullo."); // Log warning if the file is null
+				logger.warn("il file è nullo.");
 			} else {
-				logger.warn("File does not exist: {}", file.getAbsolutePath()); // Log file path if it doesn't exist
+				logger.warn("File does not exist: {}", file.getAbsolutePath());
 			}
 
-			return; // Exit the method as the file is invalid
+			return;
 		}
 
 		try {
-			// Define the path to the ClamAV executable
-			String clamavPath = "C:\\Program Files\\ClamAV\\clamscan.exe";
-			logger.info("ClamAV path: {}", clamavPath); // Log the path for debugging purposes
 
-			// Create a ProcessBuilder to execute the ClamAV scan
+			String clamavPath = FileManager.getConfigValue("CLAMAV_STD_PATH");
+			File folder = new File(clamavPath);
+			if (folder.exists() && folder.isDirectory()) {
+				clamavPath += File.separator + "clamdscan.exe";
+			} else {
+				logger.error("ClamAV path is not a directory: {}", clamavPath);
+				return;
+			}
+
+			logger.info("cmd: {}", clamavPath + " " + file.getAbsolutePath());
 			ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
-			processBuilder.redirectErrorStream(true); // Redirect error stream to standard output
-			Process process = processBuilder.start(); // Start the ClamAV process
+			processBuilder.redirectErrorStream(true);
+			Process process = processBuilder.start();
 
-			// BufferedReader to capture ClamAV's output
 			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line; // Holds each line of output from ClamAV
-			boolean threatDetected = false; // Flag for detected threats
-			boolean suspiciousDetected = false; // Flag for detected suspicious activity
-			String threatDetails = ""; // To store detailed information about threats
+			String line;
+			boolean threatDetected = false;
+			boolean suspiciousDetected = false;
+			String threatDetails = "";
 
-			// Process each line of ClamAV's output
 			while ((line = reader.readLine()) != null) {
-				logger.debug("ClamAV output: {}", line); // Log each line for debugging
+				logger.debug("ClamAV output: {}", line);
 
-				// Check for threats in the output
 				if (line.contains("FOUND")) {
-					threatDetected = true; // Set the threat flag to true
+					threatDetected = true;
 
-					// Extract threat details from the output line
 					threatDetails = line.substring(line.indexOf(":") + 2, line.lastIndexOf("FOUND")).trim();
-					logger.info("Threat detected: {}", threatDetails); // Log the detected threat
-					break; // Stop processing further lines
+					logger.info("Threat detected: {}", threatDetails);
+					break;
 
-				} else if (line.contains("suspicious")) { // Check for suspicious activity
-					suspiciousDetected = true; // Set the suspicious flag to true
-					// Extract details about the suspicious activity
+				} else if (line.contains("suspicious")) {
+					suspiciousDetected = true;
 					threatDetails = line.substring(line.indexOf(":") + 2).trim();
-					logger.info("Suspicious activity detected: {}", threatDetails); // Log suspicious activity
-					break; // Stop processing further lines
+					logger.info("Suspicious activity detected: {}", threatDetails);
+					break;
 				}
 			}
-
-			// Create and populate the scan report
-			clamavReport = new ScanReport();
-			clamavReport.setFile(file); // Associate the scanned file with the report
-			clamavReport.setValid(true); // Mark the report as valid
-			clamavReport.setThreatDetected(threatDetected || suspiciousDetected); // Set the detection flag
-
-			// Populate the scan report based on the analysis results
+				
+			this.clamavReport = new ScanReport();
+			this.clamavReport.setFile(file);
+			this.clamavReport.setValid(true);
+			this.clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
+			
 			if (threatDetected) {
-				clamavReport.setThreatDetails(threatDetails); // Add threat details
-				clamavReport.setWarningClass(warningClass.DANGEROUS); // Classify the file as dangerous
-				logger.warn("Threat found, marking as dangerous."); // Log the classification
+				this.clamavReport.setThreatDetails(threatDetails);
+				this.clamavReport.setWarningClass(warningClass.DANGEROUS);
+				logger.warn("Threat found, marking as dangerous.");
 			} else if (suspiciousDetected) {
-				clamavReport.setThreatDetails("Suspicious activity detected"); // Add suspicious details
-				clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Classify the file as suspicious
-				logger.warn("Suspicious activity detected, marking as suspicious."); // Log the classification
+				this.clamavReport.setThreatDetails("Suspicious activity detected");
+				this.clamavReport.setWarningClass(warningClass.SUSPICIOUS);
+				logger.warn("Suspicious activity detected, marking as suspicious.");
 			} else {
-				clamavReport.setThreatDetails("No threat detected"); // Indicate no threats
-				clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
-				logger.info("No threat detected."); // Log the result
+				this.clamavReport.setThreatDetails("No threat detected");
+				this.clamavReport.setWarningClass(warningClass.CLEAR);
+				logger.info("No threat detected.");
 			}
 
-			reader.close(); // Close the reader after processing output
+			reader.close();
 
 		} catch (IOException e) {
-			// Handle exceptions during the scanning process
-			clamavReport = new ScanReport(); // Create an error scan report
-			clamavReport.setFile(file); // Associate the file with the report
-			clamavReport.setValid(false); // Mark the report as invalid
-			clamavReport.setThreatDetails("Error during scan: " + e.getMessage()); // Add error details
-			clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threats due to error)
-			logger.error("Error during scan: {}", e.getMessage(), e); // Log the exception details
+			this.clamavReport = new ScanReport();
+			this.clamavReport.setFile(file);
+			this.clamavReport.setValid(false);
+			this.clamavReport.setThreatDetails("Error during scan: " + e.getMessage());
+			this.clamavReport.setWarningClass(warningClass.CLEAR);
+			logger.error("Error during scan: {}", e.getMessage(), e);
 		}
+	}
+					
+
+	/**
+     * Starts the "clamd" service in a daemon thread if it exists.
+     * If the service is found, attempts to start it and logs the result.
+     */
+	public void startClamdService(){
+
+		Runnable clamdServiceTask = () -> {
+			String serviceName = "clamd";
+
+			try {
+
+				if (ServicesUtils.serviceExists(serviceName)) {
+
+					if(ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already running.");
+						this.clamdState = runningStates.UP;
+						return;
+					}
+
+					if(ServicesUtils.startService(serviceName)){
+
+						while(!ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()){
+							try {
+								Thread.sleep(200);
+							} catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+							}
+						}
+
+						this.clamdState = runningStates.UP;
+						logger.info("Service " + serviceName + " started successfully.");
+
+					} else {
+						logger.info("Failed to start service " + serviceName);
+					}
+
+				} else {
+					logger.info("Service " + serviceName + " not found.");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+
+			}
+
+			logger.info("Thread stopped - [startClamdService()] starting clamd service thread terminated.");
+		};
+		
+		this.clamdServiceStartThread = new Thread(clamdServiceTask);
+		
+		this.clamdServiceStartThread.setDaemon(false);
+		this.clamdServiceStartThread.start();
+	}
+
+	/**
+     * Stops the "clamd" service in a daemon thread if it is currently running.
+     * Checks for service existence and running state before attempting to stop it.
+     */
+	public void stopClamdService(){
+
+		Runnable clamdServiceTask = () -> {
+			String serviceName = "clamd";
+
+			try {
+                if (ServicesUtils.serviceExists(serviceName)) {
+                    
+					// this method was been called simultaneously with the UI.stopAllThreads() method. The thread interruption was been generating an exeption in isServiceRunning() --> return false;.
+					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned false even if the service was running.
+					//ServicesUtils.isServiceRunning(serviceName);
+
+					if (!ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already not running.");
+						this.clamdState = runningStates.DOWN;
+						return;
+					}
+
+                    ServicesUtils.stopService(serviceName);
+
+					while(ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()){
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException e) {
+							logger.error("Error while waiting for clamd service to start: {}", e.getMessage());
+							Thread.currentThread().interrupt();
+						}
+					}
+						
+					this.clamdState = runningStates.DOWN;
+					logger.info("Service " + serviceName + " stopped successfully.");
+				}
+				else {
+                    logger.info("Service " + serviceName + " not found.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+			logger.info("Thread stopped - [stopClamdService()] stopping clamd service thread terminated.");
+		};
+		
+		this.clamdServiceStopThread = new Thread(clamdServiceTask);
+
+		this.clamdServiceStopThread.setDaemon(false);
+		this.clamdServiceStopThread.start();
 	}
 
 	/**
@@ -158,6 +265,30 @@ public class ClamAV implements AVInterface {
 	 * @return The scan report, or null if no scan has been performed.
 	 */
 	public ScanReport getReport() {
-		return clamavReport; // Return the most recent scan report
+		return this.clamavReport; // Return the most recent scan report
+	}
+
+	/**
+	 * Retrieves the most recent clamd state.
+	 * 
+	 * @return runningState.
+	 */
+	public runningStates getClamdState() {
+		return this.clamdState;
+	}
+
+	/**
+	 * Interrupts all threads associated with the `clamdServiceStart` and `clamdServiceStop` services, if they are active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()){
+			this.clamdServiceStartThread.interrupt();
+			this.clamdServiceStartThread.join();
+		}
+		if(this.clamdServiceStopThread != null && this.clamdServiceStopThread.isAlive()){
+			this.clamdServiceStopThread.interrupt();
+			this.clamdServiceStopThread.join();
+		}
 	}
 }

@@ -33,6 +33,9 @@ public class Connection {
 	private static String wireguardPath;
 	private static String defaultPeerPath;
 
+	private Thread wireGuardInterfaceSetDownThread;
+	private Thread wireGuardInterfaceSetUpThread;
+
 	private static final long BYTE = 1L;
     private static final long KILOBYTE = 1024L;
     private static final long MEGABYTE = KILOBYTE * 1024L;
@@ -74,6 +77,7 @@ public class Connection {
 			int exitCode = -1;
 		
 			try {
+
 				ProcessBuilder processBuilder = new ProcessBuilder(this.wireguardPath, "/installtunnelservice", this.defaultPeerPath + configFileName);
 				Process process = processBuilder.start();
 	
@@ -95,7 +99,7 @@ public class Connection {
 			
 			if (exitCode == 0) {
 
-				while (getActiveInterface() == null) {
+				while (this.getActiveInterface() == null && !Thread.currentThread().isInterrupted()) {
 					try {
 						Thread.sleep(200); // Wait for 1 second before checking again
 					} catch (InterruptedException e) {
@@ -108,10 +112,13 @@ public class Connection {
 				logger.error("Error starting WireGuard interface -> exit code: {}", exitCode);
 			}
 		
+			logger.info("Thread stopped - [setUp()] set up wireguard connection thread terminated.");
 		};
 
-		Thread wireGuardInterfaceThread = new Thread(WireGuardInterfaceUpTask);
-		wireGuardInterfaceThread.start();
+		this.wireGuardInterfaceSetUpThread = new Thread(WireGuardInterfaceUpTask);
+
+		this.wireGuardInterfaceSetUpThread.setDaemon(true);
+		this.wireGuardInterfaceSetUpThread.start();
 	}
 
 	public void setDown(String interfaceName){
@@ -141,7 +148,7 @@ public class Connection {
 			
 			if (exitCode == 0) {
 
-				while (getActiveInterface() != null) {
+				while (getActiveInterface() != null && !Thread.currentThread().isInterrupted()) {
 					try {
 						Thread.sleep(200); // Wait for 1 second before checking again
 					} catch (InterruptedException e) {
@@ -153,10 +160,15 @@ public class Connection {
 			} else {
 				logger.error("Error stopping WireGuard interface -> exit code: {}", exitCode);	
 			}
+
+			logger.info("Thread stopped - [setDown()] interrupt wireguard connection thread terminated.");
+
 		};
 
-		Thread wireGuardInterfaceThread = new Thread(WireGuardInterfaceDownTask);
-		wireGuardInterfaceThread.start();
+		this.wireGuardInterfaceSetDownThread = new Thread(WireGuardInterfaceDownTask);
+
+		this.wireGuardInterfaceSetDownThread.setDaemon(true);
+		this.wireGuardInterfaceSetDownThread.start();
 	}
 	
 	/**
@@ -179,16 +191,15 @@ public class Connection {
 			// Read command output
 			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 			String line;
-			while ((line = reader.readLine()) != null) {
+			while ((line = reader.readLine()) != null && !Thread.currentThread().isInterrupted()) {
 				return line.split("=")[1].trim();
 			}
 			return null;
 
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (IOException e) {
 			return null;
-
 		}
+
 	}
 
 
@@ -247,7 +258,7 @@ public class Connection {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
 
-				while ((line = reader.readLine()) != null) {
+				while ((line = reader.readLine()) != null && !Thread.currentThread().isInterrupted()) {
 					if (!line.isEmpty()) {
 						this.activeInterface = line; // Get only the first wg interface up and exit
 						return;
@@ -357,6 +368,21 @@ public class Connection {
             return String.format("%.2f TB", value);
         }
     }
+
+	/**
+	 * Interrupts all threads associated with the `wireGuardInterfaceSetUpThread` and `wireGuardInterfaceSetDownThread` services, if they are active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.wireGuardInterfaceSetUpThread != null && this.wireGuardInterfaceSetUpThread.isAlive()){
+			this.wireGuardInterfaceSetUpThread.interrupt();
+			this.wireGuardInterfaceSetUpThread.join();
+		}
+		if(this.wireGuardInterfaceSetDownThread != null && this.wireGuardInterfaceSetDownThread.isAlive()){
+			this.wireGuardInterfaceSetDownThread.interrupt();
+			this.wireGuardInterfaceSetDownThread.join();
+		}
+	}
 	
 	
 	// Protected setters for internal testing
