@@ -77,14 +77,14 @@ public class AntivirusManager {
 	 */
 	public void startScan() {
 		if (this.scannerStatus == runningStates.UP) {
-			logger.warn("Scan process is already running.");
+			logger.warn("Scan Thread is already running.");
 			return;
 		}
 
-		scanThread = new Thread(() -> {
+		this.scanThread = new Thread(() -> {
 			this.scannerStatus = runningStates.UP;
 
-			while(clamAV.getClamdState() == runningStates.DOWN){
+			while(clamAV.getClamdState() == runningStates.DOWN && !Thread.currentThread().isInterrupted()){ // to be introduced a method to stop this thread if clamdservice fails startup
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e) {
@@ -94,10 +94,12 @@ public class AntivirusManager {
 
 			performScan();
 			this.scannerStatus = runningStates.DOWN;
+
+			logger.info("Thread stopped - [startScan()] ScannerThread interrupted.");
 		});
 
-		scanThread.setDaemon(true);
-		scanThread.start();
+		this.scanThread.setDaemon(false);
+		this.scanThread.start();
 	}
 
 	private void performScan(){
@@ -154,7 +156,7 @@ public class AntivirusManager {
         		return;
     	}
 
-		if (this.scanThread != null && scanThread.isAlive()) {
+		if (this.scanThread != null && this.scanThread.isAlive()) {
 			scanThread.interrupt();
 			
 			try {
@@ -234,6 +236,17 @@ public class AntivirusManager {
 				target.setWarningClass(source.getWarningClass());
 			}
 			target.setValid(target.isValidReport() && (source.isValidReport()));
+		}
+	}
+
+	/**
+	 * Interrupts `scanThread` thread, if is active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.scanThread != null && this.scanThread.isAlive()){
+			this.scanThread.interrupt();
+			this.scanThread.join();
 		}
 	}
 }
