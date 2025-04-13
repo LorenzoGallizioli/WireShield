@@ -17,9 +17,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.wireshield.av.AntivirusManager;
-import com.wireshield.av.ClamAV;
 import com.wireshield.av.FileManager;
 import com.wireshield.enums.runningStates;
+
+import com.wireshield.av.ClamAV;
+
 
 /**
  * The DownloadManager class is responsible for: - Monitoring a download
@@ -214,6 +216,7 @@ public class DownloadManager {
 			monitorStatus = runningStates.DOWN;
 		});
 
+		monitorThread.setDaemon(true);
 		monitorThread.start(); // Begin monitoring
 	}
 
@@ -276,19 +279,17 @@ public class DownloadManager {
 	}
 
 	/**
-	 * Esegue un test del flusso di lavoro completo del DownloadManager,
-	 * dall'avvio del monitoraggio alla scansione di un file scaricato,
-	 * fino alla gestione delle azioni successive in base ai risultati
-	 * dell'analisi. Verranno visualizzati messaggi per l'utente che
-	 * indicheranno come procedere durante il test.
+	 * A test main method to exercise the DownloadManager class. It gets an
+	 * instance of ClamAV, AntivirusManager, and DownloadManager, then starts
+	 * the antivirus scanner and monitoring.
+	 * 
+	 * @param args Command-line arguments (not used)
 	 */
-
 	public static void main(String[] args) {
 		try {
 
 			// Get the ClamAV instance
 			ClamAV clamAV = ClamAV.getInstance();
-
 			// Get the AntivirusManager instance
 			AntivirusManager antivirusManager = AntivirusManager.getInstance();
 			antivirusManager.setClamAV(clamAV); // <-- set the instance to use

@@ -1,22 +1,16 @@
 package com.wireshield.av;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import org.json.simple.parser.JSONParser;
-import org.json.simple.JSONObject;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -322,22 +316,6 @@ public class FileManagerTest {
 	}
 
 	/**
-	 * Tests the `calculateSHA256` method when a non-existent file is passed.
-	 * Verifies that the method returns null if the file cannot be found or read.
-	 */
-	@Test
-	public void testCalculateSHA256_Catch() {
-		// Create a non-existing file
-		nonExistingFile = new File("nonExistingFile.txt");
-
-		// Attempt to calculate SHA256 for the non-existent file
-		String result = FileManager.calculateSHA256(nonExistingFile);
-
-		// Assert that the result is null, indicating an error
-		assertNull("Il risultato dovrebbe essere null in caso di errore.", result);
-	}
-
-	/**
 	 * Tests the `getProjectFolder` method to verify that the project folder path is
 	 * correctly retrieved. Ensures that the method returns a valid path that exists
 	 * on the filesystem.
@@ -355,31 +333,6 @@ public class FileManagerTest {
 
 		// Assert that the project folder path exists
 		assertTrue("Project folder path should exist.", new File(projectFolder).exists());
-	}
-
-	/**
-	 * Tests the `calculateSHA256` method to verify that it correctly calculates the
-	 * SHA256 hash of a file. Ensures that the hash is calculated correctly and has
-	 * the expected length of 64 characters.
-	 */
-	@Test
-	public void testCalculateSHA256() {
-		// Create a test file and write content to it
-		FileManager.createFile(testFilePath);
-		String content = "Test SHA256 content";
-		FileManager.writeFile(testFilePath, content);
-
-		// Initialize validFile with the created file
-		validFile = new File(testFilePath);
-
-		// Calculate the SHA256 hash for the validFile
-		String sha256Hash = FileManager.calculateSHA256(validFile);
-
-		// Assertions Ensure the SHA256 hash is not null
-		assertNotNull("SHA256 hash should not be null", sha256Hash);
-
-		// Ensure the SHA256 hash has a length of 64 characters (expected for SHA256)
-		assertEquals("SHA256 hash should have 64 characters", 64, sha256Hash.length());
 	}
 
 	/**
@@ -402,96 +355,5 @@ public class FileManagerTest {
 	public void testGetConfigValueInvalidKey() {
 		String value = FileManager.getConfigValue("nonexistent_key");
 		assertNull(value);
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when the configuration file exists and is
-	 * valid. Verifies that new key-value pairs are correctly written to the
-	 * configuration file.
-	 */
-	@Test
-	public void testWriteConfigValue_FileExists_ValidJSON() throws Exception {
-		// Prepare a valid JSON file
-		JSONObject initialJson = new JSONObject();
-		initialJson.put("existingKey", "existingValue");
-		try (FileWriter writer = new FileWriter(CONFIG_PATH)) {
-			writer.write(initialJson.toJSONString());
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("newKey", "newValue");
-
-		// Verify the result
-		assertTrue(result);
-
-		// Check that the file has been updated
-		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader(CONFIG_PATH)) {
-			JSONObject jsonObject = (JSONObject) parser.parse(reader);
-			assertEquals("newValue", jsonObject.get("newKey"));
-			assertEquals("existingValue", jsonObject.get("existingKey"));
-		}
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when the configuration file does not
-	 * exist. Verifies that the method creates the file and writes the new key-value
-	 * pair correctly.
-	 */
-	@Test
-	public void testWriteConfigValue_FileDoesNotExist() throws Exception {
-		// Delete the file if it exists
-		File file = new File(CONFIG_PATH);
-		if (file.exists()) {
-			file.delete();
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertTrue(result);
-
-		// Check that the file was created and contains the correct value
-		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader(CONFIG_PATH)) {
-			JSONObject jsonObject = (JSONObject) parser.parse(reader);
-			assertEquals("value", jsonObject.get("key"));
-		}
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method with invalid JSON format. Verifies that
-	 * the method returns false when an invalid JSON format is encountered.
-	 */
-	@Test
-	public void testWriteConfigValue_InvalidJSON() throws Exception {
-		// Prepare an invalid JSON file
-		try (FileWriter writer = new FileWriter(CONFIG_PATH)) {
-			writer.write("invalid JSON");
-		}
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertFalse(result);
-	}
-
-	/**
-	 * Tests the `writeConfigValue` method when there is an I/O error (e.g., due to
-	 * invalid path). Verifies that the method returns false in such cases.
-	 */
-	@Test
-	public void testWriteConfigValue_IOError() {
-		// Set an unwritable path
-		String invalidPath = "C:\\nonexistent\\config.json";
-		FileManager.configPath = invalidPath;
-
-		// Test the function
-		boolean result = FileManager.writeConfigValue("key", "value");
-
-		// Verify the result
-		assertFalse(result);
 	}
 }

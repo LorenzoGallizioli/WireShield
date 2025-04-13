@@ -43,14 +43,12 @@ public class AntivirusManager {
     private static AntivirusManager instance;
 
     private ClamAV clamAV;
-    private VirusTotal virusTotal;
     private Queue<File> scanBuffer = new LinkedList<>();
     private List<File> filesToRemove = new ArrayList<>();
     private List<ScanReport> finalReports = new ArrayList<>();
     private runningStates scannerStatus;
 
     private Thread scanThread;
-    static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // Maximum file size for VirusTotal analysis (10 MB)
 
     private AntivirusManager() {
         logger.info("AntivirusManager initialized.");
@@ -98,7 +96,6 @@ public class AntivirusManager {
             logger.warn("Scan process is already running.");
             return;
         }
-
         scannerStatus = runningStates.UP;
         logger.info("Starting antivirus scan process...");
 
@@ -108,6 +105,7 @@ public class AntivirusManager {
 
         });
 
+        scanThread.setDaemon(true);
         scanThread.start();
     }
 
@@ -148,26 +146,8 @@ public class AntivirusManager {
             clamAV.analyze(fileToScan);
             ScanReport clamAVReport = clamAV.getReport();
 
-            if (clamAVReport != null) {
+            if (clamAVReport != null)
                 mergeReports(finalReport, clamAVReport);
-            }
-
-            // If a threat is detected and the file is small enough, use VirusTotal
-            if (virusTotal != null) {
-                if (finalReport.isThreatDetected() && fileToScan.length() <= MAX_FILE_SIZE) {
-
-                    virusTotal.analyze(fileToScan);
-                    ScanReport virusTotalReport = virusTotal.getReport();
-
-                    if (virusTotalReport != null) {
-                        mergeReports(finalReport, virusTotalReport);
-                    }
-
-                } else if (fileToScan.length() > MAX_FILE_SIZE) {
-                    logger.warn("File {} is too large for VirusTotal analysis (>10 MB)", fileToScan.getName());
-
-                }
-            }
 
             // Add the final report to the results list
             finalReports.add(finalReport);
@@ -214,15 +194,6 @@ public class AntivirusManager {
     }
 
     /**
-     * Sets the VirusTotal engine for file analysis.
-     *
-     * @param virusTotal the VirusTotal instance.
-     */
-    public void setVirusTotal(VirusTotal virusTotal) {
-        this.virusTotal = virusTotal;
-    }
-
-    /**
      * Retrieves the current status of the scanner.
      *
      * @return the scanner status.
@@ -255,43 +226,32 @@ public class AntivirusManager {
      * @param target the target report to be updated.
      * @param source the source report to merge from.
      */
-    void mergeReports(ScanReport target, ScanReport source) {
-        if (source != null && source.isThreatDetected()) {
-            target.setThreatDetected(true);
-            target.setThreatDetails(source.getThreatDetails());
+	void mergeReports(ScanReport target, ScanReport source) {
+		if (source != null && source.isThreatDetected()) {
+			target.setThreatDetected(true);
+			target.setThreatDetails(source.getThreatDetails());
 
-            if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
-                target.setWarningClass(source.getWarningClass());
-            }
+			if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
+				target.setWarningClass(source.getWarningClass());
+			}
+			target.setValid(target.isValidReport() && (source.isValidReport()));
+		}
+	}
 
-            target.setMaliciousCount(target.getMaliciousCount() + source.getMaliciousCount());
-            target.setHarmlessCount(target.getHarmlessCount() + source.getHarmlessCount());
-            target.setSuspiciousCount(target.getSuspiciousCount() + source.getSuspiciousCount());
-            target.setUndetectedCount(target.getUndetectedCount() + source.getUndetectedCount());
-        }
-
-        if (source != null && source.getSha256() != null && !source.getSha256().equals(target.getSha256())) {
-            target.setSha256(source.getSha256());
-        }
-
-        target.setValid(target.isValidReport() && (source != null && source.isValidReport()));
-    }
-
-
-/**
- * Moves the specified file to a quarantine directory for further analysis.
- * The file is relocated to a hidden '.QUARANTINE' folder within the user's
- * Downloads directory. If the file already exists in quarantine, it is left
- * unchanged. Metadata about the file, including its original path and size,
- * is stored in a separate metadata file.
- *
- * If the quarantine directory does not exist, it is created and made hidden.
- * Access control lists (ACLs) are set to ensure full access for the program
- * while restricting other users to read-only access.
- *
- * @param originalFile the file to be moved to quarantine
- * @return the quarantined file, or null if an error occurs
- */
+    /**
+     * Moves the specified file to a quarantine directory for further analysis.
+     * The file is relocated to a hidden '.QUARANTINE' folder within the user's
+     * Downloads directory. If the file already exists in quarantine, it is left
+     * unchanged. Metadata about the file, including its original path and size,
+     * is stored in a separate metadata file.
+     *
+     * If the quarantine directory does not exist, it is created and made hidden.
+     * Access control lists (ACLs) are set to ensure full access for the program
+     * while restricting other users to read-only access.
+     *
+     * @param originalFile the file to be moved to quarantine
+     * @return the quarantined file, or null if an error occurs
+     */
     public File moveToQuarantine(File originalFile) {
         if (originalFile == null || !originalFile.exists()) {
             logger.warn("File is null or does not exist, cannot quarantine it.");
@@ -341,8 +301,7 @@ public class AntivirusManager {
                         // Read-only for **all** other users (both local and non-local)
                         AclEntry readOnlyAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(lookupService.lookupPrincipalByName("S-1-1-0")) // SID for Everyone
-                                                                                              // Apply read-only for all users
+                                .setPrincipal(lookupService.lookupPrincipalByName("S-1-1-0")) // SID for Everyone apply read-only for all users
                                 .setPermissions(
                                         AclEntryPermission.READ_DATA,
                                         AclEntryPermission.READ_ATTRIBUTES,
@@ -402,7 +361,6 @@ public class AntivirusManager {
         }
     }
 
-
     /**
      * Updates the quarantine status of a given file based on the scan results.
      * If the file is identified as a threat, the threat details are also updated
@@ -410,10 +368,13 @@ public class AntivirusManager {
      * the same path as the quarantined file with a ".meta" extension.
      *
      * @param quarantinedFile The file whose quarantine status is to be updated.
-     *        This file must not be null and must exist in the filesystem.
-     * @param isThreat A boolean indicating whether the file is considered a threat.
-     * @param threatDetails The details of the threat if one is detected. This parameter
-     *        is used only if isThreat is true.
+     *                        This file must not be null and must exist in the
+     *                        filesystem.
+     * @param isThreat        A boolean indicating whether the file is considered a
+     *                        threat.
+     * @param threatDetails   The details of the threat if one is detected. This
+     *                        parameter
+     *                        is used only if isThreat is true.
      * @return True if the metadata is successfully updated, otherwise false.
      *         Returns false if the file or its metadata cannot be found or if an
      *         error occurs during the update process.
@@ -463,8 +424,10 @@ public class AntivirusManager {
      * 
      * @param quarantinedFile the quarantined file to restore
      * @return the restored file if successful, otherwise null
-     *         Restores the file to its original location and deletes the metadata file.
-     *         Returns null if the file or its metadata cannot be found or if an error
+     *         Restores the file to its original location and deletes the metadata
+     *         file.
+     *         Returns null if the file or its metadata cannot be found or if an
+     *         error
      *         occurs during the restoration process.
      */
     public File restoreFromQuarantine(File quarantinedFile) {
