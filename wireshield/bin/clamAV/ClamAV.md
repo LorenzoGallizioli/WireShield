@@ -2,11 +2,15 @@
 
 Benvenuto! Questa guida ti permette di scaricare rapidamente, configurare e automatizzare l'uso di ClamAV per il corretto funzionamento di WireShield su Windows.
 
+---
+
 ## 📂 Download del File Eseguibile
 
 Clicca sul link qui sotto per scaricare il file eseguibile ClamAV pronto per l'uso:
 
 👉 [Scarica ClamAV per WireShield](link del file .exe su github)
+
+---
 
 ## 🛠️ Istruzioni per l'Installazione
 
@@ -14,19 +18,41 @@ Clicca sul link qui sotto per scaricare il file eseguibile ClamAV pronto per l'u
    Scarica il file `.exe` direttamente sul tuo computer.
 
 2. **Esegui il file**  
-   Fai doppio clic sul file `.exe` per avviare l'installazione.  
-   - Il programma scaricherà automaticamente l'archivio di ClamAV da Google Drive.
-   - Estrae i file e li sposta nella cartella di installazione `C:\Program Files\ClamAV`.
-   - Una volta installato, aggiornerà automaticamente il database di ClamAV utilizzando il comando `freshclam`.
+   Fai doppio clic sul file `.exe` per avviare l’installazione.  
+   Il programma:
+   - Scarica automaticamente l'ultima versione stabile di ClamAV dal sito ufficiale.
+   - Estrae i file e li installa in `C:\Program Files\ClamAV`.
+   - Scarica e applica la configurazione predefinita di WireShield.
+   - Installa ClamAV come servizio Windows.
+   - Aggiorna subito il database antivirus.
 
-3. **Pianifica gli aggiornamenti automatici**  
-   Ogni 6 giorni, il programma pianificherà un aggiornamento automatico del database di ClamAV per mantenere il sistema sempre protetto.
+3. **Permessi di amministratore**  
+   Verrà richiesto di eseguire il programma con privilegi amministrativi. È fondamentale per completare correttamente l’installazione.
 
-   Non dovrai preoccuparti di fare altro! Il processo avverrà automaticamente senza intervento da parte tua.
+---
+
+## 🔄 Aggiornamento Automatico delle Firme Antivirus
+
+WireShield è progettato per avviarsi automaticamente all'accensione del computer. Durante l'avvio, **WireShield esegue automaticamente il comando `freshclam`**, che aggiorna il database delle firme antivirus.
+
+🛡️ **In sintesi:**
+- Nessuna pianificazione manuale necessaria.
+- Il database si aggiorna **automaticamente ad ogni avvio del sistema operativo**.
+- ClamAV sarà sempre aggiornato per proteggerti dalle minacce più recenti.
+
+---
 
 ## ✅ Configurazione Completa
 
-Una volta eseguito il file `.exe`, il sistema sarà pronto e ClamAV sarà configurato per l'uso con WireShield. Non sono necessari ulteriori passaggi di configurazione.
+Dopo aver eseguito il file `.exe`, ClamAV sarà correttamente installato, aggiornato e pronto per funzionare con WireShield. Non serve alcuna configurazione aggiuntiva.
+
+---
+
+## 🧹 Pulizia Automatica
+
+Al termine dell’installazione, il programma elimina automaticamente tutti i file temporanei utilizzati durante il processo.
+
+---
 
 ## ⚠️ Requisiti di Amministratore
 
@@ -38,4 +64,4 @@ Se hai bisogno di ulteriore assistenza o se qualcosa non funziona come previsto,
 
 ---
 
-***Team WireShield***
+**🛡️ Team WireShield**
