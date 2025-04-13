@@ -61,8 +61,6 @@ public class WireguardManager {
 		} else {
 			throw new IllegalStateException("Il costruttore di PeerManager ha restituito un oggetto null");
 		}
-		
-		this.startUpdateWireguardLogs(); // Start log update thread
 	}
 
 	/**
@@ -197,7 +195,7 @@ public class WireguardManager {
 		    Process process = processBuilder.start();
 			process.waitFor();
 	        	
-	        String logDump = FileManager.readFile(logDumpPath);
+	        String logDump = FileManager.readFile(this.logDumpPath);
 	        this.logs = logDump;
 
 	    } else {
@@ -222,10 +220,12 @@ public class WireguardManager {
 		String[] command = {"cmd.exe", "/c", this.wireguardPath + " /dumplog > " + this.logDumpPath};
 
 		this.updateWireguardLogsThread = new Thread(() -> {
-			while (!Thread.currentThread().isInterrupted() && connection.getStatus() == connectionStates.CONNECTED) {
+
+			while (!Thread.currentThread().isInterrupted()) {
 				
 				try {
 					
+					logger.debug("Updating WireGuard logs...");
 					this.updateWireguardLogs(command);
 					Thread.sleep(500);
 					
@@ -242,6 +242,17 @@ public class WireguardManager {
 		// Set the thread as not a Deamon to ensure log file remains in a consistent state
 		this.updateWireguardLogsThread.setDaemon(false);
 		this.updateWireguardLogsThread.start();
+	}
+
+	public void stopUpdateWireguardLogs(){
+		if (this.updateWireguardLogsThread != null && this.updateWireguardLogsThread.isAlive()) {
+			this.updateWireguardLogsThread.interrupt();
+			try {
+				this.updateWireguardLogsThread.join();
+			} catch (InterruptedException e) {
+				logger.error("Error stopping updateWireguardLogs thread: {}", e.getMessage());
+			}
+		}
 	}
 
 	/**
@@ -340,6 +351,9 @@ public class WireguardManager {
 	 * @return The WireGuard logs.
 	 */
 	public String getLog() {
+
+		if (this.logs == null) return "Waiting for VPN connection...";
+
     	String[] lines = this.logs.split("\n");
     	Collections.reverse(Arrays.asList(lines));
     	this.logs = String.join("\n", lines);

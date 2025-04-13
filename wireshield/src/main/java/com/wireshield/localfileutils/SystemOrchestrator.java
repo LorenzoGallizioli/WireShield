@@ -92,12 +92,14 @@ public class SystemOrchestrator {
 
 			// waiting staring while loop must be implemented in Userinterface -> on connection state variable
 			wireguardManager.setInterfaceUp(peer);
+			wireguardManager.startUpdateWireguardLogs();
 			break;
 
 		case STOP:
 
 			// waiting stopping while loop must be implemented in Userinterface -> on connection state variable
 			wireguardManager.setInterfaceDown();
+			wireguardManager.stopUpdateWireguardLogs();
 			break;
 
 		default:
