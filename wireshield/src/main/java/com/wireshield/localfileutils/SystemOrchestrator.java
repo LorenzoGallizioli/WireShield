@@ -38,6 +38,8 @@ public class SystemOrchestrator {
     // Control variable for componentStatesGuardian thread --> runningStates.UP let the thread to continue running, runningStates.DOWN stops the thread execution
     private runningStates guardianState = runningStates.DOWN; 
 
+	Thread stateGuardianThread;
+
 	/**
 	 * Private constructor to initialize the SystemOrchestrator instance. Configures
 	 * all necessary components.
@@ -156,27 +158,15 @@ public class SystemOrchestrator {
 	 */
 	public void manageAV(runningStates status) {
 
-		runningStates s;
 		logger.info("Managing antivirus service. Desired state: {}", status);
 
-		if (status == runningStates.UP) {
-			if (antivirusManager.getScannerStatus() != runningStates.UP) {
-
-                antivirusManager.startScan(); // waiting staring while loop must be implemented in Userinterface -> on avmanager scannerStatus viable
-                
-            } else { 
-                logger.info("Antivirus service is already running.");
-            }
+		if (status == runningStates.UP) 
+		{
+            antivirusManager.startScan(); // waiting staring while loop must be implemented in Userinterface -> on avmanager scannerStatus viable
         } 
 		else 
 		{
-            if (antivirusManager.getScannerStatus() != runningStates.DOWN) {
-                
-                antivirusManager.stopScan(); // waiting stopping while loop must be implemented in Userinterface -> on avmanager scannerStatus viable
-
-            } else {
-                logger.info("Antivirus service is already stopped.");
-            }
+            antivirusManager.stopScan(); // waiting stopping while loop must be implemented in Userinterface -> on avmanager scannerStatus viable
 			
 			List<ScanReport> finalReports = antivirusManager.getFinalReports();
 			if (finalReports.isEmpty()) {} 
@@ -195,14 +185,12 @@ public class SystemOrchestrator {
 	 * @param state {@code UP} to start or {@code DOWN} to stop the service.
 	 */
 	public void manageClamdService(runningStates state){
-		if (state == runningStates.UP) {
+		if (state.equals(runningStates.UP)) {
 
-			// waiting staring while loop must be implemented in Userinterface -> on clamav clamdState viable
 			// during starting waiting, in UI, the stop clamd service button must be disabled (so delete commended code in ClamAV.java)
 			antivirusManager.getClamAV().startClamdService(); 	
 		} else {
 
-			// waiting stopping while loop must be implemented in Userinterface -> on clamav clamdState viable
 			antivirusManager.getClamAV().stopClamdService();
 		}
 	}
@@ -258,7 +246,7 @@ public class SystemOrchestrator {
 	 * @return The WireguardManager instance.
 	 */
 	public WireguardManager getWireguardManager() {
-		return wireguardManager;
+		return this.wireguardManager;
 	}
 
 	/**
@@ -279,7 +267,7 @@ public class SystemOrchestrator {
 	 */
 	public DownloadManager getDownloadManager() {
 		logger.debug("Retrieving DownloadManager instance.");
-		return downloadManager;
+		return this.downloadManager;
 	}    
 
 	/**
@@ -288,7 +276,7 @@ public class SystemOrchestrator {
      * @return The AntivirusManager instance.
      */
     public AntivirusManager getAntivirusManager() {
-        return antivirusManager;
+        return this.antivirusManager;
     }
     
     
@@ -312,13 +300,13 @@ public class SystemOrchestrator {
      */
     public void statesGuardian() {
 		
-    	Thread thread = new Thread(() -> {
+    	this.stateGuardianThread = new Thread(() -> {
 
 			connectionStates VPNState = connectionStates.DISCONNECTED; // Initialize VPN state
 			runningStates AVState = runningStates.DOWN; // Initialize AV state
 			runningStates MonitorState = runningStates.DOWN; // Initialize monitor state
 			
-            while (guardianState == runningStates.UP && !Thread.currentThread().isInterrupted()) { // Check interface is up
+            while (this.guardianState == runningStates.UP && !Thread.currentThread().isInterrupted()) { // Check interface is up
 				
 				if(wireguardManager.getConnectionStatus() == connectionStates.CONNECTED) {
 					VPNState = connectionStates.CONNECTED;
@@ -332,7 +320,7 @@ public class SystemOrchestrator {
 
 				if (VPNState == connectionStates.CONNECTED && AVState == runningStates.UP && MonitorState == runningStates.UP) {
 					boolean loopFlag = true;
-					while (loopFlag) { 
+					while (loopFlag && !Thread.currentThread().isInterrupted()) { 
 						if(wireguardManager.getConnectionStatus() == connectionStates.CONNECTED) {
 							if(antivirusManager.getScannerStatus() == runningStates.DOWN || downloadManager.getMonitorStatus() == runningStates.DOWN) {
 								
@@ -362,9 +350,7 @@ public class SystemOrchestrator {
 							Thread.sleep(200); // wait
 							
 						} catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-							logger.error("startComponentStatesGuardian() thread unexpecly interrupted");
-							
+							Thread.currentThread().interrupt();							
 						}
 					}
 				}
@@ -373,18 +359,17 @@ public class SystemOrchestrator {
                     Thread.sleep(200); // wait
                     
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    logger.error("startComponentStatesGuardian() thread unexpecly interrupted");
-                    
+                    Thread.currentThread().interrupt();                    
                 }
             }
-            logger.info("startComponentStatesGuardian() thread stopped");
+
+           	logger.info("Thread stopped - [statesGuardian()] guardian thread terminated.");
         });
         
-        guardianState = runningStates.UP;
+        this.guardianState = runningStates.UP;
         
-		thread.setDaemon(true);
-		thread.start();
+		this.stateGuardianThread.setDaemon(true);
+		this.stateGuardianThread.start();
     }
     
     /**
@@ -393,7 +378,7 @@ public class SystemOrchestrator {
      * @param enum runningStates object.
      */
     public void setGuardianState(runningStates s) {
-    	guardianState = s;
+    	this.guardianState = s;
     }
     
     /**
@@ -402,14 +387,25 @@ public class SystemOrchestrator {
      * @return enum runningStates object.
      */
     public runningStates getGuardianState() {
-    	return guardianState;
+    	return this.guardianState;
     }
     
     /*
      * Only for test
      */
     protected void resetIstance() {
-    	instance = null;
+    	this.instance = null;
     }
+
+	/**
+	 * Interrupts `stateGuardianThread` thread, if is active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.stateGuardianThread != null && this.stateGuardianThread.isAlive()){
+			this.stateGuardianThread.interrupt();
+			this.stateGuardianThread.join();
+		}
+	}
     
 }

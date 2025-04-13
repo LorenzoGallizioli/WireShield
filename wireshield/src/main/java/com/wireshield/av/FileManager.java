@@ -178,6 +178,13 @@ public class FileManager {
         }
     }
 
+	/**
+	 * Sets a configuration value in the properties file specified by {@code configPath}.
+	 *
+	 * @param key   the property key to add or update
+	 * @param value the value to associate with the key
+	 * @return {@code true} if the configuration was successfully updated, {@code false} if an error occurred
+	 */
 	public static Boolean setConfigValue(String key, String value) {
 		Properties prop = new Properties();
 		try (FileInputStream input = new FileInputStream(configPath)) {

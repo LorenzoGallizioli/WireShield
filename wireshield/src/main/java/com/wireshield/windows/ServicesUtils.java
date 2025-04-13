@@ -1,5 +1,7 @@
 package com.wireshield.windows;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 public class ServicesUtils {
@@ -60,11 +62,30 @@ public class ServicesUtils {
         try {
             ProcessBuilder pb = new ProcessBuilder("sc", "query", serviceName);
             Process process = pb.start();
-            process.waitFor();
 
-            String output = new String(process.getInputStream().readAllBytes());
+            int exitCode = process.waitFor();
+
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            String errorOutput = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+
+            if (exitCode != 0 || !errorOutput.trim().isEmpty()) {
+                System.err.println("Errore durante l'esecuzione di 'sc query " + serviceName + "':");
+                System.err.println("Exit Code: " + exitCode);
+                System.err.println("Output Errore: " + errorOutput);
+            }
+
+            logger.info("Output di 'sc query " + serviceName + "': " + output);
             return output.contains("RUNNING");
-        } catch (Exception e) {
+            
+        } catch (IOException e) {
+
+            System.err.println("IOException durante l'esecuzione di 'sc query " + serviceName + "': " + e.getMessage());
+            return false;
+
+        } catch (InterruptedException e) {
+
+            System.err.println("Interruzione durante l'esecuzione di 'sc query " + serviceName + "': " + e.getMessage());
+            Thread.currentThread().interrupt();
             return false;
         }
     }
