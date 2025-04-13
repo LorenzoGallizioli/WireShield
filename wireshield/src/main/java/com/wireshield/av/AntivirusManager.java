@@ -173,10 +173,12 @@ public class AntivirusManager {
             finalReports.add(finalReport);
 
             // If the file is dangerous or suspicious, take action
-            if (finalReport.getWarningClass() == warningClass.DANGEROUS || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
+            if (finalReport.getWarningClass() == warningClass.DANGEROUS
+                    || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
                 logger.warn("Threat detected in file: {}", fileToScan.getName());
 
-                JOptionPane.showMessageDialog(null, "Threat detected in file: " + fileToScan.getName(), "Threat Detected", JOptionPane.WARNING_MESSAGE); // Show warning dialog
+                JOptionPane.showMessageDialog(null, "Threat detected in file: " + fileToScan.getName(),
+                        "Threat Detected", JOptionPane.WARNING_MESSAGE); // Show warning dialog
                 filesToRemove.add(fileToScan);
             }
         }
@@ -184,7 +186,7 @@ public class AntivirusManager {
     }
 
     /*
-         * Stops the ongoing antivirus scan process gracefully.
+     * Stops the ongoing antivirus scan process gracefully.
      */
     public void stopScan() {
         if (scannerStatus == runningStates.DOWN) {
@@ -275,20 +277,36 @@ public class AntivirusManager {
         target.setValid(target.isValidReport() && (source != null && source.isValidReport()));
     }
 
-    /**
-     * Sposta un file nella quarantena temporanea per la scansione, dopo averlo
-     * preventivamente bloccato.
-     *
-     * @param originalFile il file da mettere in quarantena
-     * @return il file in quarantena, oppure null in caso di errore
-     */
+
+/**
+ * Moves the specified file to a quarantine directory for further analysis.
+ * The file is relocated to a hidden '.QUARANTINE' folder within the user's
+ * Downloads directory. If the file already exists in quarantine, it is left
+ * unchanged. Metadata about the file, including its original path and size,
+ * is stored in a separate metadata file.
+ *
+ * If the quarantine directory does not exist, it is created and made hidden.
+ * Access control lists (ACLs) are set to ensure full access for the program
+ * while restricting other users to read-only access.
+ *
+ * @param originalFile the file to be moved to quarantine
+ * @return the quarantined file, or null if an error occurs
+ */
     public File moveToQuarantine(File originalFile) {
         if (originalFile == null || !originalFile.exists()) {
-            logger.warn("File nullo o non esistente, impossibile metterlo in quarantena.");
+            logger.warn("File is null or does not exist, cannot quarantine it.");
             return null;
         }
 
-        // Creazione della cartella di quarantena all'interno di "Downloads"
+        // Check if the file is already in quarantine
+        String quarantineDirPath = System.getProperty("user.home") + File.separator + "Downloads" + File.separator
+                + ".QUARANTINE";
+        if (originalFile.getAbsolutePath().startsWith(quarantineDirPath)) {
+            logger.info("File is already in quarantine: {}", originalFile.getAbsolutePath());
+            return originalFile;
+        }
+
+        // Create the quarantine directory inside "Downloads"
         String downloadsDirPath = System.getProperty("user.home") + File.separator + "Downloads";
         Path quarantineDir = Paths.get(downloadsDirPath, ".QUARANTINE");
 
@@ -296,140 +314,170 @@ public class AntivirusManager {
             if (!Files.exists(quarantineDir)) {
                 Files.createDirectories(quarantineDir);
 
-                // Rendi la cartella nascosta in Windows
+                // Make the directory hidden in Windows
                 Files.setAttribute(quarantineDir, "dos:hidden", true);
-                logger.info("Creata cartella di quarantena: {}", quarantineDir);
+                logger.info("Created quarantine directory: {}", quarantineDir);
 
                 try {
-                    AclFileAttributeView aclAttrView = Files.getFileAttributeView(quarantineDir, AclFileAttributeView.class);
+                    AclFileAttributeView aclAttrView = Files.getFileAttributeView(quarantineDir,
+                            AclFileAttributeView.class);
 
                     if (aclAttrView != null) {
-                        // Servizio per ottenere l'utente dal sistema
-                        UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+                        // Service for getting the user from the system
+                        UserPrincipalLookupService lookupService = FileSystems.getDefault()
+                                .getUserPrincipalLookupService();
 
-                        // Ottenere l'utente corrente (che è amministratore perché il programma è eseguito con privilegi di amministratore)
-                        UserPrincipal currentUser = lookupService.lookupPrincipalByName(System.getProperty("user.name"));
+                        // Get the current user (who is an administrator)
+                        UserPrincipal currentUser = lookupService
+                                .lookupPrincipalByName(System.getProperty("user.name"));
 
-                        // Permessi completi per il programma (amministratore) – lettura, scrittura, cancellazione
+                        // Full access for the program (administrator) - read, write, delete
                         AclEntry fullAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(currentUser) // Il programma amministratore
-                                .setPermissions(AclEntryPermission.values()) // Permessi completi
+                                .setPrincipal(currentUser) // The program administrator
+                                .setPermissions(AclEntryPermission.values()) // Full permissions
                                 .build();
 
-                        // Sola lettura per **tutti** gli altri utenti (sia locali che non locali)
+                        // Read-only for **all** other users (both local and non-local)
                         AclEntry readOnlyAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone")) // Applica la lettura a tutti gli utenti
+                                .setPrincipal(lookupService.lookupPrincipalByName("S-1-1-0")) // SID for Everyone
+                                                                                              // Apply read-only for all users
                                 .setPermissions(
                                         AclEntryPermission.READ_DATA,
                                         AclEntryPermission.READ_ATTRIBUTES,
-                                        AclEntryPermission.READ_ACL
-                                )
+                                        AclEntryPermission.READ_ACL)
                                 .build();
 
-                        // Imposta le ACL per la cartella di quarantena:
-                        // - Permessi completi per il programma (amministratore)
-                        // - Sola lettura per **tutti** gli altri utenti
+                        // Set the ACL for the quarantine directory
+                        // - Full access for the program (administrator)
+                        // - Read-only for **all** other users
                         aclAttrView.setAcl(Arrays.asList(fullAccess, readOnlyAccess));
-                        logger.info("ACL impostate: accesso completo per il programma (amministratore), sola lettura per tutti gli utenti.");
+                        logger.info("Set ACL: full access for the program (administrator), read-only for all users.");
                     }
                 } catch (IOException e) {
-                    logger.warn("Errore nell'impostazione degli ACL sulla quarantena", e);
+                    logger.warn("Error setting ACL on quarantine", e);
                 }
             }
 
-            // Genera un nome file univoco
+            // Generate a unique file name
             String quarantineFileName = originalFile.getName();
+            Path targetPath = quarantineDir.resolve(quarantineFileName);
+            int counter = 1;
+            while (Files.exists(targetPath)) {
+                String baseName = quarantineFileName;
+                String extension = "";
+                int dotIndex = quarantineFileName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    baseName = quarantineFileName.substring(0, dotIndex);
+                    extension = quarantineFileName.substring(dotIndex);
+                }
+                quarantineFileName = baseName + " (" + counter + ")" + extension;
+                targetPath = quarantineDir.resolve(quarantineFileName);
+                counter++;
+            }
 
-            // Usa lo stesso nome del file originale
-            Path targetPath = quarantineDir.resolve(originalFile.getName());
-
-            // Crea file di metadati preliminare (senza risultato scansione)
+            // Create a preliminary metadata file (without scan result)
             Path metadataPath = quarantineDir.resolve(quarantineFileName + ".meta");
             Properties metadata = new Properties();
             metadata.setProperty("originalPath", originalFile.getAbsolutePath());
             metadata.setProperty("quarantineDate", new Date().toString());
-            metadata.setProperty("scanStatus", "pending"); // in attesa di scansione
+            metadata.setProperty("scanStatus", "pending"); // awaiting scan
             metadata.setProperty("fileSize", String.valueOf(originalFile.length()));
 
-            // Salva metadata
+            // Save metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Quarantine metadata");
             }
 
-            // Sposta il file bloccato in quarantena
+            // Move the blocked file to quarantine
             Files.move(originalFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
             File quarantinedFile = targetPath.toFile();
-            logger.info("File spostato in quarantena per la scansione: {}", targetPath);
+            logger.info("File moved to quarantine for scanning: {}", targetPath);
 
             return quarantinedFile;
         } catch (IOException e) {
-            logger.error("Errore durante il trasferimento del file in quarantena", e);
+            logger.error("Error while moving the file to quarantine", e);
             return null;
         }
     }
 
+
     /**
-     * Aggiorna i metadati di un file in quarantena dopo la scansione con
-     * ClamAV.
+     * Updates the quarantine status of a given file based on the scan results.
+     * If the file is identified as a threat, the threat details are also updated
+     * in the file's metadata. The metadata file is expected to be located at
+     * the same path as the quarantined file with a ".meta" extension.
      *
-     * @param quarantinedFile il file in quarantena
-     * @param isThreat se il file è una minaccia
-     * @param threatDetails dettagli sulla minaccia rilevata, o null se pulito
-     * @return true se l'aggiornamento è riuscito
+     * @param quarantinedFile The file whose quarantine status is to be updated.
+     *        This file must not be null and must exist in the filesystem.
+     * @param isThreat A boolean indicating whether the file is considered a threat.
+     * @param threatDetails The details of the threat if one is detected. This parameter
+     *        is used only if isThreat is true.
+     * @return True if the metadata is successfully updated, otherwise false.
+     *         Returns false if the file or its metadata cannot be found or if an
+     *         error occurs during the update process.
      */
     public boolean updateQuarantineStatus(File quarantinedFile, boolean isThreat, String threatDetails) {
         if (quarantinedFile == null || !quarantinedFile.exists()) {
-            logger.warn("File non valido per l'aggiornamento dello stato: {}", quarantinedFile);
+            logger.warn("Invalid file for updating quarantine status: {}", quarantinedFile);
             return false;
         }
 
         Path metadataPath = Paths.get(quarantinedFile.getAbsolutePath() + ".meta");
         if (!Files.exists(metadataPath)) {
-            logger.warn("File di metadati non trovato: {}", metadataPath);
+            logger.warn("Metadata file not found: {}", metadataPath);
             return false;
         }
 
         try {
-            // Carica i metadati esistenti
+            // Load existing metadata
             Properties metadata = new Properties();
             try (InputStream in = Files.newInputStream(metadataPath)) {
                 metadata.load(in);
             }
 
-            // Aggiorna con i risultati della scansione
+            // Update with scan results
             metadata.setProperty("scanStatus", isThreat ? "threat" : "clean");
             metadata.setProperty("scanDate", new Date().toString());
             if (isThreat && threatDetails != null) {
                 metadata.setProperty("threatDetails", threatDetails);
             }
 
-            // Salva i metadati aggiornati
+            // Save updated metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Updated quarantine metadata after scan");
             }
 
-            logger.info("Metadati aggiornati per file in quarantena: {} (Minaccia: {})",
+            logger.info("Metadata updated for quarantined file: {} (Threat: {})",
                     quarantinedFile, isThreat);
             return true;
         } catch (IOException e) {
-            logger.error("Errore durante l'aggiornamento dei metadati", e);
+            logger.error("Error while updating metadata", e);
             return false;
         }
     }
 
+    /**
+     * Restores a quarantined file to its original location.
+     * 
+     * @param quarantinedFile the quarantined file to restore
+     * @return the restored file if successful, otherwise null
+     *         Restores the file to its original location and deletes the metadata file.
+     *         Returns null if the file or its metadata cannot be found or if an error
+     *         occurs during the restoration process.
+     */
     public File restoreFromQuarantine(File quarantinedFile) {
         if (quarantinedFile == null || !quarantinedFile.exists()) {
-            logger.warn("File non valido per il ripristino dalla quarantena: {}", quarantinedFile);
+            logger.warn("Invalid file for restoration from quarantine: {}", quarantinedFile);
             return null;
         }
 
         try {
-            // 1. Leggi i metadati
+            // 1. Read metadata
             Path metadataPath = Paths.get(quarantinedFile.getAbsolutePath() + ".meta");
             if (!Files.exists(metadataPath)) {
-                logger.warn("File di metadati non trovato per il ripristino: {}", metadataPath);
+                logger.warn("Metadata file not found for restoration: {}", metadataPath);
                 return null;
             }
 
@@ -440,26 +488,33 @@ public class AntivirusManager {
 
             String originalPath = metadata.getProperty("originalPath");
             if (originalPath == null) {
-                logger.warn("Percorso originale non disponibile nei metadati: {}", quarantinedFile);
+                logger.warn("Original path not available in metadata: {}", quarantinedFile);
                 return null;
             }
 
-            //2. Sposta il file nella posizione originale
+            // 2. Move the file to the original location
             Path targetPath = Paths.get(originalPath);
-            Files.createDirectories(targetPath.getParent()); // assicura esistenza cartella
+            Files.createDirectories(targetPath.getParent()); // ensure folder exists
             Files.move(quarantinedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             File restoredFile = targetPath.toFile();
 
-            // 3. Elimina metadati
+            // 3. Delete metadata
             Files.deleteIfExists(metadataPath);
 
-            logger.info("File ripristinato dalla quarantena: {}", restoredFile.getAbsolutePath());
+            logger.info("File restored from quarantine: {}", restoredFile.getAbsolutePath());
 
             return restoredFile;
 
         } catch (IOException e) {
-            logger.error("Errore durante il ripristino del file dalla quarantena", e);
+            logger.error("Error during file restoration from quarantine", e);
+            try {
+                Path metadataPath = Paths.get(quarantinedFile.getAbsolutePath() + ".meta");
+                Files.deleteIfExists(metadataPath);
+                logger.info("Metadata file deleted after restoration failure.");
+            } catch (IOException ex) {
+                logger.warn("Unable to delete metadata file after restoration error", ex);
+            }
             return null;
         }
     }

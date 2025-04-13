@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
@@ -62,8 +65,8 @@ public class ClamAV implements AVInterface {
      * suspicious activity.
      *
      * @param file The file to be analyzed. It must not be null and must exist
-     * on the filesystem. If the file is invalid, the method will create an
-     * appropriate error report.
+     *             on the filesystem. If the file is invalid, the method will create
+     *             an appropriate error report.
      */
     public void analyze(File file) {
         // Check if the file is null or does not exist
@@ -76,7 +79,7 @@ public class ClamAV implements AVInterface {
 
             // Log appropriate warnings based on file validity
             if (file == null) {
-                logger.warn("il file è nullo."); // Log warning if the file is null
+                logger.warn("The file is null."); // Log warning if the file is null
             } else {
                 logger.warn("File does not exist: {}", file.getAbsolutePath()); // Log file path if it doesn't exist
             }
@@ -88,6 +91,11 @@ public class ClamAV implements AVInterface {
             // Define the path to the ClamAV executable
             String clamavPath = "C:\\Program Files\\ClamAV\\clamscan.exe";
             logger.info("ClamAV path: {}", clamavPath); // Log the path for debugging purposes
+
+            File clamavExecutable = new File(clamavPath);
+            if (!clamavExecutable.exists()) {
+                throw new IOException("ClamAV executable not found at: " + clamavPath);
+            }
 
             // Create a ProcessBuilder to execute the ClamAV scan
             ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
@@ -170,6 +178,8 @@ public class ClamAV implements AVInterface {
             }
 
             reader.close(); // Close the reader after processing output
+            int exitCode = process.waitFor();
+            logger.info("ClamAV process exited with code: {}", exitCode);
 
         } catch (IOException e) {
             // Handle exceptions during the scanning process
@@ -179,55 +189,150 @@ public class ClamAV implements AVInterface {
             clamavReport.setThreatDetails("Error during scan: " + e.getMessage()); // Add error details
             clamavReport.setWarningClass(warningClass.CLEAR); // Mark as clear (no threats due to error)
             logger.error("Error during scan: {}", e.getMessage(), e); // Log the exception details
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // To restore the interrupted state
+            clamavReport = new ScanReport();
+            clamavReport.setFile(file);
+            clamavReport.setValid(false);
+            clamavReport.setThreatDetails("Scan interrupted: " + e.getMessage());
+            clamavReport.setWarningClass(warningClass.CLEAR);
+            logger.error("Scan interrupted: {}", e.getMessage(), e);
         }
     }
 
+    /**
+     * Asks the user what to do with the file after the scan.
+     * If the file was found to be infected or suspicious, asks the user to delete the file or restore it
+     * from quarantine.
+     * If the user chooses to delete the file, deletes the associated metadata file as well.
+     * If the user chooses to restore the file, restores the file from quarantine and updates the report
+     * to reference the restored file.
+     * If the user enters an invalid input, the file remains in quarantine.
+     * @param file the file to process
+     */
     public void postScanActions(File file) {
-        // Solo se il file è stato trovato infetto o sospetto
-        if (clamavReport.getWarningClass() == warningClass.DANGEROUS || clamavReport.getWarningClass() == warningClass.SUSPICIOUS) {
-            Scanner scanner = new Scanner(System.in);
+        // Only if the file was found to be infected or suspicious
+        if (clamavReport.getWarningClass() == warningClass.DANGEROUS
+                || clamavReport.getWarningClass() == warningClass.SUSPICIOUS) {
 
-            // Chiedi cosa fare con il file
-            System.out.println("Il file " + file.getAbsolutePath() + " è stato trovato infetto o sospetto.");
-            System.out.println("1. Cancellare il file");
-            System.out.println("2. Ripristinare il file");
-            System.out.println("3. Lasciare il file in quarantena");
+            // Don't close the scanner inside the method
+            Scanner scanner = new Scanner(System.in); // Keep the scanner open
+            try {
+                // Ask the user what to do with the file
+                System.out.println("The file " + file.getAbsolutePath() + " was found to be infected or suspicious.");
+                System.out.println("1. Delete the file");
+                System.out.println("2. Restore the file");
 
-            String userChoice = scanner.nextLine().trim();
+                String userChoice = scanner.nextLine().trim(); // Read the user's choice
 
-            if ("1".equals(userChoice)) {
-                // L'utente ha scelto di cancellare il file
-                if (file.delete()) {
-                    logger.info("File cancellato: {}", file.getAbsolutePath());
-                    clamavReport.setThreatDetails("File deleted by user.");
-                    clamavReport.setWarningClass(warningClass.CLEAR);
-                } else {
-                    logger.error("Errore durante la cancellazione del file: {}", file.getAbsolutePath());
-                    clamavReport.setThreatDetails("Error deleting the file.");
-                    clamavReport.setWarningClass(warningClass.CLEAR);
+                if ("1".equals(userChoice)) {
+                    // The user chose to delete the file
+                    boolean fileDeleted = false;
+
+                    // Check if the file was renamed with the .blocked extension
+                    String blockedFilePath = file.getAbsolutePath() + ".blocked";
+                    File blockedFile = new File(blockedFilePath);
+
+                    // If the renamed file exists, try to delete it
+                    if (blockedFile.exists()) {
+                        if (blockedFile.delete()) {
+                            logger.info("Infected file deleted: {}", blockedFile.getAbsolutePath());
+                            fileDeleted = true;
+                        } else {
+                            logger.error("Error deleting the infected file: {}", blockedFile.getAbsolutePath());
+                        }
+                    } else {
+                        // If the renamed file doesn't exist, delete the original file
+                        if (file.delete()) {
+                            logger.info("File deleted: {}", file.getAbsolutePath());
+                            fileDeleted = true;
+                        } else {
+                            logger.error("Error deleting the file: {}", file.getAbsolutePath());
+                        }
+                    }
+
+                    // Delete the associated metadata file as well
+                    if (fileDeleted) {
+                        // Determine the path of the metadata file
+                        Path metadataPath = Paths.get(file.getAbsolutePath() + ".meta");
+                        try {
+                            if (Files.deleteIfExists(metadataPath)) {
+                                logger.info("Metadata file deleted: {}", metadataPath);
+                                clamavReport.setThreatDetails("File and metadata deleted by user.");
+                            } else {
+                                logger.warn("Metadata file not found: {}", metadataPath);
+                                clamavReport.setThreatDetails("File deleted by user. Metadata not found.");
+                            }
+                        } catch (IOException e) {
+                            logger.error("Error deleting the metadata file: {}", metadataPath, e);
+                            clamavReport.setThreatDetails("File deleted, but error deleting metadata.");
+                        }
+                        clamavReport.setWarningClass(warningClass.CLEAR);
+                    } else {
+                        clamavReport.setThreatDetails("Error deleting the file.");
+                        clamavReport.setWarningClass(warningClass.CLEAR);
+                    }
                 }
-            } else if ("2".equals(userChoice)) {
-                // L'utente ha scelto di ripristinare il file
-                File restoredFile = antivirusManager.restoreFromQuarantine(file);
-                if (restoredFile != null) {
-                    logger.info("File ripristinato dalla quarantena: {}", restoredFile.getAbsolutePath());
-                    clamavReport.setThreatDetails("File restored from quarantine.");
-                    clamavReport.setWarningClass(warningClass.CLEAR);
+
+                else if ("2".equals(userChoice)) {
+                    // The user chose to restore the file
+                    File blockedFile = new File(file.getAbsolutePath() + ".blocked"); // Check if the file was renamed
+
+                    // If the renamed file exists, unblock it and restore it from quarantine
+                    if (blockedFile.exists()) {
+                        // Remove the .blocked extension to get the original file name
+                        File unblockedFile = FileManager.unblockFileExecution(blockedFile); // Function that removes the .blocked extension
+
+                        if (unblockedFile != null) {
+                            // Once the file is unblocked, restore it from quarantine
+                            File restoredFile = antivirusManager.restoreFromQuarantine(unblockedFile);
+
+                            if (restoredFile != null) {
+                                logger.info("Infected file restored from quarantine: {}",
+                                        restoredFile.getAbsolutePath());
+
+                                // Update the report to reference the restored file
+                                clamavReport.setFile(restoredFile);
+                                clamavReport.setThreatDetails("No threat detected after restore"); // Indicates that no threats were found after restore
+                                clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
+                            } else {
+                                logger.error("Failed to restore infected file from quarantine: {}",
+                                        unblockedFile.getAbsolutePath());
+                                clamavReport.setThreatDetails("Infected file restoration failed"); // Indicates that the restore failed
+                                clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
+                            }
+                        } else {
+                            logger.error("Failed to unblock infected file: {}", blockedFile.getAbsolutePath());
+                            clamavReport.setThreatDetails("Failed to unblock infected file"); // Indicates that the file was not unblocked
+                            clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
+                        }
+                    } else {
+                        // If the file was not renamed or not found, restore the original file
+                        File restoredFile = antivirusManager.restoreFromQuarantine(file);
+
+                        if (restoredFile != null) {
+                            logger.info("Clean file restored from quarantine: {}", restoredFile.getAbsolutePath());
+
+                            // Update the report to reference the restored file
+                            clamavReport.setFile(restoredFile);
+                            clamavReport.setThreatDetails("No threat detected"); // Indicates that no threats were found
+                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
+                        } else {
+                            logger.error("Failed to restore clean file from quarantine: {}", file.getAbsolutePath());
+                            clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicates that no threats were found, but the restore failed
+                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
+                        }
+                    }
+
                 } else {
-                    logger.error("Errore durante il ripristino del file: {}", file.getAbsolutePath());
-                    clamavReport.setThreatDetails("Error restoring the file.");
-                    clamavReport.setWarningClass(warningClass.CLEAR);
+                    // Invalid input, so the file remains in quarantine
+                    logger.warn("Invalid choice, file remains in quarantine.");
+                    clamavReport.setThreatDetails("Invalid choice, file remains in quarantine.");
+                    clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Or DANGEROUS
                 }
-            } else if ("3".equals(userChoice)) {
-                // L'utente ha scelto di lasciare il file in quarantena
-                logger.info("File lasciato in quarantena: {}", file.getAbsolutePath());
-                clamavReport.setThreatDetails("File left in quarantine.");
-                clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Puoi anche usare DANGEROUS a seconda della minaccia
-            } else {
-                // Input non valido, quindi rimaniamo nella quarantena
-                logger.warn("Scelta non valida, il file rimarrà in quarantena.");
-                clamavReport.setThreatDetails("Invalid choice, file remains in quarantine.");
-                clamavReport.setWarningClass(warningClass.SUSPICIOUS); // O DANGEROUS
+            } catch (Exception e) {
+                logger.error("Error reading user's choice.", e);
             }
         }
     }

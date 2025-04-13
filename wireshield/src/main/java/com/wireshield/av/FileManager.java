@@ -23,291 +23,342 @@ import org.json.simple.parser.JSONParser;
  */
 public class FileManager {
 
-    // Logger for logging information and errors.
-    private static final Logger logger = LogManager.getLogger(FileManager.class);
+	// Logger for logging information and errors.
+	private static final Logger logger = LogManager.getLogger(FileManager.class);
 
-    // Path to the configuration file.
-    static String configPath = FileManager.getProjectFolder() + "\\config\\config.json";
+	// Path to the configuration file.
+	static String configPath = FileManager.getProjectFolder() + "\\config\\config.json";
 
-    /**
-     * Private constructor to prevent instantiation of this utility class.
-     */
-    private FileManager() {
-        // Prevent instantiation
-    }
+	/**
+	 * Private constructor to prevent instantiation of this utility class.
+	 */
+	private FileManager() {
+		// Prevent instantiation
+	}
 
-    /**
-     * Creates a new file at the specified path.
-     *
-     * @param filePath the path where the file will be created
-     * @return true if the file is successfully created, false if the file
-     * already exists or an error occurs
-     */
-    public static boolean createFile(String filePath) {
-        File file = new File(filePath);
-        try {
-            if (file.createNewFile()) {
-                logger.info("File created: {}", file.getName());
-                return true;
-            } else {
-                logger.debug("File already exists.");
-                return false;
-            }
-        } catch (IOException e) {
-            logger.error("Error occured during file creation: {}", e.getMessage());
-            return false;
-        }
-    }
+	/**
+	 * Creates a new file at the specified path.
+	 *
+	 * @param filePath the path where the file will be created
+	 * @return true if the file is successfully created, false if the file
+	 *         already exists or an error occurs
+	 */
+	public static boolean createFile(String filePath) {
+		File file = new File(filePath);
+		try {
+			if (file.createNewFile()) {
+				logger.info("File created: {}", file.getName());
+				return true;
+			} else {
+				logger.debug("File already exists.");
+				return false;
+			}
+		} catch (IOException e) {
+			logger.error("Error occured during file creation: {}", e.getMessage());
+			return false;
+		}
+	}
 
-    /**
-     * Writes the specified content to a file at the given path.
-     *
-     * @param filePath the path of the file to write to
-     * @param content the content to write to the file
-     * @return true if the content is successfully written, false if an error
-     * occurs
-     */
-    public static boolean writeFile(String filePath, String content) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            writer.write(content);
-            System.out.println("Scrittura completata.");
-            return true;
-        } catch (IOException e) {
-            System.out.println("Errore durante la scrittura del file: " + e.getMessage());
-            return false;
-        }
-    }
+	/**
+	 * Writes the specified content to a file at the given path.
+	 *
+	 * @param filePath the path of the file to write to
+	 * @param content  the content to write to the file
+	 * @return true if the content is successfully written, false if an error
+	 *         occurs
+	 */
+	public static boolean writeFile(String filePath, String content) {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+			writer.write(content);
+			System.out.println("Scrittura completata.");
+			return true;
+		} catch (IOException e) {
+			System.out.println("Errore durante la scrittura del file: " + e.getMessage());
+			return false;
+		}
+	}
 
-    /**
-     * Reads the content of a file from the specified path.
-     *
-     * @param filePath the path of the file to read
-     * @return the content of the file as a String, or null if an error occurs
-     */
-    public static String readFile(String filePath) {
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-        } catch (IOException e) {
-            logger.error("Errore durante la lettura del file: {}", e.getMessage());
-            return null;
-        }
-        return content.toString();
-    }
+	/**
+	 * Reads the content of a file from the specified path.
+	 *
+	 * @param filePath the path of the file to read
+	 * @return the content of the file as a String, or null if an error occurs
+	 */
+	public static String readFile(String filePath) {
+		StringBuilder content = new StringBuilder();
+		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				content.append(line).append("\n");
+			}
+		} catch (IOException e) {
+			logger.error("Errore durante la lettura del file: {}", e.getMessage());
+			return null;
+		}
+		return content.toString();
+	}
 
-    /**
-     * Deletes the file at the specified path.
-     *
-     * @param filePath the path of the file to delete
-     * @return true if the file is successfully deleted, false if an error
-     * occurs or the file does not exist
-     */
-    public static boolean deleteFile(String filePath) {
-        try {
-            Files.delete(Paths.get(filePath)); // Elimina il file usando Files.delete
-            logger.info("File eliminato: {}", filePath);
-            return true;
-        } catch (IOException e) {
-            logger.error("Errore durante l'eliminazione del file {}: {}", filePath, e.getMessage());
-            return false;
-        }
-    }
+	/**
+	 * Deletes the file at the specified path.
+	 *
+	 * @param filePath the path of the file to delete
+	 * @return true if the file is successfully deleted, false if an error
+	 *         occurs or the file does not exist
+	 */
+	public static boolean deleteFile(String filePath) {
+		try {
+			Files.delete(Paths.get(filePath)); // Elimina il file usando Files.delete
+			logger.info("File eliminato: {}", filePath);
+			return true;
+		} catch (IOException e) {
+			logger.error("Errore durante l'eliminazione del file {}: {}", filePath, e.getMessage());
+			return false;
+		}
+	}
 
-    /**
-     * Retrieves the absolute path of the project folder.
-     *
-     * @return the absolute path of the project folder
-     */
-    public static String getProjectFolder() {
-        return new File("").getAbsolutePath();
-    }
+	/**
+	 * Retrieves the absolute path of the project folder.
+	 *
+	 * @return the absolute path of the project folder
+	 */
+	public static String getProjectFolder() {
+		return new File("").getAbsolutePath();
+	}
 
-    /**
-     * Determines if a file is temporary or incomplete (e.g., `.crdownload`,
-     * `.part` files).
-     *
-     * @param file the file to check
-     * @return true if the file is temporary, false otherwise
-     */
-    public static boolean isTemporaryFile(File file) {
-        String fileName = file.getName().toLowerCase();
-        return fileName.endsWith(".crdownload") || fileName.endsWith(".part") || fileName.startsWith(".");
-    }
+	/**
+	 * Determines if a file is temporary or incomplete (e.g., `.crdownload`,
+	 * `.part` files).
+	 *
+	 * @param file the file to check
+	 * @return true if the file is temporary, false otherwise
+	 */
+	public static boolean isTemporaryFile(File file) {
+		String fileName = file.getName().toLowerCase();
+		return fileName.endsWith(".crdownload") || fileName.endsWith(".part") || fileName.startsWith(".");
+	}
 
-    /**
-     * Checks if a file is stable (i.e., exists, is readable, and is non-empty).
-     *
-     * @param file the file to check
-     * @return true if the file is stable, false otherwise
-     */
-    public static boolean isFileStable(File file) {
-        try {
-            Thread.sleep(500); // Wait for potential ongoing writes to complete
-            return file.exists() && file.canRead() && file.length() > 0; // File must exist, be readable, and non-empty
-        } catch (InterruptedException e) {
-            logger.error("Error checking file stability: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
+	/**
+	 * Checks if a file is stable (i.e., exists, is readable, and is non-empty).
+	 *
+	 * @param file the file to check
+	 * @return true if the file is stable, false otherwise
+	 */
+	public static boolean isFileStable(File file) {
+		try {
+			Thread.sleep(500); // Wait for potential ongoing writes to complete
+			return file.exists() && file.canRead() && file.length() > 0; // File must exist, be readable, and non-empty
+		} catch (InterruptedException e) {
+			logger.error("Error checking file stability: {}", e.getMessage(), e);
+			Thread.currentThread().interrupt();
+			return false;
+		}
+	}
 
-    /**
-     * Calculates the SHA256 hash of a given file.
-     *
-     * @param file the file to calculate the hash for
-     * @return the SHA256 hash as a hexadecimal string, or null if an error
-     * occurs
-     */
-    public static String calculateSHA256(File file) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (FileInputStream fis = new FileInputStream(file)) {
-                byte[] byteArray = new byte[1024];
-                int bytesCount;
-                while ((bytesCount = fis.read(byteArray)) != -1) {
-                    digest.update(byteArray, 0, bytesCount);
-                }
-            }
-            byte[] bytes = digest.digest();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : bytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	/**
+	 * Calculates the SHA256 hash of a given file.
+	 *
+	 * @param file the file to calculate the hash for
+	 * @return the SHA256 hash as a hexadecimal string, or null if an error
+	 *         occurs
+	 */
+	public static String calculateSHA256(File file) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			try (FileInputStream fis = new FileInputStream(file)) {
+				byte[] byteArray = new byte[1024];
+				int bytesCount;
+				while ((bytesCount = fis.read(byteArray)) != -1) {
+					digest.update(byteArray, 0, bytesCount);
+				}
+			}
+			byte[] bytes = digest.digest();
+			StringBuilder sb = new StringBuilder();
+			for (byte b : bytes) {
+				sb.append(String.format("%02x", b));
+			}
+			return sb.toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-    /**
-     * Reads the JSON configuration file and retrieves the value associated with
-     * the given key.
-     *
-     * @param key the key whose associated value is to be returned
-     * @return the value as a String, or null if the key does not exist
-     */
-    public static String getConfigValue(String key) {
-        // Parse the JSON file
-        JSONParser parser = new JSONParser();
-        try (FileReader reader = new FileReader(configPath)) {
-            // Read the JSON object from the file
-            JSONObject jsonObject = (JSONObject) parser.parse(reader);
+	/**
+	 * Reads the JSON configuration file and retrieves the value associated with
+	 * the given key.
+	 *
+	 * @param key the key whose associated value is to be returned
+	 * @return the value as a String, or null if the key does not exist
+	 */
+	public static String getConfigValue(String key) {
+		// Parse the JSON file
+		JSONParser parser = new JSONParser();
+		try (FileReader reader = new FileReader(configPath)) {
+			// Read the JSON object from the file
+			JSONObject jsonObject = (JSONObject) parser.parse(reader);
 
-            // Retrieve the value associated with the key
-            Object value = jsonObject.get(key);
-            if (value != null) {
-                return value.toString();
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
+			// Retrieve the value associated with the key
+			Object value = jsonObject.get(key);
+			if (value != null) {
+				return value.toString();
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+	}
 
-    /**
-     * Writes a value to the JSON configuration file for the specified key.
-     *
-     * @param key the key to add or update
-     * @param value the value to set for the key
-     * @return true if the value is successfully written, false otherwise
-     */
-    public static boolean writeConfigValue(String key, String value) {
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject = null;
+	/**
+	 * Writes a value to the JSON configuration file for the specified key.
+	 *
+	 * @param key   the key to add or update
+	 * @param value the value to set for the key
+	 * @return true if the value is successfully written, false otherwise
+	 */
+	public static boolean writeConfigValue(String key, String value) {
+		JSONParser parser = new JSONParser();
+		JSONObject jsonObject = null;
 
-        File file = new File(configPath);
+		File file = new File(configPath);
 
-        // Load existing JSON data if the file exists
-        if (file.exists()) {
-            try (FileReader reader = new FileReader(file)) {
-                jsonObject = (JSONObject) parser.parse(reader);
-            } catch (Exception e) {
-                logger.error("Error during JSON");
-                return false;
-            }
-        } else {
-            // If the file does not exist, initialize a new JSON object
-            jsonObject = new JSONObject();
-        }
+		// Load existing JSON data if the file exists
+		if (file.exists()) {
+			try (FileReader reader = new FileReader(file)) {
+				jsonObject = (JSONObject) parser.parse(reader);
+			} catch (Exception e) {
+				logger.error("Error during JSON");
+				return false;
+			}
+		} else {
+			// If the file does not exist, initialize a new JSON object
+			jsonObject = new JSONObject();
+		}
 
-        // Update or add the key-value pair
-        jsonObject.put(key, value);
+		// Update or add the key-value pair
+		jsonObject.put(key, value);
 
-        // Write the updated JSON object back to the file
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write(jsonObject.toJSONString());
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+		// Write the updated JSON object back to the file
+		try (FileWriter writer = new FileWriter(file)) {
+			writer.write(jsonObject.toJSONString());
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 
-    /**
-     * Blocca l'esecuzione automatica di un file rinominandolo e impedendone
-     * l'esecuzione tramite permessi. Il file sarà rinominato con un suffisso
-     * che lo identifica chiaramente come bloccato.
-     *
-     * @param file il file da bloccare
-     * @return il file rinominato, oppure null in caso di errore
-     */
-    public static File blockFileExecution(File file) {
-        if (file == null || !file.exists()) {
-            logger.warn("File non valido per il blocco esecuzione: {}", file);
-            return null;
-        }
+	/**
+	 * Blocks the execution of a file by renaming it with a ".blocked" suffix. If
+	 * the file is already blocked, does nothing and returns the file itself.
+	 * 
+	 * @param file the file to block
+	 * @return the blocked file, or null if an error occurs
+	 */
+	public static File blockFileExecution(File file) {
+		if (file == null || !file.exists()) {
+			logger.warn("Invalid file for blocking execution: {}", file);
+			return null;
+		}
 
-        // Rinominare il file con un suffisso ".blocked" per indicare che l'esecuzione è disabilitata.
-        String blockedFileName = file.getName() + ".blocked";
-        File blockedFile = new File(file.getParent(), blockedFileName);
+		// Check if the file is already blocked
+		if (isExecutionBlocked(file)) {
+			logger.info("File is already blocked: {}", file.getAbsolutePath());
+			return file; // Return the file already blocked
+		}
 
-        if (file.renameTo(blockedFile)) {
-            logger.info("File rinominato per bloccare l'esecuzione: {}", blockedFile.getAbsolutePath());
-            return blockedFile;
-        } else {
-            logger.error("Impossibile rinominare il file per il blocco dell'esecuzione: {}", file.getAbsolutePath());
-            return null;
-        }
-    }
+		if (!file.canWrite()) {
+			logger.warn("File is not writable and cannot be renamed: {}", file.getAbsolutePath());
+			return null;
+		}
 
-    /**
-     * Ripristina un file precedentemente bloccato, rimuovendo il suffisso
-     * ".blocked" e sbloccandone l'esecuzione.
-     *
-     * @param blockedFile il file con estensione .blocked
-     * @return il file ripristinato, oppure null in caso di errore
-     */
-    public static File unblockFileExecution(File blockedFile) {
-        if (blockedFile == null || !blockedFile.exists() || !blockedFile.getName().endsWith(".blocked")) {
-            logger.warn("File non valido o non bloccato: {}", blockedFile);
-            return null;
-        }
+		// Rename the file with a ".blocked" suffix to indicate that execution is
+		// disabled.
+		String blockedFileName = file.getName() + ".blocked";
+		File blockedFile = new File(file.getParent(), blockedFileName);
 
-        // Ripristinare il nome originale del file rimuovendo il suffisso ".blocked"
-        String originalName = blockedFile.getName().replaceFirst("\\.blocked$", "");
-        File restoredFile = new File(blockedFile.getParent(), originalName);
+		// If a file with the same name already exists, add a counter (1), (2), ...
+		int counter = 1;
+		while (blockedFile.exists()) {
+			blockedFileName = file.getName() + " (" + counter + ").blocked";
+			blockedFile = new File(file.getParent(), blockedFileName);
+			counter++;
+		}
 
-        if (blockedFile.renameTo(restoredFile)) {
-            logger.info("File ripristinato al suo nome originale: {}", restoredFile.getAbsolutePath());
-            return restoredFile;
-        } else {
-            logger.error("Errore nel ripristino del file bloccato: {}", blockedFile.getAbsolutePath());
-            return null;
-        }
-    }
+		if (file.renameTo(blockedFile)) {
+			logger.info("File renamed for blocking execution: {}", blockedFile.getAbsolutePath());
+			return blockedFile;
+		} else {
+			logger.error("Unable to rename file for blocking execution: {}", file.getAbsolutePath());
+			return null;
+		}
+	}
 
-    /**
-     * Verifica se un file ha l'estensione ".blocked", quindi è bloccato per
-     * l'esecuzione.
-     *
-     * @param file il file da verificare
-     * @return true se il file è bloccato, false altrimenti
-     */
-    public static boolean isExecutionBlocked(File file) {
-        return file != null && file.getName().endsWith(".blocked");
-    }
+
+
+	/**
+	 * Unblocks a file for execution by removing the ".blocked" suffix and optionally
+	 * a counter (N) from the file name. If the original file name already exists, a
+	 * counter is added to the file name to ensure uniqueness.
+	 *
+	 * @param blockedFile the blocked file to unblock
+	 * @return the unblocked file if successful, otherwise null
+	 */
+	public static File unblockFileExecution(File blockedFile) {
+		if (blockedFile == null || !blockedFile.exists() || !blockedFile.getName().endsWith(".blocked")) {
+			logger.warn("Invalid or non-blocked file: {}", blockedFile);
+			return null;
+		}
+		
+		// Check if the file is actually blocked
+		if (!isExecutionBlocked(blockedFile)) {
+			logger.info("The file is not blocked, no action needed: {}", blockedFile.getAbsolutePath());
+			return blockedFile; // Return the already unblocked file
+		}
+
+		if (!blockedFile.canWrite()) {
+			logger.warn("The file is not writable and cannot be renamed: {}", blockedFile.getAbsolutePath());
+			return null;
+		}
+
+		// Prepare the original name by removing the ".blocked" suffix and optional counter (N)
+		String originalName;
+
+		// Handle two cases: normal name with .blocked or name with counter (N).blocked
+		if (blockedFile.getName().matches(".*\\s\\(\\d+\\)\\.blocked$")) {
+			// Pattern to extract the original name from "name (N).blocked"
+			originalName = blockedFile.getName().replaceFirst("\\s\\(\\d+\\)\\.blocked$", "");
+		} else {
+			// Pattern to remove simple ".blocked" suffix
+			originalName = blockedFile.getName().replaceFirst("\\.blocked$", "");
+		}
+
+		File restoredFile = new File(blockedFile.getParent(), originalName);
+
+		// If a file with the original name already exists, add a counter (1), (2), etc.
+		int counter = 1;
+		while (restoredFile.exists()) {
+			String countedName = originalName + " (" + counter + ")";
+			restoredFile = new File(blockedFile.getParent(), countedName);
+			counter++;
+		}
+
+		if (blockedFile.renameTo(restoredFile)) {
+			logger.info("File restored to its name: {}", restoredFile.getAbsolutePath());
+			return restoredFile;
+		} else {
+			logger.error("Error restoring the blocked file: {}", blockedFile.getAbsolutePath());
+			return null;
+		}
+	}
+
+	/**
+	 * Checks if a file is blocked for execution by verifying if its name ends
+	 * with the ".blocked" suffix.
+	 *
+	 * @param file the file to check
+	 * @return true if the file is blocked, false otherwise
+	 */
+	public static boolean isExecutionBlocked(File file) {
+		return file != null && file.getName().endsWith(".blocked");
+	}
 }
