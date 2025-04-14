@@ -216,7 +216,7 @@ public class DownloadManager {
 			monitorStatus = runningStates.DOWN;
 		});
 
-		monitorThread.setDaemon(true);
+		monitorThread.setDaemon(false);
 		monitorThread.start(); // Begin monitoring
 	}
 
@@ -276,35 +276,5 @@ public class DownloadManager {
 	 */
 	public String getDownloadPath() {
 		return downloadPath;
-	}
-
-	/**
-	 * A test main method to exercise the DownloadManager class. It gets an
-	 * instance of ClamAV, AntivirusManager, and DownloadManager, then starts
-	 * the antivirus scanner and monitoring.
-	 * 
-	 * @param args Command-line arguments (not used)
-	 */
-	public static void main(String[] args) {
-		try {
-
-			// Get the ClamAV instance
-			ClamAV clamAV = ClamAV.getInstance();
-			// Get the AntivirusManager instance
-			AntivirusManager antivirusManager = AntivirusManager.getInstance();
-			antivirusManager.setClamAV(clamAV); // <-- set the instance to use
-
-			// Get the DownloadManager instance
-			DownloadManager downloadManager = DownloadManager.getInstance(antivirusManager);
-
-			// Start the antivirus scanner
-			antivirusManager.startScan();
-
-			// Start monitoring the directory
-			downloadManager.startMonitoring();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 }
