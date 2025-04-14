@@ -10,8 +10,6 @@ from packaging import version
 from bs4 import BeautifulSoup
 import requests
 import sys
-import win32com.client
-from datetime import datetime, timedelta
 
 CLAMAV_DOWNLOAD_PAGE = "https://www.clamav.net/downloads"
 CONF_BASE_URL = "https://raw.githubusercontent.com/LorenzoGallizioli/WireShield/110-gestione-automatica-degli-aggiornamenti-del-database-clamav-allavvio/wireshield/bin/clamAV/conf"
