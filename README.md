@@ -33,7 +33,7 @@ Il progetto consiste in un'applicazione **client Java** progettata per connetter
 Con questo strumento, vogliamo offrire una soluzione che combini:
 
 - **Privacy**: Una connessione sicura tramite **WireGuard**, un protocollo di VPN moderno e sicuro.
-- **Sicurezza**: Un sistema di scansione antivirus per analizzare i file da malware che possono infettare i sistemi informatici utilizzando **ClamAV** e **VirusTotal**.
+- **Sicurezza**: Un sistema di scansione antivirus per analizzare i file da malware che possono infettare i sistemi informatici utilizzando **ClamAV**.
 - **Open Source**: Una soluzione completamente open-source, liberamente utilizzabile da chiunque.
 
 &nbsp;
@@ -117,7 +117,6 @@ I file identificati come sospetti vengono automaticamente spostati in quarantena
 
 - **WireGuard**: [Sito Ufficiale](https://www.wireguard.com/)
 - **ClamAV**: [Sito Ufficiale](https://www.clamav.net/)
-- **VirusTotal API**: [Documentazione API](https://developers.virustotal.com/)
 
 &nbsp;
 ## 📞 Contatti
