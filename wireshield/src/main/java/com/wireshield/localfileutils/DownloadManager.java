@@ -20,9 +20,6 @@ import com.wireshield.av.AntivirusManager;
 import com.wireshield.av.FileManager;
 import com.wireshield.enums.runningStates;
 
-import com.wireshield.av.ClamAV;
-
-
 /**
  * The DownloadManager class is responsible for: - Monitoring a download
  * directory for new files. - Detecting and processing new downloads. - Adding
@@ -216,7 +213,7 @@ public class DownloadManager {
 			monitorStatus = runningStates.DOWN;
 		});
 
-		monitorThread.setDaemon(false);
+		monitorThread.setDaemon(true);
 		monitorThread.start(); // Begin monitoring
 	}
 
