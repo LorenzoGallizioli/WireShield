@@ -1,5 +1,3 @@
-# Template Casi di Test – Progetto WireShield
-
 ## Informazioni Generali
 
 | Campo     | Valore                                                    |
