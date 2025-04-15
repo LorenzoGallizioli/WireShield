@@ -50,7 +50,7 @@ Per proteggere i file scaricati durante l’utilizzo della VPN, il client offre 
    - **Integrazione con ClamAV**: scansione antivirus open-source con ClamAV.
    - **Aggiornamento automatico delle firme virus**: ogni volta che WireShield viene avviato, l'applicazione aggiorna automaticamente le firme virali per garantire la massima protezione.
 
-## 3. Sistema di Quarantena
+### 3. Sistema di Quarantena
 Per gestire in sicurezza i file potenzialmente pericolosi:
 - **Directory di quarantena protetta**: i file sospetti vengono spostati in una directory nascosta `.QUARANTINE` con controlli di accesso restrittivi.
 - **Gestione metadati**: ogni file in quarantena mantiene informazioni sul percorso originale, data di quarantena e risultati della scansione.
