@@ -268,10 +268,8 @@ public class ClamAV implements AVInterface {
                             logger.error("Error deleting the metadata file: {}", metadataPath, e);
                             clamavReport.setThreatDetails("File deleted, but error deleting metadata.");
                         }
-                        clamavReport.setWarningClass(warningClass.CLEAR);
                     } else {
                         clamavReport.setThreatDetails("Error deleting the file.");
-                        clamavReport.setWarningClass(warningClass.CLEAR);
                     }
                 }
 
@@ -295,17 +293,14 @@ public class ClamAV implements AVInterface {
                                 // Update the report to reference the restored file
                                 clamavReport.setFile(restoredFile);
                                 clamavReport.setThreatDetails("No threat detected after restore"); // Indicates that no threats were found after restore
-                                clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
                             } else {
                                 logger.error("Failed to restore infected file from quarantine: {}",
                                         unblockedFile.getAbsolutePath());
                                 clamavReport.setThreatDetails("Infected file restoration failed"); // Indicates that the restore failed
-                                clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
                             }
                         } else {
                             logger.error("Failed to unblock infected file: {}", blockedFile.getAbsolutePath());
                             clamavReport.setThreatDetails("Failed to unblock infected file"); // Indicates that the file was not unblocked
-                            clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
                         }
                     } else {
                         // If the file was not renamed or not found, restore the original file
@@ -317,11 +312,9 @@ public class ClamAV implements AVInterface {
                             // Update the report to reference the restored file
                             clamavReport.setFile(restoredFile);
                             clamavReport.setThreatDetails("No threat detected"); // Indicates that no threats were found
-                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
                         } else {
                             logger.error("Failed to restore clean file from quarantine: {}", file.getAbsolutePath());
                             clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicates that no threats were found, but the restore failed
-                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
                         }
                     }
 
@@ -329,7 +322,6 @@ public class ClamAV implements AVInterface {
                     // Invalid input, so the file remains in quarantine
                     logger.warn("Invalid choice, file remains in quarantine.");
                     clamavReport.setThreatDetails("Invalid choice, file remains in quarantine.");
-                    clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Or DANGEROUS
                 }
             } catch (Exception e) {
                 logger.error("Error reading user's choice.", e);

@@ -214,7 +214,7 @@ public class SystemOrchestrator {
 	 */
 	public connectionStates getConnectionStatus() {
 		connectionStates connectionStatus = wireguardManager.getConnectionStatus();
-		logger.debug("Retrieving connection status: {}", connectionStatus);
+		// logger.debug("Retrieving connection status: {}", connectionStatus);
 		return connectionStatus;
 	}
 

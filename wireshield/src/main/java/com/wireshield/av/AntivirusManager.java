@@ -301,7 +301,7 @@ public class AntivirusManager {
                         // Read-only for **all** other users (both local and non-local)
                         AclEntry readOnlyAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(lookupService.lookupPrincipalByName("S-1-1-0")) // SID for Everyone apply read-only for all users
+                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone")) // SID for Everyone apply read-only for all users
                                 .setPermissions(
                                         AclEntryPermission.READ_DATA,
                                         AclEntryPermission.READ_ATTRIBUTES,

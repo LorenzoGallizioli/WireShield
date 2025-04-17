@@ -28,7 +28,8 @@ public class ScanReport {
 
 	/**
 	 * Constructor initializing the scan report with a scanId and file.
-	 * @param file   The file being scanned
+	 * 
+	 * @param file The file being scanned
 	 */
 	public ScanReport(File file) {
 		this();
@@ -41,7 +42,9 @@ public class ScanReport {
 	 * @return True if a threat was detected, otherwise false.
 	 */
 	public Boolean isThreatDetected() {
-		return warningState == warningClass.DANGEROUS || warningState == warningClass.SUSPICIOUS;
+		return threatDetected || 
+			   warningState == warningClass.DANGEROUS || 
+			   warningState == warningClass.SUSPICIOUS;
 	}
 
 	/**
@@ -141,17 +144,17 @@ public class ScanReport {
 		System.out.printf("%-20s: %s%n", "Threat Details", threatDetails);
 		System.out.printf("%-20s: %s%n", "Warning Class", warningState);
 		System.out.printf("%-20s: %s%n", "Report Status", isValidReport() ? "Valid" : "Invalid");
-		
+
 		System.out.println(separator);
 	}
 
 	/**
 	 * @return a string representation of the scan report.
 	 */
-    @Override
-    public String toString() {
-        return "ScanReport {" + "file=" + (file != null ? file.getName() : "null")
-                + ", threatDetected=" + threatDetected + ", threatDetails='" + threatDetails + '\'' + ", warningClass="
-                + warningState + ", isValid=" + isValid + '}';
-    }
+	@Override
+	public String toString() {
+		return "ScanReport {" + "file=" + (file != null ? file.getName() : "null")
+				+ ", threatDetected=" + threatDetected + ", threatDetails='" + threatDetails + '\'' + ", warningClass="
+				+ warningState + ", isValid=" + isValid + '}';
+	}
 }
