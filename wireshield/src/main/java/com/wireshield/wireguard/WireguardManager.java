@@ -225,7 +225,6 @@ public class WireguardManager {
 				
 				try {
 					
-					logger.debug("Updating WireGuard logs...");
 					this.updateWireguardLogs(command);
 					Thread.sleep(500);
 					

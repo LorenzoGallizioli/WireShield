@@ -73,8 +73,6 @@ public class ServicesUtils {
                 System.err.println("Exit Code: " + exitCode);
                 System.err.println("Output Errore: " + errorOutput);
             }
-
-            logger.info("Output di 'sc query " + serviceName + "': " + output);
             return output.contains("RUNNING");
             
         } catch (IOException e) {
@@ -89,6 +87,37 @@ public class ServicesUtils {
             return false;
         }
     }
+
+    public static boolean isServiceStarting(String serviceName) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("sc", "query", serviceName);
+            Process process = pb.start();
+
+            int exitCode = process.waitFor();
+
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            String errorOutput = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+
+            if (exitCode != 0 || !errorOutput.trim().isEmpty()) {
+                System.err.println("Errore durante l'esecuzione di 'sc query " + serviceName + "':");
+                System.err.println("Exit Code: " + exitCode);
+                System.err.println("Output Errore: " + errorOutput);
+            }
+            return output.contains("START_PENDING") || output.contains("START_IN_PROGRESS");
+            
+        } catch (IOException e) {
+
+            System.err.println("IOException durante l'esecuzione di 'sc query " + serviceName + "': " + e.getMessage());
+            return false;
+
+        } catch (InterruptedException e) {
+
+            System.err.println("Interruzione durante l'esecuzione di 'sc query " + serviceName + "': " + e.getMessage());
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
  
 	/**
      * Attempts to stop a Windows service with the specified name.

@@ -162,6 +162,7 @@ public class ClamAV implements AVInterface {
 
 		Runnable clamdServiceTask = () -> {
 			String serviceName = "clamd";
+			Boolean closeflag = false;
 
 			try {
 
@@ -175,12 +176,19 @@ public class ClamAV implements AVInterface {
 
 					if(ServicesUtils.startService(serviceName)){
 
-						while(!ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()){
+						while(ServicesUtils.isServiceStarting(serviceName) && !Thread.currentThread().isInterrupted()){
+							logger.info("Service " + serviceName + " is starting... " + closeflag);
 							try {
 								Thread.sleep(200);
 							} catch (InterruptedException e) {
+								closeflag = true;
 								Thread.currentThread().interrupt();
 							}
+						}
+
+						if (closeflag) {
+							stopClamdService();
+							closeflag = false;
 						}
 
 						this.clamdState = runningStates.UP;
@@ -223,7 +231,7 @@ public class ClamAV implements AVInterface {
 					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned false even if the service was running.
 					//ServicesUtils.isServiceRunning(serviceName);
 
-					if (!ServicesUtils.isServiceRunning(serviceName)) {
+					if (!ServicesUtils.isServiceRunning(serviceName) && !ServicesUtils.isServiceStarting(serviceName)) {
 						logger.info("Service " + serviceName + " is already not running.");
 						this.clamdState = runningStates.DOWN;
 						return;
@@ -282,13 +290,19 @@ public class ClamAV implements AVInterface {
 	 * Checks if each thread is not null and is alive before attempting to interrupt it.
 	 */
 	public void interruptAllThreads() throws InterruptedException {
-		if(this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()){
-			this.clamdServiceStartThread.interrupt();
-			this.clamdServiceStartThread.join();
-		}
+
+		/** clamdServiceStopThread must stopped before clamdServiceStartThread
+		 * in the case of stopping during clamd startup, the fact that thread.interrupt() 
+		 * is called on clamdServiceStopThread at this time ensures that the thread will 
+		 * not be interrupted if started by clamdServiceStartThread
+		 */
 		if(this.clamdServiceStopThread != null && this.clamdServiceStopThread.isAlive()){
 			this.clamdServiceStopThread.interrupt();
 			this.clamdServiceStopThread.join();
+		}
+		if(this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()){
+			this.clamdServiceStartThread.interrupt();
+			this.clamdServiceStartThread.join();
 		}
 	}
 }
