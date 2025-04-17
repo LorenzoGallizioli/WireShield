@@ -149,14 +149,11 @@ public class ClamAV implements AVInterface {
                 if (threatDetected) {
                     clamavReport.setThreatDetails(threatDetails); // Add threat details
                     clamavReport.setWarningClass(warningClass.DANGEROUS); // Classify the file as dangerous
-                    logger.warn("Threat found, marking as dangerous and keeping in quarantine."); // Log the
-                                                                                                  // classification
+                    logger.warn("Threat found, marking as dangerous and keeping in quarantine."); // Log the classification
                 } else {
                     clamavReport.setThreatDetails("Suspicious activity detected"); // Add suspicious details
                     clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Classify the file as suspicious
-                    logger.warn("Suspicious activity detected, marking as suspicious and keeping in quarantine."); // Log
-                                                                                                                   // the
-                                                                                                                   // classification
+                    logger.warn("Suspicious activity detected, marking as suspicious and keeping in quarantine."); // Log the classification
                 }
                 // Now, interact with the user to decide what to do
                 postScanActions(file);
@@ -175,9 +172,7 @@ public class ClamAV implements AVInterface {
                     clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
                 } else {
                     logger.error("Failed to restore clean file from quarantine: {}", file.getAbsolutePath());
-                    clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicate no threats
-                                                                                                // but restoration
-                                                                                                // failed
+                    clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicate no threats but restoration failed
                     clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
                 }
             }
