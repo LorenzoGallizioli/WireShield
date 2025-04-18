@@ -16,26 +16,46 @@
 			<BorderPane prefHeight="630.0" prefWidth="1100.0">
 				<top>
 					<VBox>
-						<HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT">
+						<HBox fx:id="menuBox" prefHeight="0" spacing="10.0" alignment="CENTER_LEFT">
 							<padding>
 								<Insets left="20.0" />
 							</padding>
 							<children>
 								<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome"
-									prefHeight="0" prefWidth="70.0" text="Home"
-									styleClass="btn-menu" />
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-home" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Home" />
+									</tooltip>
+								</Button>
+
 								<Button id="avButton" mnemonicParsing="false" onAction="#viewAv"
-									prefHeight="0" prefWidth="100.0" text="Antivirus"
-									styleClass="btn-menu" />
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-shield-alt" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Antivirus" />
+									</tooltip>
+								</Button>
+
 								<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs"
-									prefHeight="0" prefWidth="70.0" text="Logs"
-									styleClass="btn-menu" />
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-list-alt" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Logs" />
+									</tooltip>
+								</Button>
 							</children>
 						</HBox>
 					</VBox>
 				</top>
 			</BorderPane>
-			<Pane layoutX="0" layoutY="28.0" prefHeight="643.0" prefWidth="1100.0">
+			<Pane layoutX="0" layoutY="44.0" prefHeight="643.0" prefWidth="1100.0">
 				<children>
 
 
@@ -195,7 +215,7 @@
 									</VBox>
 									<Region HBox.hgrow="ALWAYS" />
 									<Button fx:id="vpnButton" onAction="#changeVPNState"
-										text="Start VPN" styleClass="btn-primary" />
+										text="Start VPN" styleClass="primary-button" />
 								</HBox>
 
 								<!-- Bottom row: Traffic and Handshake info -->
