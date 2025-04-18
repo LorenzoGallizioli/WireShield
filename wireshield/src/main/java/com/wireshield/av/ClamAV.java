@@ -187,7 +187,9 @@ public class ClamAV implements AVInterface {
 						}
 
 						if (closeflag) {
-							stopClamdService();
+							Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+								ServicesUtils.stopService(serviceName);
+							}));
 							closeflag = false;
 						}
 
@@ -231,7 +233,7 @@ public class ClamAV implements AVInterface {
 					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned false even if the service was running.
 					//ServicesUtils.isServiceRunning(serviceName);
 
-					if (!ServicesUtils.isServiceRunning(serviceName) && !ServicesUtils.isServiceStarting(serviceName)) {
+					if (!ServicesUtils.isServiceRunning(serviceName)) {
 						logger.info("Service " + serviceName + " is already not running.");
 						this.clamdState = runningStates.DOWN;
 						return;
