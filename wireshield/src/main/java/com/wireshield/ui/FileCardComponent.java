@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter;
 
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import com.wireshield.enums.warningClass;
+
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,7 +20,7 @@ public class FileCardComponent extends VBox {
     private final VBox detailsPanel;
     private boolean expanded = false;
 
-    public FileCardComponent(String fileName, String filePath, String status, LocalDateTime scanTime, String detectedThreats) {
+    public FileCardComponent(String fileName, String filePath, String status, LocalDateTime scanTime, warningClass WarningClass) {
         getStyleClass().add("file-card");
         setSpacing(10);
 
@@ -29,18 +31,18 @@ public class FileCardComponent extends VBox {
 
         // Indicatore di stato
         Circle statusCircle = new Circle(6);
-        switch (status.toLowerCase()) {
-            case "clean":
+        switch (WarningClass) {
+            case CLEAR:
                 statusCircle.getStyleClass().add("status-indicator");
-                statusCircle.getStyleClass().add("active");
+                statusCircle.getStyleClass().add("clear");
                 break;
-            case "threat":
+            case SUSPICIOUS:
                 statusCircle.getStyleClass().add("status-indicator");
-                statusCircle.getStyleClass().add("inactive");
+                statusCircle.getStyleClass().add("suspicious");
                 break;
-            case "warning":
+            case DANGEROUS:
                 statusCircle.getStyleClass().add("status-indicator");
-                statusCircle.getStyleClass().add("scanning");
+                statusCircle.getStyleClass().add("dangerous");
                 break;
         }
 
@@ -60,14 +62,14 @@ public class FileCardComponent extends VBox {
         Label statusLabel = new Label(status);
         statusLabel.getStyleClass().add("file-status");
 
-        switch (status.toLowerCase()) {
-            case "clean":
+        switch (WarningClass) {
+            case CLEAR:
                 statusLabel.getStyleClass().add("status-clean");
                 break;
-            case "threat":
+            case SUSPICIOUS:
                 statusLabel.getStyleClass().add("status-threat");
                 break;
-            case "warning":
+            case DANGEROUS:
                 statusLabel.getStyleClass().add("status-warning");
                 break;
         }
@@ -90,12 +92,12 @@ public class FileCardComponent extends VBox {
         // Aggiungi dettagli al panel
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-        addDetailRow(this.detailsPanel, "Data Scansione:", scanTime.format(formatter));
-        addDetailRow(this.detailsPanel, "Percorso Completo:", filePath);
-        addDetailRow(this.detailsPanel, "Stato:", status);
+        addDetailRow(this.detailsPanel, "Scanning Date:", scanTime.format(formatter));
+        addDetailRow(this.detailsPanel, "Absolute Path:", filePath);
+        addDetailRow(this.detailsPanel, "File Status:", status);
 
-        if (!detectedThreats.isEmpty()) {
-            addDetailRow(detailsPanel, "Minacce Rilevate:", detectedThreats);
+        if (!WarningClass.equals(WarningClass.CLEAR)) {
+            addDetailRow(detailsPanel, "Minacce Rilevate:", status);
         }
 
         // Aggiungi i componenti al layout principale

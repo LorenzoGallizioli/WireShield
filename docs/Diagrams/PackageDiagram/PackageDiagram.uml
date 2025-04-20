@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="_6LZe4MVWEe-NBaoJc3tJ_A" name="PackageDiagram">
+  <packageImport xmi:type="uml:PackageImport" xmi:id="_6MgSIMVWEe-NBaoJc3tJ_A">
+    <importedPackage xmi:type="uml:Model" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
+  </packageImport>
+  <packagedElement xmi:type="uml:Model" xmi:id="_ujFqcMXDEe-33bHsHYpPkg" name="WireShield">
+    <packagedElement xmi:type="uml:Package" xmi:id="_x1nyMMXDEe-33bHsHYpPkg" name="com.wireshield.main">
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_YklWUMXEEe-33bHsHYpPkg" name="import" client="_x1nyMMXDEe-33bHsHYpPkg" supplier="_KKedMMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_daFFoMXEEe-33bHsHYpPkg" name="import" client="_x1nyMMXDEe-33bHsHYpPkg" supplier="_LnP9MMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_enUU0MXEEe-33bHsHYpPkg" name="import" client="_x1nyMMXDEe-33bHsHYpPkg" supplier="_MdPKAMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_fJ-V8MXEEe-33bHsHYpPkg" name="access" client="_x1nyMMXDEe-33bHsHYpPkg" supplier="_G1qdgMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_NoaRwMXGEe-33bHsHYpPkg" name="import" client="_x1nyMMXDEe-33bHsHYpPkg" supplier="_N39bkMXEEe-33bHsHYpPkg"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="_G1qdgMXEEe-33bHsHYpPkg" name="com.wireshield.ui">
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_3uNO0MXGEe-33bHsHYpPkg" name="import" client="_G1qdgMXEEe-33bHsHYpPkg" supplier="_LnP9MMXEEe-33bHsHYpPkg"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="_KKedMMXEEe-33bHsHYpPkg" name="com.wireshield.av">
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_mnTqMMXEEe-33bHsHYpPkg" name="needs" client="_KKedMMXEEe-33bHsHYpPkg" supplier="_N39bkMXEEe-33bHsHYpPkg"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="_LnP9MMXEEe-33bHsHYpPkg" name="com.wireshield.localfileutils">
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_nWlyEMXEEe-33bHsHYpPkg" name="needs" client="_LnP9MMXEEe-33bHsHYpPkg" supplier="_N39bkMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_owLwUMXGEe-33bHsHYpPkg" name="needs" client="_LnP9MMXEEe-33bHsHYpPkg" supplier="_KKedMMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_vC7gwMXGEe-33bHsHYpPkg" name="import" client="_LnP9MMXEEe-33bHsHYpPkg" supplier="_MdPKAMXEEe-33bHsHYpPkg"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="_MdPKAMXEEe-33bHsHYpPkg" name="com.wireshield.wireguard">
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_oVN9gMXEEe-33bHsHYpPkg" name="needs" client="_MdPKAMXEEe-33bHsHYpPkg" supplier="_N39bkMXEEe-33bHsHYpPkg"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="_AK3SEMXHEe-33bHsHYpPkg" name="needs" client="_MdPKAMXEEe-33bHsHYpPkg" supplier="_KKedMMXEEe-33bHsHYpPkg"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="_N39bkMXEEe-33bHsHYpPkg" name="com.wireshield.enums"/>
+  </packagedElement>
+</uml:Model>

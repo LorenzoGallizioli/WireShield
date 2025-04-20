@@ -10,9 +10,10 @@
 3. [📝 Descrizione del Progetto](#-descrizione-del-progetto)  
 4. [🔑 Funzionalità Principali](#-funzionalità-principali)  
    - [4.1 Connessione VPN con WireGuard](#1-connessione-vpn-con-wireguard)  
-   - [4.2 Scansione Antivirus Integrata](#2-scansione-antivirus-integrata)  
-   - [4.3 Interfaccia Utente (UI)](#3-interfaccia-utente-ui)  
-   - [4.4 Logging e Notifiche](#4-logging-e-notifiche)  
+   - [4.2 Scansione Antivirus Integrata](#2-scansione-antivirus-integrata)
+   - [4.3 Sistema di Quarantena](#3-sistema-di-quarantena)
+   - [4.4 Interfaccia Utente (UI)](#4-interfaccia-utente-ui)  
+   - [4.5 Logging e Notifiche](#5-logging-e-notifiche)
 5. [🚀 Guida all'Installazione](#-guida-allinstallazione)  
    - [5.1 Prerequisiti](#prerequisiti)  
 6. [🛠️ Come Usare l'Applicazione](#%EF%B8%8F-come-usare-lapplicazione)  
@@ -33,7 +34,7 @@ Il progetto consiste in un'applicazione **client Java** progettata per connetter
 Con questo strumento, vogliamo offrire una soluzione che combini:
 
 - **Privacy**: Una connessione sicura tramite **WireGuard**, un protocollo di VPN moderno e sicuro.
-- **Sicurezza**: Un sistema di scansione antivirus per analizzare i file da malware che possono infettare i sistemi informatici utilizzando **ClamAV** e **VirusTotal**.
+- **Sicurezza**: Un sistema di scansione antivirus per analizzare i file da malware che possono infettare i sistemi informatici utilizzando **ClamAV**.
 - **Open Source**: Una soluzione completamente open-source, liberamente utilizzabile da chiunque.
 
 &nbsp;
@@ -47,15 +48,23 @@ L’applicazione permette la configurazione e la gestione di una connessione VPN
 ### 2. Scansione Antivirus Integrata
 Per proteggere i file scaricati durante l’utilizzo della VPN, il client offre una doppia opzione per la scansione antivirus:
    - **Integrazione con ClamAV**: scansione antivirus open-source con ClamAV.
-   - **Integrazione con VirusTotal API**: verifica dei files flaggati infetti da clamAV tramite chiamate all’API di VirusTotal, che permette di esaminare file sospetti per scongiurare falsi positivi.
+   - **Aggiornamento automatico delle firme virus**: ogni volta che WireShield viene avviato, l'applicazione aggiorna automaticamente le firme virali per garantire la massima protezione.
 
-### 3. Interfaccia Utente (UI)
+### 3. Sistema di Quarantena
+Per gestire in sicurezza i file potenzialmente pericolosi:
+- **Directory di quarantena protetta**: i file sospetti vengono spostati in una directory nascosta `.QUARANTINE` con controlli di accesso restrittivi.
+- **Gestione metadati**: ogni file in quarantena mantiene informazioni sul percorso originale, data di quarantena e risultati della scansione.
+- **Ripristino sicuro**: possibilità di ripristinare i file nella loro posizione originale quando necessario.
+- **Blocco esecuzione file**: i file sospetti vengono automaticamente bloccati aggiungendo l'estensione ".blocked" per impedirne l'esecuzione accidentale.
+
+### 4. Interfaccia Utente (UI)
 L’applicazione presenta un’interfaccia **JavaFX** che consente all’utente di:
    - **Configurare la connessione VPN**: l'utente può facilmente configurare e gestire la connessione VPN direttamente dall'interfaccia grafica.
    - **Monitorare la connessione**: visualizzazione di informazioni in tempo reale sulla VPN, come la latenza, la velocità di connessione e i dettagli del traffico.
    - **Visualizzare i risultati delle scansioni antivirus**: l'interfaccia fornisce feedback chiari e immediati riguardo ai risultati delle scansioni antivirus, indicando se i file sono sicuri o contengono malware.
+   - **Gestire i file in quarantena: visualizzare**, ripristinare o eliminare definitivamente i file posti in quarantena.
 
-### 4. Logging e Notifiche
+### 5. Logging e Notifiche
 L’applicazione tiene traccia di tutte le operazioni e fornisce notifiche in tempo reale:
    - **Logging completo**: tutti gli eventi, comprese le scansioni antivirus e i risultati delle analisi, vengono registrati in un file di log per una tracciabilità completa delle operazioni.
    - **Notifiche di sicurezza**: notifiche automatiche vengono inviate all'utente se viene rilevato malware durante le scansioni antivirus.
@@ -67,10 +76,18 @@ L’applicazione tiene traccia di tutte le operazioni e fornisce notifiche in te
 
 > ⚠️ **Permessi Amministrativi**: Poiché l’applicazione interagisce con WireGuard, è necessario eseguire il programma con privilegi elevati (root/sudo) per gestire le connessioni di rete.
 
-1. **ClamAV**: Necessario per la scansione antivirus tramite `clamscan` ([Segui la guida per installare clamAV sul tuo PC](https://github.com/LorenzoGallizioli/WireShield/blob/7e6f6c54f63fd79cc4b99bfd91c4ab223ffa6286/wireshield/bin/ClamAV.md))
+1. **ClamAV**: Necessario per la scansione antivirus ([Segui la guida per installare clamAV sul tuo PC](https://github.com/LorenzoGallizioli/WireShield/blob/7e6f6c54f63fd79cc4b99bfd91c4ab223ffa6286/wireshield/bin/ClamAV.md))
 .
 2. **Java 11** o versione successiva: L’applicazione è sviluppata in Java e utilizza funzionalità correlate come JavaFX.
-3. **API Key di VirusTotal** (opzionale): Per integrare le scansioni tramite l'API di VirusTotal, è necessaria una chiave API.
+
+### Installazione di ClamAV (Windows)
+Lo script di installazione automatizzato per Windows ora offre:
+1. **Download dinamico dell'ultima versione**: Lo script scarica automaticamente l'ultima versione stabile di ClamAV direttamente dal sito ufficiale.
+2. **Configurazione automatica**: I file di configurazione necessari vengono scaricati e installati automaticamente.
+3. **Installazione come servizio Windows**: ClamAV viene configurato come servizio di sistema per garantire il funzionamento continuo.
+4. **Pulizia automatica**: I file temporanei vengono rimossi al termine dell'installazione.
+
+L'aggiornamento delle firme virali avviene automaticamente all'avvio di WireShield, garantendo che l'antivirus sia sempre aggiornato con le ultime definizioni disponibili.
 
 &nbsp;
 ## 🛠️ Come Usare l'Applicazione
@@ -87,18 +104,20 @@ Al primo avvio non sarà presente nessun peer.
 ### 4. Carica un peer
 Il peer deve essere caricato cliccando sul bottone '+' nella **Home** di WireShield e deve essere un file di configurazione wireguard (.conf).
 
-### 4. Avvia la connessione VPN
+### 5. Avvia la connessione VPN
 Puoi avviare o interrompere la connessione VPN direttamente dalla scheda **Home** dell'interfaccia utente e controllare i log nella scheda **Logs**.
 
-### 5. Esegui una scansione antivirus
-Una volta stabilita la connessione VPN, puoi scansionare i file scaricati tramite **ClamAV** e **VirusTotal** semplicemente scaricando un file dal web e attendendo che WireShield effettui la scansione. Il sistema ti notificherà immediatamente in caso di rilevamento di malware e troverai il risultato della scansione, al termine della stessa, nella sezione **Antivirus**.
+### 6. Esegui una scansione antivirus
+Una volta stabilita la connessione VPN, puoi scansionare i file scaricati tramite **ClamAV** semplicemente scaricando un file dal web e attendendo che WireShield effettui la scansione. Il sistema ti notificherà immediatamente in caso di rilevamento di malware e troverai il risultato della scansione, al termine della stessa, nella sezione **Antivirus**.
+
+### 7. Gestione della quarantena
+I file identificati come sospetti vengono automaticamente spostati in quarantena. Puoi **visualizzare** i file in quarantena, **ripristinarli** o **eliminarli** definitivamente attraverso l'interfaccia dedicata.
 
 &nbsp;
 ## 📚 Riferimenti e Approfondimenti
 
 - **WireGuard**: [Sito Ufficiale](https://www.wireguard.com/)
 - **ClamAV**: [Sito Ufficiale](https://www.clamav.net/)
-- **VirusTotal API**: [Documentazione API](https://developers.virustotal.com/)
 
 &nbsp;
 ## 📞 Contatti

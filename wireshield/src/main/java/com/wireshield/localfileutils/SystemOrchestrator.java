@@ -188,7 +188,7 @@ public class SystemOrchestrator {
 	 */
 	public void manageClamdService(runningStates state){
 		if (state.equals(runningStates.UP)) {
-
+			
 			// during starting waiting, in UI, the stop clamd service button must be disabled (so delete commended code in ClamAV.java)
 			antivirusManager.getClamAV().startClamdService(); 	
 		} else {

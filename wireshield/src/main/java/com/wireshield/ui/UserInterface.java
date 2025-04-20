@@ -6,12 +6,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +30,7 @@ import com.wireshield.enums.runningStates;
 import com.wireshield.enums.vpnOperations;
 import com.wireshield.enums.warningClass;
 import com.wireshield.localfileutils.SystemOrchestrator;
+import com.wireshield.ui.FileCardComponent;
 import com.wireshield.windows.WFPManager;
 import com.wireshield.wireguard.Connection;
 import com.wireshield.wireguard.Peer;
@@ -34,16 +41,23 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -74,8 +88,6 @@ public class UserInterface extends Application implements PeerOperationListener 
     // FXML Controls
     @FXML
     protected Button vpnButton;
-    @FXML
-    protected Label avStatusLabel;
     @FXML
     protected Label connStatusLabel;
     @FXML
@@ -147,7 +159,7 @@ public class UserInterface extends Application implements PeerOperationListener 
         this.setDynamicLogUpdate();
 
         this.startDynamicConnectionInfoUpdate();
-        if(FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")){
+        if (FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")) {
             this.so.manageClamdService(runningStates.UP);
         }
 
@@ -159,7 +171,7 @@ public class UserInterface extends Application implements PeerOperationListener 
     }
 
     public static void main(String[] args) {
-        
+
         so = SystemOrchestrator.getInstance();
 
         so.manageVPN(vpnOperations.STOP, null);
@@ -175,10 +187,11 @@ public class UserInterface extends Application implements PeerOperationListener 
         this.so.manageAV(runningStates.DOWN);
         this.so.manageVPN(vpnOperations.STOP, null);
 
-        while(this.so.getConnectionStatus() == connectionStates.CONNECTED || this.so.getAntivirusManager().getClamdStatus() == runningStates.UP) {
+        while (this.so.getConnectionStatus() == connectionStates.CONNECTED || this.so.getAntivirusManager().getClamdStatus() == runningStates.UP) {
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
         }
 
         // manca da aggiungere il print con logger di chiusra su tutti i thread (in modo da eseguire il debug e verifica)
@@ -237,8 +250,6 @@ public class UserInterface extends Application implements PeerOperationListener 
         }
         avPane.toFront();
     }*/
-
-
     /**
      * Toggles the VPN connection state. If the VPN is currently connected,
      * stops all services (VPN, antivirus, and download manager). If
@@ -247,8 +258,7 @@ public class UserInterface extends Application implements PeerOperationListener 
      */
     @FXML
     public void changeVPNState() {
-        if (this.so.getConnectionStatus() == connectionStates.CONNECTED) 
-        {
+        if (this.so.getConnectionStatus() == connectionStates.CONNECTED) {
             this.so.setGuardianState(runningStates.DOWN);
             this.so.manageDownload(runningStates.DOWN);
             this.so.manageAV(runningStates.DOWN);
@@ -257,7 +267,8 @@ public class UserInterface extends Application implements PeerOperationListener 
             while (this.so.getConnectionStatus() == connectionStates.CONNECTED) {
                 try {
                     Thread.sleep(200);
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                }
             }
 
             this.vpnButton.setText("Start VPN");
@@ -276,10 +287,10 @@ public class UserInterface extends Application implements PeerOperationListener 
             while (this.so.getConnectionStatus() == connectionStates.DISCONNECTED) {
                 try {
                     Thread.sleep(200);
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                }
             }
             this.so.getWireguardManager().startUpdateConnectionStats();
-
 
             this.so.manageAV(runningStates.UP);
             this.so.manageDownload(runningStates.UP);
@@ -434,59 +445,56 @@ public class UserInterface extends Application implements PeerOperationListener 
                         process.destroy();
                     }
                 });*/
-
                 // Add a shutdown hook to ensure the process is terminated when the application exits.
                 // When process terminate, the ShutdownHook is removed (no more needed).
                 //Runtime.getRuntime().addShutdownHook(hookThread);
-
                 this.notepadProcess.waitFor();
 
-            }catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 if (this.notepadProcess.isAlive()) {
                     this.notepadProcess.destroy();
                 }
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
 
+            //Runtime.getRuntime().removeShutdownHook(hookThread);
+            Platform.runLater(() -> {
+                this.loadPeersFromPath();
+                this.updatePeerList();
 
-                //Runtime.getRuntime().removeShutdownHook(hookThread);
-                
-                Platform.runLater(() -> {
-                    this.loadPeersFromPath();
-                    this.updatePeerList();
+                this.selectedPeer = peer.getName();
 
-                    this.selectedPeer = peer.getName();
+                Peer updatedPeer = this.so.getWireguardManager().getPeerManager().getPeerByName(peer.getName());
+                if (updatedPeer != null) {
 
-                    Peer updatedPeer = this.so.getWireguardManager().getPeerManager().getPeerByName(peer.getName());
-                    if (updatedPeer != null) {
+                    VBox existingContainer = null;
+                    for (javafx.scene.Node node : this.homePane.getChildren()) {
+                        if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
+                            existingContainer = (VBox) node;
+                            break;
+                        }
+                    }
 
-                        VBox existingContainer = null;
-                        for (javafx.scene.Node node : this.homePane.getChildren()) {
-                            if (node instanceof VBox && node.getStyleClass().contains("peerInfo-container")) {
-                                existingContainer = (VBox) node;
+                    if (existingContainer != null) {
+                        this.fillPeerInfoContainer(updatedPeer, existingContainer);
+                    }
+                }
+
+                for (javafx.scene.Node node : this.peerCardsContainer.getChildren()) {
+                    if (node instanceof VBox peerCard) {
+                        for (javafx.scene.Node cardChild : peerCard.getChildren()) {
+                            if (cardChild instanceof Label cardLabel
+                                    && cardLabel.getStyleClass().contains("peer-card-text-name")
+                                    && cardLabel.getText().equals(this.selectedPeer)) {
+                                peerCard.getStyleClass().add("selected");
                                 break;
                             }
                         }
-
-                        if (existingContainer != null) {
-                            this.fillPeerInfoContainer(updatedPeer, existingContainer);
-                        }
                     }
+                }
+            });
 
-                    for (javafx.scene.Node node : this.peerCardsContainer.getChildren()) {
-                        if (node instanceof VBox peerCard) {
-                            for (javafx.scene.Node cardChild : peerCard.getChildren()) {
-                                if (cardChild instanceof Label cardLabel
-                                        && cardLabel.getStyleClass().contains("peer-card-text-name")
-                                        && cardLabel.getText().equals(this.selectedPeer)) {
-                                    peerCard.getStyleClass().add("selected");
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                });
-
-                logger.info("Thread stopped - [onPeerModified()] peer modify thread terminated.");
+            logger.info("Thread stopped - [onPeerModified()] peer modify thread terminated.");
         });
 
         editorThread.setDaemon(true);
@@ -652,7 +660,7 @@ public class UserInterface extends Application implements PeerOperationListener 
     }
 
     protected void startDynamicLogUpdate() {
-        
+
         if (this.logUpdateThread != null && this.logUpdateThread.isAlive()) {
             return;
         }
@@ -667,9 +675,10 @@ public class UserInterface extends Application implements PeerOperationListener 
 
         if (this.logUpdateThread != null && this.logUpdateThread.isAlive()) {
             this.logUpdateThread.interrupt();
-            try{
+            try {
                 this.logUpdateThread.join();
-            }catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
         }
     }
 
@@ -759,21 +768,22 @@ public class UserInterface extends Application implements PeerOperationListener 
             this.connectionInfoUpdateThread.interrupt();
             try {
                 this.connectionInfoUpdateThread.join();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
         }
     }
 
-
-
-    /* AntiVirus */
+    /* AntiVirus UI Elements */
     @FXML
     private Circle statusIndicator;
     @FXML
-    private Button startScanButton;
+    private Button startScanButton; // Rinominato per chiarezza rispetto all'azione
     @FXML
     private Label totalScannedLabel;
     @FXML
     private Label threatsDetectedLabel;
+    @FXML
+    protected Label avStatusLabel;
     @FXML
     private Label currentStatusLabel;
     @FXML
@@ -781,245 +791,477 @@ public class UserInterface extends Application implements PeerOperationListener 
     @FXML
     private VBox fileCardsContainer;
 
-    Thread updateAVInfoThread;
-
-    private List<FileCardComponent> fileCards = new ArrayList<>();
+    private Thread updateAVInfoThread;
+    private final List<FileCardComponent> fileCards = new ArrayList<>(); // Mantiene l'ordine visivo
+    private final Set<UUID> displayedReportIds = new HashSet<>(); // Traccia gli UUID dei report mostrati
+    private final Map<UUID, FileCardComponent> reportIdToCardMap = new HashMap<>(); // Mappa UUID a Card per rimozione efficiente
 
     /**
-     * Avvia il thread che aggiorna le informazioni sull'antivirus e sullo stato del servizio ogni secondo.
-     * Il thread viene eseguito in background e continua a eseguire l'aggiornamento fino a quando non viene interrotto.
+     * Avvia il thread di aggiornamento.
      */
-    private void startUpdateAVInfo(){
-
+    private void startUpdateAVInfo() {
         if (this.updateAVInfoThread != null && this.updateAVInfoThread.isAlive()) {
-            return;
+            return; // Già in esecuzione
         }
-        
+
         Runnable task = () -> {
             while (!Thread.currentThread().isInterrupted()) {
-
-                runningStates scannerStatus = this.so.getScannerStatus();
-
-                this.clamdAtStartupSelector();
-
-                Platform.runLater(() -> {
-                    this.updateAVInfo(scannerStatus);
-                    this.updateServiceStatus(scannerStatus, this.so.getAntivirusManager().getClamdStatus());
-                });
-
                 try {
-                    Thread.sleep(1000);
+                    // Recupera gli stati PRIMA di accedere alla UI thread
+                    runningStates scannerStatus = this.so.getScannerStatus();
+                    runningStates clamdStatus = this.so.getAntivirusManager().getClamdStatus();
+                    List<ScanReport> finalReports = null;
+
+                    if (scannerStatus == runningStates.UP) {
+                         // Recupera i report solo se lo scanner è attivo
+                         // Clona la lista per evitare ConcurrentModificationException se viene modificata altrove
+                        finalReports = new ArrayList<>(so.getAntivirusManager().getFinalReports());
+                    }
+
+                    // Aggiorna la UI sulla JavaFX Application Thread
+                    final List<ScanReport> reportsToProcess = finalReports; // Final per lambda
+                    Platform.runLater(() -> {
+                        updateServiceStatus(scannerStatus, clamdStatus);
+                        updateAVInfo(scannerStatus, reportsToProcess); // Passa i report recuperati
+                        setupClamdStartupButtonAction(); // Aggiorna stato pulsante avvio auto
+                    });
+
+                    Thread.sleep(1000); // Intervallo di aggiornamento
+
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    logger.info("Thread stopped - [startUpdateAVInfo()] AV info update thread interrupted.");
+                    break; // Esci dal ciclo se interrotto
+                } catch (Exception e) {
+                    logger.error("Error during AV info update loop", e);
+                    // Attendi un po' di più in caso di errore per evitare log flooding
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break; // Esci se interrotto durante l'attesa
+                    }
                 }
             }
-            logger.info("Thread interrupted - [startUpdateAVInfo()] AV info update thread interrupted.");    
+            logger.info("AV info update thread finished.");
         };
 
         this.updateAVInfoThread = new Thread(task);
-        this.updateAVInfoThread.setDaemon(true);
+        this.updateAVInfoThread.setDaemon(true); // Permette all'applicazione di chiudersi anche se il thread è attivo
+        this.updateAVInfoThread.setName("AV-Info-Updater");
         this.updateAVInfoThread.start();
     }
 
     /**
-     * Ferma l'aggiornamento delle informazioni sull'antivirus interrompendo il thread associato e aspettando il suo completamento.
+     * Ferma il thread di aggiornamento.
      */
-    private void stopAVInfoUpdate() {
+    public void stopAVInfoUpdate() {
         if (this.updateAVInfoThread != null && this.updateAVInfoThread.isAlive()) {
             this.updateAVInfoThread.interrupt();
             try {
-                this.updateAVInfoThread.join();
-            } catch (InterruptedException e) {}
+                // Attendi un breve periodo per permettere al thread di terminare
+                this.updateAVInfoThread.join(1500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("Interrupted while waiting for AV info update thread to stop.");
+            }
+            logger.info("AV info update thread stop requested.");
         }
     }
 
     /**
-     * Aggiorna le informazioni sull'antivirus in base allo stato dello scanner.
-     * Se lo scanner è attivo, mostra i report finali, il numero di minacce rilevate e le informazioni sui file scansionati.
-     * Se lo scanner non è attivo, resetta le etichette e le card.
+     * Aggiorna le informazioni AV, creando card con pulsanti basate sugli UUID.
      *
-     * @param scannerStatus Lo stato attuale dello scanner antivirus.
+     * @param scannerStatus Lo stato corrente dello scanner.
+     * @param reports La lista di report da processare (può essere null se scannerStatus != UP).
      */
-    private void updateAVInfo(runningStates scannerStatus){
+    private void updateAVInfo(runningStates scannerStatus, List<ScanReport> reports) {
 
-        if (scannerStatus == runningStates.UP) {
+        if (scannerStatus == runningStates.UP && reports != null) {
 
-            List<ScanReport> reports = so.getAntivirusManager().getFinalReports();
-            this.totalScannedLabel.setText(String.valueOf(reports.size()));
-
-            long threatCount = reports.stream().filter(report -> !report.getWarningClass().equals(com.wireshield.enums.warningClass.CLEAR)).count();
+            long totalFiles = reports.size(); 
+            long threatCount = reports.stream()
+                    .filter(report -> report.getWarningClass() != null && !warningClass.CLEAR.equals(report.getWarningClass()))
+                    .count();
+            this.totalScannedLabel.setText(String.valueOf(totalFiles));
             this.threatsDetectedLabel.setText(String.valueOf(threatCount));
 
-            this.fileCardsContainer.getChildren().clear();
-            this.fileCards.clear();
+            List<FileCardComponent> cardsToAdd = new ArrayList<>();
+            List<UUID> currentReportIds = reports.stream().map(ScanReport::getId).collect(Collectors.toList());
 
-            for (ScanReport report : reports) {
-                String fileName = report.getFile().getName();
-                String filePath = report.getFile().getAbsolutePath();
-                warningClass warningClass = report.getWarningClass();
-
-                String status = convertWarningClassToStatus(warningClass);
-
-                LocalDateTime scanTime = LocalDateTime.now();
-
-                addScannedFile(fileName, filePath, status, scanTime, warningClass);
+            Set<UUID> idsToRemove = new HashSet<>(displayedReportIds);
+            idsToRemove.removeAll(currentReportIds);
+            if (!idsToRemove.isEmpty()) {
+                logger.debug("Removing {} outdated cards.", idsToRemove.size());
+                idsToRemove.forEach(this::removeCardByReportIdInternal);
             }
 
-        } else {
-            this.totalScannedLabel.setText("0");
-            this.threatsDetectedLabel.setText("0");
-            this.fileCardsContainer.getChildren().clear();
-            this.fileCards.clear();
+            for (ScanReport report : reports) {
+                UUID reportId = report.getId();
+
+                if (!displayedReportIds.contains(reportId)) {
+                    String filePath = report.getFile().getAbsolutePath();
+                    String fileName = report.getFile().getName();
+                    warningClass wc = report.getWarningClass();
+                    String status = wc.toString().toLowerCase();
+                    LocalDateTime scanTime = LocalDateTime.now();//DA MODIFICARE: //report.getScanTime(); // Usa il tempo dal report se disponibile, altrimenti usa LocalDateTime.now() come fallback
+
+                    Button restoreButton = new Button("Restore");
+                    Button deleteButton = new Button("Delete");
+                    restoreButton.getStyleClass().add("action-button-restore");
+                    deleteButton.getStyleClass().add("action-button-delete");
+
+                    if (report.getWarningClass() != warningClass.CLEAR) {
+                        boolean isInQuarantine = so.getAntivirusManager().isFileInQuarantine(report.getFile());
+                        restoreButton.setDisable(!isInQuarantine);
+                        deleteButton.setDisable(!isInQuarantine);
+
+                        restoreButton.setOnAction(e -> operationOnFile("restore", report));
+                        deleteButton.setOnAction(e -> operationOnFile("delete", report));
+                    } else {
+                        // if the file is CLEAR, disable the buttons and hide them
+                         restoreButton.setVisible(false);
+                         restoreButton.setManaged(false);
+                         deleteButton.setVisible(false);
+                         deleteButton.setManaged(false); 
+                    }
+
+                    FileCardComponent card = new FileCardComponent(fileName, filePath, status, scanTime, wc);
+
+                     try {
+                        HBox actionBox = new HBox(10, restoreButton, deleteButton);
+                        actionBox.setAlignment(Pos.CENTER_LEFT);
+                        Pane spacer = new Pane();
+                        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                        if (!card.getChildren().isEmpty() && card.getChildren().get(0) instanceof HBox) {
+                            HBox mainLayout = (HBox) card.getChildren().get(0);
+                            if (restoreButton.isManaged() || deleteButton.isManaged()) {
+                                mainLayout.getChildren().addAll(spacer, actionBox);
+                            }
+                        } else {
+                             if (restoreButton.isManaged() || deleteButton.isManaged()) {
+                                card.getChildren().add(actionBox);
+                                logger.warn("Added action buttons directly to card root for {}, layout might be suboptimal.", fileName);
+                            }
+                        }
+
+                    } catch (Exception ex) {
+                        logger.error("Failed to add action buttons to card for {}. FileCardComponent structure might be incompatible.", fileName, ex);
+                    }
+
+                    cardsToAdd.add(card);
+                    displayedReportIds.add(reportId);
+                    reportIdToCardMap.put(reportId, card);
+                }
+            }
+
+            // Aggiungi le nuove card all'inizio della lista nell'UI
+            if (!cardsToAdd.isEmpty()) {
+                this.fileCardsContainer.getChildren().addAll(0, cardsToAdd);
+                this.fileCards.addAll(0, cardsToAdd); // Aggiungi anche alla lista interna
+                logger.debug("Added {} new file cards.", cardsToAdd.size());
+                filterFileCards(searchField.getText()); // Riapplica il filtro corrente
+            }
+
+        } else { // Scanner non UP o reports è null
+            // Se lo scanner si ferma, pulisci tutto
+            if (!this.fileCardsContainer.getChildren().isEmpty()) {
+                logger.info("Scanner is not UP or reports unavailable. Clearing file cards display.");
+                this.fileCardsContainer.getChildren().clear();
+                this.fileCards.clear();
+                this.displayedReportIds.clear(); // Svuota anche gli ID tracciati
+                this.reportIdToCardMap.clear(); // Svuota anche la mappa
+                this.totalScannedLabel.setText("0");
+                this.threatsDetectedLabel.setText("0");
+            }
+             // Potresti voler impostare uno stato specifico se reports è null ma lo scanner è UP
+            if (scannerStatus == runningStates.UP && reports == null) {
+                 this.currentStatusLabel.setText("In attesa di report...");
+            }
         }
     }
 
     /**
-     * Aggiorna lo stato visivo del servizio nell'interfaccia utente.
-     * Modifica il colore dell'indicatore di stato e il testo dei label in base allo stato dello scanner e del servizio antivirus.
+     * Esegue un'operazione (ripristino o eliminazione) su un file associato a un report.
+     * Usa l'UUID del report per identificare la card da rimuovere in caso di successo.
      *
-     * @param scannerStatus Lo stato attuale dello scanner antivirus.
-     * @param avStatus Lo stato del servizio antivirus.
+     * @param actionType Tipo di azione ("restore" o "delete").
+     * @param report     Il report di scansione relativo al file.
+     */
+    private void operationOnFile(String actionType, ScanReport report) {
+        UUID reportId = report.getId();
+        String filePath = report.getFile().getAbsolutePath(); // Il path è ancora utile per l'azione effettiva
+        logger.info("Action requested: {} on file: {} (Report ID: {})", actionType, filePath, reportId);
+
+        boolean success = false;
+        if ("restore".equals(actionType)) {
+            success = so.getAntivirusManager().restoreFileFromQuarantine(report); // Passa il File object
+            if(success) logger.info("File restored successfully: {}", filePath);
+            else logger.error("Failed to restore file: {}", filePath);
+        } else if ("delete".equals(actionType)) {
+            success = so.getAntivirusManager().deleteFileFromQuarantine(report); // Passa il File object
+             if(success) logger.info("File deleted successfully: {}", filePath);
+            else logger.error("Failed to delete file: {}", filePath);
+        }
+
+        if (success) {
+            // Rimuovi la card associata a questo report usando l'UUID
+            removeCardByReportId(reportId);
+             // Aggiorna i conteggi dopo la rimozione (opzionale, dipende se vuoi che i conteggi riflettano solo i file VISUALIZZATI)
+            // updateThreatCountAfterAction();
+        } else {
+            // Mostra un messaggio di errore all'utente (es. usando un Alert)
+             showOperationErrorAlert(actionType, filePath);
+        }
+    }
+
+    /**
+     * Rimuove una card dall'UI e dalle strutture dati interne usando l'UUID del report.
+     * Questo metodo esegue l'operazione sulla UI thread.
+     *
+     * @param reportId L'UUID del report la cui card deve essere rimossa.
+     */
+    private void removeCardByReportId(UUID reportId) {
+        Platform.runLater(() -> removeCardByReportIdInternal(reportId));
+    }
+
+    /**
+     * Logica interna per rimuovere la card. Deve essere chiamata dalla UI thread.
+     *
+     * @param reportId L'UUID del report la cui card deve essere rimossa.
+     */
+     private void removeCardByReportIdInternal(UUID reportId) {
+        FileCardComponent cardToRemove = reportIdToCardMap.get(reportId);
+
+        if (cardToRemove != null) {
+            boolean removedFromUI = fileCardsContainer.getChildren().remove(cardToRemove);
+            boolean removedFromList = fileCards.remove(cardToRemove);
+            reportIdToCardMap.remove(reportId); // Rimuovi dalla mappa
+            displayedReportIds.remove(reportId); // Rimuovi dal set di tracciamento
+
+            if (removedFromUI && removedFromList) {
+                 logger.info("Removed card for report ID: {}", reportId);
+            } else {
+                 logger.warn("Card for report ID {} removed from map/set, but removal from UI ({}) or internal list ({}) failed.",
+                           reportId, removedFromUI, removedFromList);
+            }
+            // Potresti voler aggiornare i conteggi qui se necessario
+            // updateThreatCountAfterAction();
+
+        } else {
+            logger.warn("Attempted to remove card for report ID {}, but it was not found in the map.", reportId);
+            // Potrebbe essere già stata rimossa, o mai aggiunta correttamente.
+            // Rimuovi comunque l'ID dal set per sicurezza, se presente.
+            displayedReportIds.remove(reportId);
+        }
+    }
+
+     /**
+     * Mostra un popup di errore all'utente.
+     * @param actionType L'azione fallita ("restore" o "delete").
+     * @param filePath Il percorso del file coinvolto.
+     */
+    private void showOperationErrorAlert(String actionType, String filePath) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Errore Operazione");
+            alert.setHeaderText("Impossibile completare l'azione: " + actionType);
+            alert.setContentText("Si è verificato un errore durante il tentativo di " +
+                                 (actionType.equals("restore") ? "ripristinare" : "eliminare") +
+                                 " il file:\n" + filePath +
+                                 "\n\nControlla i log per maggiori dettagli.");
+            alert.showAndWait();
+        });
+    }
+
+
+    /**
+     * Aggiorna lo stato del servizio antivirus e dello scanner.
+     * Cambia il colore dell'indicatore di stato e aggiorna le etichette in base
+     * allo stato corrente dei servizi.
+     *
+     * @param scannerStatus Lo stato corrente dello scanner.
+     * @param clamdStatus   Lo stato corrente del servizio Clamd.
      */
     private void updateServiceStatus(runningStates scannerStatus, runningStates clamdStatus) {
-
-        statusIndicator.getStyleClass().removeAll("inactive", "active");
+        statusIndicator.getStyleClass().removeAll("active", "inactive");
+        currentStatusLabel.getStyleClass().add("status-indicator");
 
         switch (clamdStatus) {
             case UP:
-                this.statusIndicator.getStyleClass().add("active");
-                this.avStatusLabel.setText("Servizio antivirus attivo");
+                this.avStatusLabel.setText("Clamd service is running");
 
                 if (scannerStatus == runningStates.UP) {
-                    this.currentStatusLabel.setText("In esecuzione");
+                    this.statusIndicator.getStyleClass().add("active");
+                    this.currentStatusLabel.setText("Active");
                 } else {
-                    this.currentStatusLabel.setText("In attesa");
+                    this.currentStatusLabel.setText("Waiting VPN");
                 }
                 break;
 
             case DOWN:
                 this.statusIndicator.getStyleClass().add("inactive");
-                this.avStatusLabel.setText("Servizio antivirus non attivo");
-                this.currentStatusLabel.setText("Non disponibile");
+                this.avStatusLabel.setText("Clamd service is not running");
+                this.currentStatusLabel.setText("Inactive");
                 break;
 
-            // Aggiungi altri stati se necessario
-            default:
+            default: // UNKNOWN o altri stati
+                this.statusIndicator.getStyleClass().add("inactive");
+                this.avStatusLabel.setText("Service status unknown");
+                this.currentStatusLabel.setText("Indeterminated");
                 break;
         }
     }
 
-    /**
-     * Converte una classe di avviso di un report in uno stato stringa da visualizzare.
-     * Gli stati possibili sono "Clean", "Warning" e "Threat".
-     *
-     * @param warningClass La classe di avviso del report da convertire.
-     * @return Lo stato corrispondente alla classe di avviso.
-     */
-    private String convertWarningClassToStatus(warningClass warningClass) {
-        if (warningClass.equals(warningClass.CLEAR)) {
-            return "Clean";
-        } else if (warningClass.equals(warningClass.SUSPICIOUS)) {
-            return "Warning";
-        } else {
-            return "Threat";
-        }
-    }
-
-    /**
-     * Aggiunge una card alla lista dei file scansionati nell'interfaccia utente.
-     *
-     * @param fileName Il nome del file scansionato.
-     * @param filePath Il percorso del file scansionato.
-     * @param status Lo stato del file scansionato ("Clean", "Warning", "Threat").
-     * @param scanTime Il tempo in cui è stata eseguita la scansione.
-     * @param detectedThreats La minaccia rilevata durante la scansione del file.
-     */
-    private void addScannedFile(String fileName, String filePath, String status, LocalDateTime scanTime, warningClass detectedThreats) {
-        FileCardComponent card = new FileCardComponent(fileName, filePath, status, scanTime, this.convertWarningClassToStatus(detectedThreats).toUpperCase());
-        this.fileCards.add(card);
-        this.fileCardsContainer.getChildren().add(card);
-    }
-
-    /**
-     * Filtra le card dei file scansionati in base al testo di ricerca.
-     * Mostra solo le card che contengono il testo di ricerca nel nome del file.
-     *
-     * @param searchText Il testo da cercare nel nome dei file scansionati.
-     */
+    /** Filtra le card visualizzate in base al testo di ricerca. (Logica invariata, usa extractFileNameFromCard) */
     private void filterFileCards(String searchText) {
-        if (searchText == null || searchText.isEmpty()) {
-            this.fileCardsContainer.getChildren().clear();
+        this.fileCardsContainer.getChildren().clear(); // Svuota il contenitore UI
+
+        String lowerCaseSearchText = (searchText == null) ? "" : searchText.toLowerCase().trim();
+
+        if (lowerCaseSearchText.isEmpty()) {
+            // Se la ricerca è vuota, mostra tutte le card presenti nella lista interna 'fileCards'
             this.fileCardsContainer.getChildren().addAll(this.fileCards);
         } else {
-            this.fileCardsContainer.getChildren().clear();
-            searchText = searchText.toLowerCase();
-
+            // Altrimenti, filtra la lista 'fileCards' e aggiungi solo quelle che corrispondono
             for (FileCardComponent card : this.fileCards) {
-                // Nota: questo è un po' hacky, dovresti migliorare la classe FileCardComponent
-                // aggiungendo un metodo per ottenere il nome del file
-                String fileName = extractFileNameFromCard(card);
-
-                if (fileName.toLowerCase().contains(searchText)) {
+                String fileName = extractFileNameFromCard(card); // Usa l'helper per estrarre il nome
+                // Aggiungi la card solo se il nome file non è nullo e contiene il testo di ricerca
+                if (fileName != null && fileName.toLowerCase().contains(lowerCaseSearchText)) {
                     this.fileCardsContainer.getChildren().add(card);
                 }
             }
         }
     }
 
+
     /**
-     * Estrae il nome del file da una card di file.
-     * Questo è un metodo temporaneo che dovrebbe essere migliorato nella classe `FileCardComponent`.
+     * Estrae il nome del file dalla struttura interna della card.
+     * !!! ATTENZIONE: Questo metodo è FRAGILE e dipende dalla struttura esatta del FXML/codice di FileCardComponent !!!
+     * Se la struttura della card cambia, questo metodo smetterà di funzionare.
+     * Sarebbe MOLTO meglio se FileCardComponent avesse un metodo pubblico `getFileName()`.
      *
-     * @param card La card di file da cui estrarre il nome del file.
-     * @return Il nome del file estratto dalla card.
+     * @param card La FileCardComponent da cui estrarre il nome.
+     * @return Il nome del file come stringa, o null se non può essere estratto.
      */
     private String extractFileNameFromCard(FileCardComponent card) {
         try {
+            // Assunzione: La card (che estende Pane, es. AnchorPane o VBox) contiene un HBox come primo figlio.
+            if (card.getChildren().isEmpty() || !(card.getChildren().get(0) instanceof HBox)) {
+                 logger.trace("Card structure incompatible: First child not an HBox or no children. Card: {}", card);
+                 return null;
+            }
             HBox mainRow = (HBox) card.getChildren().get(0);
-            VBox fileInfo = (VBox) mainRow.getChildren().get(1);
-            Label fileNameLabel = (Label) fileInfo.getChildren().get(0);
+
+            // Assunzione: L'HBox contiene diversi elementi, e le informazioni sul file sono in una VBox al secondo posto (indice 1).
+            if (mainRow.getChildren().size() < 2 || !(mainRow.getChildren().get(1) instanceof VBox)) {
+                 logger.trace("Card structure incompatible: Main HBox has < 2 children or second child is not a VBox. Card: {}", card);
+                return null;
+            }
+            VBox fileInfoVBox = (VBox) mainRow.getChildren().get(1);
+
+            // Assunzione: La VBox contiene le Label, e la prima Label (indice 0) è il nome del file.
+            if (fileInfoVBox.getChildren().isEmpty() || !(fileInfoVBox.getChildren().get(0) instanceof Label)) {
+                 logger.trace("Card structure incompatible: File info VBox has no children or first child is not a Label. Card: {}", card);
+                return null;
+            }
+            Label fileNameLabel = (Label) fileInfoVBox.getChildren().get(0);
+
             return fileNameLabel.getText();
+
+        } catch (ClassCastException | IndexOutOfBoundsException e) {
+            // Logga come warn perché è un problema atteso data la fragilità dell'approccio
+            logger.warn("Could not extract file name due to unexpected card structure. Card: {}. Error: {}", card, e.getMessage());
+            return null;
         } catch (Exception e) {
-            return "";
+             // Logga altri errori imprevisti
+            logger.error("Unexpected error extracting file name from card. Card: {}", card, e);
+            return null;
         }
     }
 
-    /**
-     * Gestisce l'avvio automatico del servizio antivirus al momento dell'avvio del programma.
-     * Imposta il testo e l'icona del pulsante in base al valore della configurazione "CLAMD_SERVICE_AUTOMATIC_STARTUP".
-     * Inoltre, definisce il comportamento del pulsante per abilitare o disabilitare l'avvio automatico del servizio.
-     */
-    private void clamdAtStartupSelector(){
 
-        Platform.runLater(() -> {
-            if (FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")) {
-                this.startScanButton.setText("Service enabled");
-                ((FontIcon)this.startScanButton.getGraphic()).setIconLiteral("fas-pause");
-            } else {
-                this.startScanButton.setText("Service disabled");
-                ((FontIcon)this.startScanButton.getGraphic()).setIconLiteral("fas-play");
-            }
-        });
-
+    /** Configura l'azione del pulsante per abilitare/disabilitare l'avvio automatico di Clamd. (Invariato) */
+    private void setupClamdStartupButtonAction() {
         this.startScanButton.setOnAction(event -> {
-            if (FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP").equals("true")) {
-                FileManager.setConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP", "false");
-                clamdAtStartupSelector();
-            } else {
-                FileManager.setConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP", "true");
-                clamdAtStartupSelector();
+            try {
+                boolean currentSetting = Boolean.parseBoolean(FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP")); // Default a false
+                boolean newSetting = !currentSetting;
+                FileManager.setConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP", String.valueOf(newSetting));
+                logger.info("Clamd automatic startup set to: {}", newSetting);
+                updateClamdStartupButtonState(); // Aggiorna immediatamente lo stato del pulsante
+            } catch (Exception e) {
+                logger.error("Failed to toggle Clamd automatic startup setting", e);
+                // Mostra errore all'utente?
+                showOperationErrorAlert("configurazione avvio automatico", "impostazioni Clamd");
             }
         });
+        // Aggiorna lo stato iniziale del pulsante
+        updateClamdStartupButtonState();
     }
 
+    /** Aggiorna testo, icona e stile del pulsante di avvio automatico Clamd. (Invariato) */
+    private void updateClamdStartupButtonState() {
+        try {
+            // Leggi l'impostazione corrente, fornendo un default "false" se non trovata o errata
+            boolean isEnabled = Boolean.parseBoolean(FileManager.getConfigValue("CLAMD_SERVICE_AUTOMATIC_STARTUP"));
+            FontIcon icon = null;
+             // Cerca l'icona solo se il pulsante ha un graphic e se è un FontIcon
+            if (this.startScanButton.getGraphic() instanceof FontIcon) {
+                 icon = (FontIcon) this.startScanButton.getGraphic();
+            } else {
+                 // Se non c'è icona o non è del tipo giusto, potresti crearne una nuova
+                 // icon = new FontIcon();
+                 // this.startScanButton.setGraphic(icon);
+                 // logger.warn("Start scan button graphic is not a FontIcon or is null. Attempting to fix.");
+                 // Per ora, logghiamo solo se non è un FontIcon
+                 if (this.startScanButton.getGraphic() != null) {
+                     logger.warn("Start scan button graphic is not a FontIcon: {}", this.startScanButton.getGraphic().getClass().getName());
+                 }
+            }
+
+
+            if (isEnabled) {
+                this.startScanButton.setText("On Startup: ON");
+                if (icon != null) {
+                    icon.setIconLiteral("fas-toggle-on"); // Usa FontAwesome sintassi
+                    icon.setIconColor(Color.GREEN); // Esempio colore
+                }
+                // Rimuovi la classe 'disabled' e aggiungi 'enabled' per lo stile CSS
+                this.startScanButton.getStyleClass().remove("button-disabled");
+                this.startScanButton.getStyleClass().add("button-enabled");
+            } else {
+                this.startScanButton.setText("On Startup: OFF");
+                 if (icon != null) {
+                    icon.setIconLiteral("fas-toggle-off");
+                    icon.setIconColor(Color.RED); // Esempio colore
+                 }
+                // Rimuovi la classe 'enabled' e aggiungi 'disabled'
+                this.startScanButton.getStyleClass().remove("button-enabled");
+                this.startScanButton.getStyleClass().add("button-disabled");
+            }
+            // Assicurati che il pulsante sia abilitato per permettere il click
+             this.startScanButton.setDisable(false);
+
+        } catch (Exception e) {
+            logger.error("Failed to update Clamd startup button state from config", e);
+            this.startScanButton.setText("Errore Config");
+            this.startScanButton.setDisable(true); // Disabilita se c'è errore nel leggere/scrivere config
+            if(this.startScanButton.getGraphic() instanceof FontIcon) {
+                ((FontIcon)this.startScanButton.getGraphic()).setIconLiteral("fas-exclamation-triangle");
+                 ((FontIcon)this.startScanButton.getGraphic()).setIconColor(Color.ORANGERED);
+            }
+             this.startScanButton.setTooltip(new Tooltip("Impossibile leggere/scrivere la configurazione per l'avvio automatico."));
+        }
+    }
 
 
 
     /* GENERAL PURPOSE METHODS */
+    private void stopAllThreads() {
 
-    private void stopAllThreads(){
-
-        try{
+        try {
             // SystemOrchestrator
             this.so.interruptAllThreads();
 
@@ -1038,8 +1280,8 @@ public class UserInterface extends Application implements PeerOperationListener 
             // DownloadManager
             this.so.getDownloadManager().interruptAllThreads();
 
-        }catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             logger.error("Error stopping all threads: ", e);
         }
-    } 
+    }
 }

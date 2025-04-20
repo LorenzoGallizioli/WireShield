@@ -145,15 +145,15 @@
     -fx-stroke: transparent;
 }
 
-.status-indicator.active {
+.status-indicator.active,  .status-indicator.clear{
     -fx-fill: #a6e3a1; /* Verde Catppuccin */
 }
 
-.status-indicator.inactive {
+.status-indicator.inactive, .status-indicator.dangerous {
     -fx-fill: #f38ba8; /* Rosso Catppuccin */
 }
 
-.status-indicator.scanning {
+.status-indicator.suspicious {
     -fx-fill: #f9e2af; /* Giallo Catppuccin */
 }
 

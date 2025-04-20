@@ -377,5 +377,7 @@ public class WireguardManager {
 			this.startUpdateConnectionStatsThread.interrupt();
 			this.startUpdateConnectionStatsThread.join();
 		}
+
+		while(this.WFPprocess.isAlive()){}
 	}
 }

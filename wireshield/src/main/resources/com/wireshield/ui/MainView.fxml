@@ -63,13 +63,14 @@
 					<AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0"
 						styleClass="modern-pane">
 						<children>
+
 							<!-- Header con titolo e stato -->
 							<HBox layoutX="14.0" layoutY="10.0" spacing="10" alignment="CENTER_LEFT"
 								prefHeight="60.0" prefWidth="1070.0">
 								<children>
 									<VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
 										<children>
-											<Label text="Monitoraggio Antivirus"
+											<Label text="Antivirus Monitoring"
 												styleClass="header-label">
 												<font>
 													<Font name="System Bold" size="20.0" />
@@ -77,7 +78,7 @@
 											</Label>
 											<HBox alignment="CENTER_LEFT" spacing="10">
 												<children>
-													<Label text="Stato:" styleClass="status-text" />
+													<Label text="State:" styleClass="status-text" />
 													<Circle fx:id="statusIndicator" radius="8"
 														styleClass="status-indicator" />
 													<Label fx:id="avStatusLabel"
@@ -101,35 +102,34 @@
 								<children>
 									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
 										<children>
-											<Label text="File Scansionati" styleClass="stat-label" />
+											<Label text="Scanned Files" styleClass="stat-label" />
 											<Label fx:id="totalScannedLabel" text="0"
 												styleClass="stat-value" />
 										</children>
 									</VBox>
 									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
 										<children>
-											<Label text="Minacce Rilevate" styleClass="stat-label" />
+											<Label text="Threats Detected" styleClass="stat-label" />
 											<Label fx:id="threatsDetectedLabel" text="0"
 												styleClass="stat-value" />
 										</children>
 									</VBox>
 									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
 										<children>
-											<Label text="Stato Attuale" styleClass="stat-label" />
-											<Label fx:id="currentStatusLabel" text="In attesa"
+											<Label text="Current Status" styleClass="stat-label" />
+											<Label fx:id="currentStatusLabel" text="Waiting"
 												styleClass="stat-value" />
 										</children>
 									</VBox>
 								</children>
 							</HBox>
 
-							<!-- Area dei risultati della scansione -->
 							<VBox layoutX="14.0" layoutY="200.0" prefHeight="430.0"
 								prefWidth="1070.0">
 								<children>
 									<HBox alignment="CENTER_LEFT" spacing="10">
 										<children>
-											<Label text="File Scansionati"
+											<Label text="Scanned Files"
 												styleClass="section-header" />
 											<Pane HBox.hgrow="ALWAYS" />
 											<TextField fx:id="searchField"
@@ -141,10 +141,10 @@
 										</padding>
 									</HBox>
 
-									<!-- ListView sostituita da ScrollPane con VBox per le card
-									personalizzate -->
-									<ScrollPane fitToWidth="true"
-										styleClass="transparent-scroll-pane" VBox.vgrow="ALWAYS">
+									<!-- ScrollPane con fx:id e classe di stile per la scrollbar -->
+									<ScrollPane fx:id="fileListScrollPane" fitToWidth="true"
+										styleClass="transparent-scroll-pane" VBox.vgrow="ALWAYS"> <!--
+										Rimosso 'purple-scrollbar' se usi CSS esterno -->
 										<content>
 											<VBox fx:id="fileCardsContainer" spacing="10"
 												styleClass="cards-container" />
@@ -152,6 +152,7 @@
 									</ScrollPane>
 								</children>
 							</VBox>
+
 						</children>
 						<padding>
 							<Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />

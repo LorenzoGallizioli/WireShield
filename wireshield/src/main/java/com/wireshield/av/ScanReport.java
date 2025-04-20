@@ -1,6 +1,7 @@
 package com.wireshield.av;
 
 import java.io.File;
+import java.util.UUID;
 
 import com.wireshield.enums.warningClass;
 
@@ -15,6 +16,7 @@ public class ScanReport {
 	private File file; // The file that was scanned
 	private warningClass warningState; // The warning classification (CLEAR, SUSPICIOUS, DANGEROUS)
 	private Boolean isValid; // Indicates if the scan report is valid
+	private final UUID id; // Serialization ID
 
 	/**
 	 * Default constructor initializing default values for the scan report.
@@ -24,11 +26,13 @@ public class ScanReport {
 		this.threatDetails = "No threat detected";
 		this.warningState = warningClass.CLEAR;
 		this.isValid = true;
+		this.id = generateUniqueId();
 	}
 
 	/**
 	 * Constructor initializing the scan report with a scanId and file.
-	 * @param file   The file being scanned
+	 * 
+	 * @param file The file being scanned
 	 */
 	public ScanReport(File file) {
 		this();
@@ -41,7 +45,28 @@ public class ScanReport {
 	 * @return True if a threat was detected, otherwise false.
 	 */
 	public Boolean isThreatDetected() {
-		return warningState == warningClass.DANGEROUS || warningState == warningClass.SUSPICIOUS;
+		return threatDetected || 
+			   warningState == warningClass.DANGEROUS || 
+			   warningState == warningClass.SUSPICIOUS;
+	}
+
+	/**
+	 * Generates a unique identifier for the peer using UUID.
+	 * 
+	 * @return A unique identifier string for the peer.
+	 * @see java.util.UUID#randomUUID()
+	 */
+	private static UUID generateUniqueId() {
+		return UUID.randomUUID();
+	}
+
+	/**
+	 * Gets the unique identifier of the scan report.
+	 *
+	 * @return The unique identifier.
+	 */
+	public UUID getId() {
+		return this.id;
 	}
 
 	/**
@@ -59,8 +84,9 @@ public class ScanReport {
 	 * @return The threat details.
 	 */
 	public String getThreatDetails() {
-		return threatDetails;
+		return this.threatDetails;
 	}
+
 
 	/**
 	 * Sets the details of the detected threat.
@@ -107,6 +133,7 @@ public class ScanReport {
 		this.warningState = warningClass;
 	}
 
+
 	/**
 	 * Checks if the scan report is valid.
 	 *
@@ -141,17 +168,17 @@ public class ScanReport {
 		System.out.printf("%-20s: %s%n", "Threat Details", threatDetails);
 		System.out.printf("%-20s: %s%n", "Warning Class", warningState);
 		System.out.printf("%-20s: %s%n", "Report Status", isValidReport() ? "Valid" : "Invalid");
-		
+
 		System.out.println(separator);
 	}
 
 	/**
 	 * @return a string representation of the scan report.
 	 */
-    @Override
-    public String toString() {
-        return "ScanReport {" + "file=" + (file != null ? file.getName() : "null")
-                + ", threatDetected=" + threatDetected + ", threatDetails='" + threatDetails + '\'' + ", warningClass="
-                + warningState + ", isValid=" + isValid + '}';
-    }
+	@Override
+	public String toString() {
+		return "ScanReport {" + "file=" + (file != null ? file.getName() : "null")
+				+ ", threatDetected=" + threatDetected + ", threatDetails='" + threatDetails + '\'' + ", warningClass="
+				+ warningState + ", isValid=" + isValid + '}';
+	}
 }
