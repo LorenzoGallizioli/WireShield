@@ -186,13 +186,14 @@ public class SystemOrchestrator {
 	 *
 	 * @param state {@code UP} to start or {@code DOWN} to stop the service.
 	 */
-	public void manageClamdService(runningStates state){
+	public void manageClamdService(runningStates state) {
 		if (state.equals(runningStates.UP)) {
-
-			// during starting waiting, in UI, the stop clamd service button must be disabled (so delete commended code in ClamAV.java)
-			antivirusManager.getClamAV().startClamdService(); 	
+			antivirusManager.getClamAV().updateFreshClam(() -> {
+				// Questo viene eseguito quando freshclam ha finito
+				logger.info("Freshclam update done, now starting clamd service.");
+				antivirusManager.getClamAV().startClamdService();
+			});
 		} else {
-
 			antivirusManager.getClamAV().stopClamdService();
 		}
 	}

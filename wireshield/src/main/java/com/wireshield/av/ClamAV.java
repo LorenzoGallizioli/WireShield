@@ -121,12 +121,12 @@ public class ClamAV implements AVInterface {
 					break;
 				}
 			}
-				
+
 			this.clamavReport = new ScanReport();
 			this.clamavReport.setFile(file);
 			this.clamavReport.setValid(true);
 			this.clamavReport.setThreatDetected(threatDetected || suspiciousDetected);
-			
+
 			if (threatDetected) {
 				this.clamavReport.setThreatDetails(threatDetails);
 				this.clamavReport.setWarningClass(warningClass.DANGEROUS);
@@ -152,13 +152,12 @@ public class ClamAV implements AVInterface {
 			logger.error("Error during scan: {}", e.getMessage(), e);
 		}
 	}
-					
 
 	/**
-     * Starts the "clamd" service in a daemon thread if it exists.
-     * If the service is found, attempts to start it and logs the result.
-     */
-	public void startClamdService(){
+	 * Starts the "clamd" service in a daemon thread if it exists.
+	 * If the service is found, attempts to start it and logs the result.
+	 */
+	public void startClamdService() {
 
 		Runnable clamdServiceTask = () -> {
 			String serviceName = "clamd";
@@ -168,15 +167,16 @@ public class ClamAV implements AVInterface {
 
 				if (ServicesUtils.serviceExists(serviceName)) {
 
-					if(ServicesUtils.isServiceRunning(serviceName)) {
+					if (ServicesUtils.isServiceRunning(serviceName)) {
 						logger.info("Service " + serviceName + " is already running.");
 						this.clamdState = runningStates.UP;
 						return;
 					}
 
-					if(ServicesUtils.startService(serviceName)){
+					if (ServicesUtils.startService(serviceName)) {
 
-						while(ServicesUtils.isServiceStarting(serviceName) && !Thread.currentThread().isInterrupted()){
+						while (ServicesUtils.isServiceStarting(serviceName)
+								&& !Thread.currentThread().isInterrupted()) {
 							logger.info("Service " + serviceName + " is starting... " + closeflag);
 							try {
 								Thread.sleep(200);
@@ -210,28 +210,31 @@ public class ClamAV implements AVInterface {
 
 			logger.info("Thread stopped - [startClamdService()] starting clamd service thread terminated.");
 		};
-		
+
 		this.clamdServiceStartThread = new Thread(clamdServiceTask);
-		
+
 		this.clamdServiceStartThread.setDaemon(false);
 		this.clamdServiceStartThread.start();
 	}
 
 	/**
-     * Stops the "clamd" service in a daemon thread if it is currently running.
-     * Checks for service existence and running state before attempting to stop it.
-     */
-	public void stopClamdService(){
+	 * Stops the "clamd" service in a daemon thread if it is currently running.
+	 * Checks for service existence and running state before attempting to stop it.
+	 */
+	public void stopClamdService() {
 
 		Runnable clamdServiceTask = () -> {
 			String serviceName = "clamd";
 
 			try {
-                if (ServicesUtils.serviceExists(serviceName)) {
-                    
-					// this method was been called simultaneously with the UI.stopAllThreads() method. The thread interruption was been generating an exeption in isServiceRunning() --> return false;.
-					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned false even if the service was running.
-					//ServicesUtils.isServiceRunning(serviceName);
+				if (ServicesUtils.serviceExists(serviceName)) {
+
+					// this method was been called simultaneously with the UI.stopAllThreads()
+					// method. The thread interruption was been generating an exeption in
+					// isServiceRunning() --> return false;.
+					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned
+					// false even if the service was running.
+					// ServicesUtils.isServiceRunning(serviceName);
 
 					if (!ServicesUtils.isServiceRunning(serviceName)) {
 						logger.info("Service " + serviceName + " is already not running.");
@@ -239,9 +242,9 @@ public class ClamAV implements AVInterface {
 						return;
 					}
 
-                    ServicesUtils.stopService(serviceName);
+					ServicesUtils.stopService(serviceName);
 
-					while(ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()){
+					while (ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()) {
 						try {
 							Thread.sleep(200);
 						} catch (InterruptedException e) {
@@ -249,20 +252,19 @@ public class ClamAV implements AVInterface {
 							Thread.currentThread().interrupt();
 						}
 					}
-						
+
 					this.clamdState = runningStates.DOWN;
 					logger.info("Service " + serviceName + " stopped successfully.");
+				} else {
+					logger.info("Service " + serviceName + " not found.");
 				}
-				else {
-                    logger.info("Service " + serviceName + " not found.");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
 			logger.info("Thread stopped - [stopClamdService()] stopping clamd service thread terminated.");
 		};
-		
+
 		this.clamdServiceStopThread = new Thread(clamdServiceTask);
 
 		this.clamdServiceStopThread.setDaemon(false);
@@ -288,23 +290,92 @@ public class ClamAV implements AVInterface {
 	}
 
 	/**
-	 * Interrupts all threads associated with the `clamdServiceStart` and `clamdServiceStop` services, if they are active.
-	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 * Interrupts all threads associated with the `clamdServiceStart` and
+	 * `clamdServiceStop` services, if they are active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt
+	 * it.
 	 */
 	public void interruptAllThreads() throws InterruptedException {
 
-		/** clamdServiceStopThread must stopped before clamdServiceStartThread
-		 * in the case of stopping during clamd startup, the fact that thread.interrupt() 
-		 * is called on clamdServiceStopThread at this time ensures that the thread will 
+		/**
+		 * clamdServiceStopThread must stopped before clamdServiceStartThread
+		 * in the case of stopping during clamd startup, the fact that
+		 * thread.interrupt()
+		 * is called on clamdServiceStopThread at this time ensures that the thread will
 		 * not be interrupted if started by clamdServiceStartThread
 		 */
-		if(this.clamdServiceStopThread != null && this.clamdServiceStopThread.isAlive()){
+		if (this.clamdServiceStopThread != null && this.clamdServiceStopThread.isAlive()) {
 			this.clamdServiceStopThread.interrupt();
 			this.clamdServiceStopThread.join();
 		}
-		if(this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()){
+		if (this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()) {
 			this.clamdServiceStartThread.interrupt();
 			this.clamdServiceStartThread.join();
 		}
+	}
+
+	/**
+	 * Updates ClamAV virus definitions using freshclam in a separate thread.
+	 * 
+	 * This method starts a new thread that runs the freshclam command-line tool
+	 * to update the virus definitions. The method takes a callback that is called
+	 * when the update is completed.
+	 * 
+	 * @param onComplete
+	 *                   a callback to be called when the update is completed.
+	 */
+	public void updateFreshClam(Runnable onComplete) {
+		Thread freshclamThread = new Thread(() -> {
+			try {
+				// Retrieve the ClamAV path from the configuration file
+				String clamavPath = FileManager.getConfigValue("CLAMAV_STD_PATH");
+
+				// Check if the ClamAV path is valid
+				File folder = new File(clamavPath);
+				String freshclamPath;
+
+				if (folder.exists() && folder.isDirectory()) {
+					// Construct the freshclam command-line path
+					freshclamPath = clamavPath + File.separator + "freshclam.exe";
+				} else {
+					logger.error("ClamAV path is not valid: {}", clamavPath);
+					return;
+				}
+
+				// Start the freshclam command-line tool
+				logger.info("Running freshclam from path: {}", freshclamPath);
+				ProcessBuilder processBuilder = new ProcessBuilder(freshclamPath);
+				processBuilder.redirectErrorStream(true);
+				Process process = processBuilder.start();
+
+				// Wait for the process to complete and log its output
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						logger.info("[freshclam] {}", line);
+					}
+				}
+
+				// Wait for the process to complete and log its exit code
+				int exitCode = process.waitFor();
+				logger.info("freshclam exited with code: {}", exitCode);
+
+			} catch (IOException | InterruptedException e) {
+				// Handle any errors that occur during the update
+				logger.error("Error running freshclam: {}", e.getMessage(), e);
+				Thread.currentThread().interrupt();
+			} finally {
+				// Log a message when the update is complete
+				logger.info("Freshclam update completed.");
+				if (onComplete != null) {
+					// Call the callback when the update is complete
+					onComplete.run();
+				}
+			}
+		});
+
+		// Set the thread as a daemon thread so that it does not prevent the JVM from exiting
+		freshclamThread.setDaemon(true);
+		freshclamThread.start();
 	}
 }
