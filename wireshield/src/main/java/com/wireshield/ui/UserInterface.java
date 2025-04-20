@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +29,6 @@ import com.wireshield.enums.runningStates;
 import com.wireshield.enums.vpnOperations;
 import com.wireshield.enums.warningClass;
 import com.wireshield.localfileutils.SystemOrchestrator;
-import com.wireshield.ui.FileCardComponent;
 import com.wireshield.windows.WFPManager;
 import com.wireshield.wireguard.Connection;
 import com.wireshield.wireguard.Peer;
@@ -48,7 +46,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -1090,10 +1087,10 @@ public class UserInterface extends Application implements PeerOperationListener 
 
         switch (clamdStatus) {
             case UP:
+                this.statusIndicator.getStyleClass().add("active");
                 this.avStatusLabel.setText("Clamd service is running");
 
                 if (scannerStatus == runningStates.UP) {
-                    this.statusIndicator.getStyleClass().add("active");
                     this.currentStatusLabel.setText("Active");
                 } else {
                     this.currentStatusLabel.setText("Waiting VPN");

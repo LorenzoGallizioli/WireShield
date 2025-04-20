@@ -378,6 +378,6 @@ public class WireguardManager {
 			this.startUpdateConnectionStatsThread.join();
 		}
 
-		while(this.WFPprocess.isAlive()){}
+		while(this.WFPprocess != null && this.WFPprocess.isAlive()){}
 	}
 }
