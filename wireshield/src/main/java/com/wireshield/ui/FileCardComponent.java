@@ -94,6 +94,7 @@ public class FileCardComponent extends VBox {
 
         addDetailRow(this.detailsPanel, "Scanning Date:", scanTime.format(formatter));
         addDetailRow(this.detailsPanel, "Absolute Path:", filePath);
+        //addDetailRow(this.detailsPanel, "SHA256:", hash);
         addDetailRow(this.detailsPanel, "File Status:", status);
 
         if (!WarningClass.equals(WarningClass.CLEAR)) {

@@ -7,8 +7,13 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -212,10 +217,9 @@ public class FileManager {
 			return null;
 		}
 
-		// Check if the file is already blocked
 		if (isExecutionBlocked(file)) {
 			logger.info("File is already blocked: {}", file.getAbsolutePath());
-			return file; // Return the file already blocked
+			return file;
 		}
 
 		if (!file.canWrite()) {
@@ -223,12 +227,9 @@ public class FileManager {
 			return null;
 		}
 
-		// Rename the file with a ".blocked" suffix to indicate that execution is
-		// disabled.
 		String blockedFileName = file.getName() + ".blocked";
 		File blockedFile = new File(file.getParent(), blockedFileName);
 
-		// If a file with the same name already exists, add a counter (1), (2), ...
 		int counter = 1;
 		while (blockedFile.exists()) {
 			blockedFileName = file.getName() + " (" + counter + ").blocked";
@@ -260,10 +261,9 @@ public class FileManager {
 			return null;
 		}
 
-		// Check if the file is actually blocked
 		if (!isExecutionBlocked(blockedFile)) {
 			logger.info("The file is not blocked, no action needed: {}", blockedFile.getAbsolutePath());
-			return blockedFile; // Return the already unblocked file
+			return blockedFile;
 		}
 
 		if (!blockedFile.canWrite()) {
@@ -271,22 +271,15 @@ public class FileManager {
 			return null;
 		}
 
-		// Prepare the original name by removing the ".blocked" suffix and optional
-		// counter (N)
 		String originalName;
-
-		// Handle two cases: normal name with .blocked or name with counter (N).blocked
 		if (blockedFile.getName().matches(".*\\s\\(\\d+\\)\\.blocked$")) {
-			// Pattern to extract the original name from "name (N).blocked"
 			originalName = blockedFile.getName().replaceFirst("\\s\\(\\d+\\)\\.blocked$", "");
 		} else {
-			// Pattern to remove simple ".blocked" suffix
 			originalName = blockedFile.getName().replaceFirst("\\.blocked$", "");
 		}
 
 		File restoredFile = new File(blockedFile.getParent(), originalName);
 
-		// If a file with the original name already exists, add a counter (1), (2), etc.
 		int counter = 1;
 		while (restoredFile.exists()) {
 			String countedName = originalName + " (" + counter + ")";
@@ -313,5 +306,33 @@ public class FileManager {
 	public static boolean isExecutionBlocked(File file) {
 		return file != null && file.getName().endsWith(".blocked");
 	}
+
+	/**
+	 * Computes the SHA-256 hash of a file.
+	 *
+	 * @param filePath the path of the file to hash
+	 * @return the SHA-256 hash as a hexadecimal string, or null if an error occurs
+	 */
+	public static String calculateFileHash(Path filePath) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            try (InputStream is = Files.newInputStream(filePath);
+                 DigestInputStream dis = new DigestInputStream(is, digest)) {
+                while (dis.read() != -1) ;
+            }
+
+            byte[] hashBytes = digest.digest();
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+
+        } catch (IOException | NoSuchAlgorithmException e) {
+            System.err.println("Errore durante il calcolo dell'hash: " + e.getMessage());
+            return null;
+        }
+    }
 	
 }

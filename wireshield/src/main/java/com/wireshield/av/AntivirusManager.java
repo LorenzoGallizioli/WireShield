@@ -217,7 +217,7 @@ public class AntivirusManager {
                 logger.info("Infected file deleted: {}", blockedFile.getAbsolutePath());
 
                 for (ScanReport r : finalReports) {
-                    if(report.getId() == r.getId()) {
+                    if (report.getId() == r.getId()) {
                         finalReports.remove(r); // Remove the report from the list
                     }
                 }
@@ -228,15 +228,13 @@ public class AntivirusManager {
                 logger.error("Error deleting the infected file: {}", blockedFile.getAbsolutePath());
             }
 
-        }
-        else 
-        {
+        } else {
 
             if (file.delete()) {
                 logger.info("File deleted: {}", file.getAbsolutePath());
 
                 for (ScanReport r : finalReports) {
-                    if(report.getId() == r.getId()) {
+                    if (report.getId() == r.getId()) {
                         finalReports.remove(r); // Remove the report from the list
                     }
                 }
@@ -251,8 +249,8 @@ public class AntivirusManager {
     }
 
     /**
-     * Restores a file from quarantine. If the file is blocked, it first unblocks
-     * it and then restores it to its original location.
+     * Restores a file from quarantine. If the file is blocked, it first
+     * unblocks it and then restores it to its original location.
      *
      * @param report The scan report containing the file to be restored.
      * @return true if the file was successfully restored, false otherwise.
@@ -278,7 +276,7 @@ public class AntivirusManager {
 
                     // Replace the old report with the new one in the finalReports list
                     for (ScanReport r : finalReports) {
-                        if(report.getId() == r.getId()) {
+                        if (report.getId() == r.getId()) {
                             finalReports.remove(r);
                             finalReports.add(report);
                         }
@@ -302,7 +300,6 @@ public class AntivirusManager {
         return false;
     }
 
-        
     /**
      * for test use only
      */
@@ -388,28 +385,18 @@ public class AntivirusManager {
      * @return the quarantined file, or null if an error occurs
      */
     public File moveToQuarantine(File originalFile) {
+
         if (originalFile == null || !originalFile.exists()) {
             logger.warn("File is null or does not exist, cannot quarantine it.");
             return null;
         }
 
-        // Check if the file is already in quarantine
-        String quarantineDirPath = System.getProperty("user.home") + File.separator + "Downloads" + File.separator
-                + ".QUARANTINE";
-        if (originalFile.getAbsolutePath().startsWith(quarantineDirPath)) {
-            logger.info("File is already in quarantine: {}", originalFile.getAbsolutePath());
-            return originalFile;
-        }
-
-        // Create the quarantine directory inside "Downloads"
-        String downloadsDirPath = System.getProperty("user.home") + File.separator + "Downloads";
-        Path quarantineDir = Paths.get(downloadsDirPath, ".QUARANTINE");
+        Path quarantineDir = Paths.get(FileManager.getConfigValue("FOLDER_TO_SCAN_PATH"), ".QUARANTINE");
 
         try {
             if (!Files.exists(quarantineDir)) {
                 Files.createDirectories(quarantineDir);
 
-                // Make the directory hidden in Windows
                 Files.setAttribute(quarantineDir, "dos:hidden", true);
                 logger.info("Created quarantine directory: {}", quarantineDir);
 
@@ -418,34 +405,27 @@ public class AntivirusManager {
                             AclFileAttributeView.class);
 
                     if (aclAttrView != null) {
-                        // Service for getting the user from the system
                         UserPrincipalLookupService lookupService = FileSystems.getDefault()
                                 .getUserPrincipalLookupService();
 
-                        // Get the current user (who is an administrator)
                         UserPrincipal currentUser = lookupService
                                 .lookupPrincipalByName(System.getProperty("user.name"));
 
-                        // Full access for the program (administrator) - read, write, delete
                         AclEntry fullAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(currentUser) // The program administrator
-                                .setPermissions(AclEntryPermission.values()) // Full permissions
+                                .setPrincipal(currentUser)
+                                .setPermissions(AclEntryPermission.values())
                                 .build();
 
-                        // Read-only for **all** other users (both local and non-local)
                         AclEntry readOnlyAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone")) // SID for Everyone apply read-only for all users
+                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone"))
                                 .setPermissions(
                                         AclEntryPermission.READ_DATA,
                                         AclEntryPermission.READ_ATTRIBUTES,
                                         AclEntryPermission.READ_ACL)
                                 .build();
 
-                        // Set the ACL for the quarantine directory
-                        // - Full access for the program (administrator)
-                        // - Read-only for **all** other users
                         aclAttrView.setAcl(Arrays.asList(fullAccess, readOnlyAccess));
                         logger.info("Set ACL: full access for the program (administrator), read-only for all users.");
                     }
@@ -454,7 +434,6 @@ public class AntivirusManager {
                 }
             }
 
-            // Generate a unique file name
             String quarantineFileName = originalFile.getName();
             Path targetPath = quarantineDir.resolve(quarantineFileName);
             int counter = 1;
@@ -471,15 +450,13 @@ public class AntivirusManager {
                 counter++;
             }
 
-            // Create a preliminary metadata file (without scan result)
             Path metadataPath = quarantineDir.resolve(quarantineFileName + ".meta");
             Properties metadata = new Properties();
             metadata.setProperty("originalPath", originalFile.getAbsolutePath());
             metadata.setProperty("quarantineDate", new Date().toString());
-            metadata.setProperty("scanStatus", "pending"); // awaiting scan
+            metadata.setProperty("scanStatus", "pending");
             metadata.setProperty("fileSize", String.valueOf(originalFile.length()));
 
-            // Save metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Quarantine metadata");
             }
@@ -526,20 +503,17 @@ public class AntivirusManager {
         }
 
         try {
-            // Load existing metadata
             Properties metadata = new Properties();
             try (InputStream in = Files.newInputStream(metadataPath)) {
                 metadata.load(in);
             }
 
-            // Update with scan results
             metadata.setProperty("scanStatus", isThreat ? "threat" : "clean");
             metadata.setProperty("scanDate", new Date().toString());
             if (isThreat && threatDetails != null) {
                 metadata.setProperty("threatDetails", threatDetails);
             }
 
-            // Save updated metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Updated quarantine metadata after scan");
             }
@@ -589,12 +563,49 @@ public class AntivirusManager {
 
             // 2. Move the file to the original location
             Path targetPath = Paths.get(originalPath);
-            Files.createDirectories(targetPath.getParent()); // ensure folder exists
+            Files.createDirectories(targetPath.getParent());
+
+            if (Files.exists(targetPath)) {
+
+                if (FileManager.calculateFileHash(targetPath).equals(FileManager.calculateFileHash(quarantinedFile.toPath()))) {
+                    logger.warn("Identic file already exists at the original location: {}", targetPath);
+
+                    File file = targetPath.toFile();
+                    Files.deleteIfExists(metadataPath);
+
+                    return file;
+
+                } 
+                else 
+                {
+
+                    int counter = 1;
+                    while (Files.exists(targetPath)) {
+                        String Name = targetPath.getFileName().toString();
+                        String extension = "";
+                        String baseName = "";
+
+                        Path parentDir = targetPath.getParent();
+                        if (parentDir != null) {
+                            baseName = parentDir.toString();
+                        }
+
+                        int dotIndex = Name.lastIndexOf('.');
+                        if (dotIndex > 0) {
+                            extension = Name.substring(dotIndex);
+                            Name = Name.substring(0, dotIndex);
+                        }
+
+                        Name = baseName + " (" + counter + ")" + extension;
+
+                        targetPath = parentDir.resolve(Name);
+                        counter++;
+                    }
+                }
+            }
+
             Files.move(quarantinedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
             File restoredFile = targetPath.toFile();
-
-            // 3. Delete metadata
             Files.deleteIfExists(metadataPath);
 
             logger.info("File restored from quarantine: {}", restoredFile.getAbsolutePath());

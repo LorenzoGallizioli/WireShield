@@ -10,7 +10,6 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +45,7 @@ public class DownloadManager {
 	 * @param antivirusManager The AntivirusManager instance for file scanning.
 	 */
 	private DownloadManager(AntivirusManager antivirusManager) {
-		this.downloadPath = getDefaultDownloadPath(); // Automatically set default download path
+		this.downloadPath = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH"); // Automatically set default download path
 		this.monitorStatus = runningStates.DOWN; // Initially not monitoring
 		this.antivirusManager = antivirusManager;
 		logger.info("DownloadManager initialized with path: {}", getDownloadPath());
@@ -67,53 +66,6 @@ public class DownloadManager {
 	}
 
 	/**
-	 * Determines the default download directory path based on the user's
-	 * operating system.
-	 *
-	 * @return The default download directory path as a String.
-	 */
-	public String getDefaultDownloadPath() {
-		String userHome = System.getProperty("user.home");
-		String[] possibleFolders = { "Download", "Downloads", "Scaricati" };
-
-		// Checks if at least one folder exists
-		for (String folder : possibleFolders) {
-			File dir = new File(userHome, folder);
-			if (dir.exists() && dir.isDirectory()) {
-				logger.info("Default download folder found: {}", dir.getAbsolutePath());
-				return dir.getAbsolutePath();
-			}
-		}
-
-		// If no valid folder is found, ask the user to enter one
-		Scanner scanner = new Scanner(System.in);
-		String userPath = null;
-		int maxRetries = 3; // Limit the number of attempts to 3
-		int attempts = 0;
-
-		while (attempts < maxRetries) {
-			try {
-				logger.warn("No default download folder found. Please enter a path:");
-				userPath = scanner.nextLine();
-				File userDir = new File(userPath);
-
-				// Check if the entered path is valid
-				if (userDir.exists() && userDir.isDirectory()) {
-					logger.info("User provided a valid download directory: {}", userPath);
-					return userDir.getAbsolutePath();
-				}
-			} catch (Exception e) {
-				logger.error("Error in user input. The program cannot continue.", e);
-				break; // Exits the loop or can perform other recovery actions
-			}
-			attempts++;
-		}
-
-		logger.error("Too many invalid attempts. Unable to proceed.");
-		return null; // Return null if no valid path is found after 3 attempts
-	}
-
-	/**
 	 * Starts monitoring the download directory for new files. Detected files
 	 * will be added to the antivirus scanning queue.
 	 *
@@ -122,43 +74,38 @@ public class DownloadManager {
 	public void startMonitoring() {
 		if (monitorStatus == runningStates.UP) {
 			logger.warn("Already monitoring the download directory.");
-			return; // Already monitoring
+			return;
 		}
 
-		// Verify that the download path is valid
-		String path = getDownloadPath(); // Get the path of the folder
+		String path = getDownloadPath();
 		if (path == null) {
 			logger.error("Download directory path is null. Cannot start monitoring.");
-			return; // Stop monitoring if the path is not valid
+			return;
 		}
 
 		File downloadDir = new File(getDownloadPath());
 		if (!downloadDir.exists() || !downloadDir.isDirectory()) {
 			logger.error("Invalid download directory: {}", getDownloadPath());
-			return; // Stop monitoring if the path is not valid
+			return;
 		}
 
-		monitorStatus = runningStates.UP; // Set monitoring status to active
+		this.monitorStatus = runningStates.UP;
 		logger.info("Started monitoring directory: {}", getDownloadPath());
 		Path watchPath = Paths.get(path);
 
-		// Create WatchService to monitor directory
 		try {
-			// Register the directory for creation events
-			watchService = FileSystems.getDefault().newWatchService();
-			watchPath.register(watchService,
+			this.watchService = FileSystems.getDefault().newWatchService();
+			watchPath.register(this.watchService,
 					StandardWatchEventKinds.ENTRY_CREATE,
 					StandardWatchEventKinds.ENTRY_MODIFY);
 
 		} catch (IOException e) {
 			logger.error("Error initializing WatchService.", e);
-			monitorStatus = runningStates.DOWN;
+			this.monitorStatus = runningStates.DOWN;
 			return;
 		}
 
-		// Start monitoring in a new thread
-		monitorThread = new Thread(() -> {
-			// Loop to monitor the directory as long as the status is UP
+		this.monitorThread = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				WatchKey key;
@@ -168,12 +115,10 @@ public class DownloadManager {
 					key = watchService.take(); // Wait for events
 
 				} catch (InterruptedException e) {
-					// Handle interruption gracefully, but don't stop the monitoring thread
 					Thread.currentThread().interrupt();
 					continue;
 				}
 
-				// Process events
 				for (WatchEvent<?> event : key.pollEvents()) {
 
 					try {
@@ -188,8 +133,11 @@ public class DownloadManager {
 
 								if (!detectedFiles.contains(fileName)) {
 									detectedFiles.add(fileName);
+
 									logger.info("New file detected: {}", newFile.getName());
+
 									File quarantinedFile = antivirusManager.moveToQuarantine(newFile);
+
 									if (quarantinedFile != null) {
 										antivirusManager.addFileToScanBuffer(quarantinedFile);
 									} else {
@@ -210,7 +158,7 @@ public class DownloadManager {
 				}
 			}
 
-			monitorStatus = runningStates.DOWN;
+			this.monitorStatus = runningStates.DOWN;
 		});
 
 		monitorThread.setDaemon(true);
@@ -227,16 +175,14 @@ public class DownloadManager {
 	public void forceStopMonitoring() {
 		if (monitorStatus == runningStates.DOWN) {
 			logger.warn("Monitoring is already stopped.");
-			return; // Already stopped
+			return; 
 
 		}
 
 		if (monitorThread != null && monitorThread.isAlive()) {
 
-			// Set monitorThread's termination flag UP
 			monitorThread.interrupt();
 			try {
-				// Wait for the thread to finish
 				monitorThread.join();
 
 			} catch (InterruptedException e) {
@@ -247,7 +193,7 @@ public class DownloadManager {
 		if (watchService != null) {
 			try {
 
-				watchService.close(); // Close WatchService
+				watchService.close();
 
 			} catch (IOException e) {
 				logger.error("Error stopping monitoring due to IO issue: {}", e.getMessage(), e);
