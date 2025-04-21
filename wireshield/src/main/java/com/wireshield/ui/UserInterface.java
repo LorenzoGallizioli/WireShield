@@ -40,6 +40,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -966,22 +967,8 @@ public class UserInterface extends Application implements PeerOperationListener 
                 logger.debug("Added {} new file cards.", cardsToAdd.size());
             }
 
-            // IMPLEMENTARE AGGIUNTA O RIMOZIONE CARD IN REALTIME BASATA SUL TESTO DI RICERCA
-            /*
-            String lowerCaseSearchText = (searchField.getText() == null) ? "" : searchField.getText().toLowerCase().trim();
-            System.out.println("Lower case search text: " + lowerCaseSearchText);
-            if (!lowerCaseSearchText.isEmpty()) {
-                // Se la ricerca è vuota, mostra tutte le card presenti nella lista interna 'fileCards'
-                for (FileCardComponent card : this.fileCards) {
-                    String fileName = card.get; // Usa l'helper per estrarre il nome
-                    // Aggiungi la card solo se il nome file non è nullo e contiene il testo di ricerca
-                    if (!fileName.toLowerCase().contains(lowerCaseSearchText)) {
-                        this.fileCardsContainer.getChildren().remove(card);
-                    }
-                }
-            }
-            */
-
+            applySearchFilter(searchField.getText(), reports);
+            
         } else {
             if (!this.fileCardsContainer.getChildren().isEmpty()) {
                 logger.info("Scanner is not UP or reports unavailable. Clearing file cards display.");
@@ -992,11 +979,51 @@ public class UserInterface extends Application implements PeerOperationListener 
                 this.totalScannedLabel.setText("0");
                 this.threatsDetectedLabel.setText("0");
             }
-            // Potresti voler impostare uno stato specifico se reports è null ma lo scanner è UP
             if (scannerStatus == runningStates.UP && reports == null) {
                 this.currentStatusLabel.setText("In attesa di report...");
             }
         }
+    }
+
+    /**
+     * Applica un filtro di ricerca alle card dei file. Mostra solo le card che
+     * contengono il testo di ricerca nel nome del file.
+     *
+     * @param searchText Il testo di ricerca inserito dall'utente.
+     * @param reports La lista di report da filtrare.
+     */
+    private void applySearchFilter(String searchText, List<ScanReport> reports) {
+        String lowerCaseSearchText = (searchText == null) ? "" : searchText.toLowerCase().trim();
+        logger.trace("Applying filter: '{}'", lowerCaseSearchText);
+
+        for (Map.Entry<UUID, FileCardComponent> entry : reportIdToCardMap.entrySet()) {
+
+            UUID reportId = entry.getKey();
+            FileCardComponent card = entry.getValue();
+
+            ScanReport report = null;
+            for (ScanReport rep : reports) {
+                if (rep.getId().equals(reportId)) {
+                    report = rep;
+                }
+            }
+
+            String cardFileName = report.getFile().getName();
+            boolean isVisible;
+
+            if (cardFileName == null) {
+                isVisible = lowerCaseSearchText.isEmpty();
+                logger.warn("Card {} has null filename, visibility depends on empty search.", card);
+            } else {
+                isVisible = lowerCaseSearchText.isEmpty() || cardFileName.toLowerCase().contains(lowerCaseSearchText);
+            }
+
+            if (fileCardsContainer.getChildren().contains(card)) {
+                card.setVisible(isVisible);
+                card.setManaged(isVisible);
+            }
+        }
+        logger.trace("Filter applied. Visible cards in container: {}", fileCardsContainer.getChildren().stream().filter(Node::isVisible).count());
     }
 
     /**
@@ -1016,15 +1043,15 @@ public class UserInterface extends Application implements PeerOperationListener 
         if ("restore".equals(actionType)) {
             success = so.getAntivirusManager().restoreFileFromQuarantine(report); // Passa il File object
             if (success) {
-                logger.info("File restored successfully: {}", filePath); 
-            }else {
+                logger.info("File restored successfully: {}", filePath);
+            } else {
                 logger.error("Failed to restore file: {}", filePath);
             }
         } else if ("delete".equals(actionType)) {
             success = so.getAntivirusManager().deleteFileFromQuarantine(report); // Passa il File object
             if (success) {
-                logger.info("File deleted successfully: {}", filePath); 
-            }else {
+                logger.info("File deleted successfully: {}", filePath);
+            } else {
                 logger.error("Failed to delete file: {}", filePath);
             }
         }
@@ -1062,22 +1089,17 @@ public class UserInterface extends Application implements PeerOperationListener 
         if (cardToRemove != null) {
             boolean removedFromUI = fileCardsContainer.getChildren().remove(cardToRemove);
             boolean removedFromList = fileCards.remove(cardToRemove);
-            reportIdToCardMap.remove(reportId); // Rimuovi dalla mappa
-            displayedReportIds.remove(reportId); // Rimuovi dal set di tracciamento
-
+            reportIdToCardMap.remove(reportId);
+            displayedReportIds.remove(reportId);
             if (removedFromUI && removedFromList) {
                 logger.info("Removed card for report ID: {}", reportId);
             } else {
                 logger.warn("Card for report ID {} removed from map/set, but removal from UI ({}) or internal list ({}) failed.",
                         reportId, removedFromUI, removedFromList);
             }
-            // Potresti voler aggiornare i conteggi qui se necessario
-            // updateThreatCountAfterAction();
 
         } else {
             logger.warn("Attempted to remove card for report ID {}, but it was not found in the map.", reportId);
-            // Potrebbe essere già stata rimossa, o mai aggiunta correttamente.
-            // Rimuovi comunque l'ID dal set per sicurezza, se presente.
             displayedReportIds.remove(reportId);
         }
     }
