@@ -190,6 +190,13 @@
     -fx-font-size: 14px;
 }
 
+.scanFolder-label {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6c7086; /* Grigio testo prompt Catppuccin */
+    -fx-padding: 8px;
+    -fx-font-size: 14px;
+}
+
 .transparent-scroll-pane {
     -fx-background: transparent;
     -fx-background-color: transparent;

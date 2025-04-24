@@ -301,7 +301,7 @@ public class SystemOrchestrator {
      * <h2>Thread Management:</h2>
      * The thread terminates gracefully when interrupted or when the guardian state changes.
      */
-    public void statesGuardian() {
+    /*public void statesGuardian() {
 		
     	this.stateGuardianThread = new Thread(() -> {
 
@@ -373,7 +373,7 @@ public class SystemOrchestrator {
         
 		this.stateGuardianThread.setDaemon(true);
 		this.stateGuardianThread.start();
-    }
+    }*/
     
     /**
      * Sets guardianState.

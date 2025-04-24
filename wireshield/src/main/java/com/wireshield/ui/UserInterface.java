@@ -57,6 +57,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -102,6 +103,8 @@ public class UserInterface extends Application implements PeerOperationListener 
     protected AnchorPane logsPane;
     @FXML
     protected AnchorPane avPane;
+    @FXML
+    protected AnchorPane settingsPane;
     @FXML
     protected TextArea logsArea;
     @FXML
@@ -230,24 +233,17 @@ public class UserInterface extends Application implements PeerOperationListener 
         this.avPane.toFront();
     }
 
-    /*@FXML
-    public void viewAv() {
+    @FXML
+    public void viewSettings() {
         this.stopDynamicLogUpdate();
+        this.stopAVInfoUpdate();
+        this.stopDynamicConnectionLogsUpdate();
 
-        runningStates scannerStatus = so.getScannerStatus();
-        avStatusLabel.setText(scannerStatus.toString());
+        this.setupSettingsPane();
 
-        if (scannerStatus == runningStates.UP) {
-            List<ScanReport> reports = so.getAntivirusManager().getFinalReports();
-            avFilesListView.getItems().clear();
-            for (ScanReport report : reports) {
-                String fileName = report.getFile().getName();
-                String warningClass = report.getWarningClass().toString();
-                avFilesListView.getItems().add(fileName + " - " + warningClass);
-            }
-        }
-        avPane.toFront();
-    }*/
+        this.settingsPane.toFront();
+    }
+
     /**
      * Toggles the VPN connection state. If the VPN is currently connected,
      * stops all services (VPN, antivirus, and download manager). If
@@ -292,7 +288,7 @@ public class UserInterface extends Application implements PeerOperationListener 
 
             this.so.manageAV(runningStates.UP);
             this.so.manageDownload(runningStates.UP);
-            this.so.statesGuardian();
+            //this.so.statesGuardian();
 
             this.vpnButton.setDisable(false);
             this.vpnButton.setText("Stop VPN");
@@ -787,6 +783,8 @@ public class UserInterface extends Application implements PeerOperationListener 
     @FXML
     private TextField searchField;
     @FXML
+    private Label scanFolderLabel;
+    @FXML
     private VBox fileCardsContainer;
 
     private Thread updateAVInfoThread;
@@ -878,10 +876,12 @@ public class UserInterface extends Application implements PeerOperationListener 
 
         if (scannerStatus == runningStates.UP && reports != null) {
 
+            String SCANFOLDER = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH");
             long totalFiles = reports.size();
             long threatCount = reports.stream()
                     .filter(report -> report.getWarningClass() != null && !warningClass.CLEAR.equals(report.getWarningClass()))
                     .count();
+
             this.totalScannedLabel.setText(String.valueOf(totalFiles));
             this.threatsDetectedLabel.setText(String.valueOf(threatCount));
 
@@ -895,12 +895,14 @@ public class UserInterface extends Application implements PeerOperationListener 
                 idsToRemove.forEach(this::removeCardByReportIdInternal);
             }
 
+            scanFolderLabel.setText(SCANFOLDER);
+
             for (ScanReport report : reports) {
                 UUID reportId = report.getId();
 
                 if (!displayedReportIds.contains(reportId)) {
                     String fileName = report.getFile().getName();
-                    String filePath = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH") + File.separator + fileName;
+                    String filePath = SCANFOLDER + File.separator + fileName;
                     warningClass wc = report.getWarningClass();
                     String status = wc.toString().toLowerCase();
                     //String hash = FileManager.calculateFileHash(report.getFile().getHash()); // Assicurati che il metodo getHash() restituisca un valore significativo
@@ -913,6 +915,8 @@ public class UserInterface extends Application implements PeerOperationListener 
 
                     if (report.getWarningClass() != warningClass.CLEAR) {
                         boolean isInQuarantine = so.getAntivirusManager().isFileInQuarantine(report.getFile());
+                        logger.info(report.getFile().getAbsolutePath());
+                        System.out.println("File in quarantine: " + isInQuarantine);
                         restoreButton.setDisable(!isInQuarantine);
                         deleteButton.setDisable(!isInQuarantine);
 
@@ -968,7 +972,7 @@ public class UserInterface extends Application implements PeerOperationListener 
             }
 
             applySearchFilter(searchField.getText(), reports);
-            
+
         } else {
             if (!this.fileCardsContainer.getChildren().isEmpty()) {
                 logger.info("Scanner is not UP or reports unavailable. Clearing file cards display.");
@@ -1238,6 +1242,83 @@ public class UserInterface extends Application implements PeerOperationListener 
             }
             this.startScanButton.setTooltip(new Tooltip("Impossibile leggere/scrivere la configurazione per l'avvio automatico."));
         }
+    }
+
+
+    /* SETTINGS PANE LOGIC */
+    @FXML
+    private TextField scanFolderTextField;
+    @FXML
+    private Button browseButton;
+    @FXML
+    private Button saveSettingsButton;
+
+    private String currentSavedPath; 
+
+    @FXML
+    private void setupSettingsPane() {
+        // 1. Load the currently saved path
+        this.currentSavedPath = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH");
+        if (this.currentSavedPath == null) {
+            this.currentSavedPath = ""; // Handle null case, maybe default to user home?
+        }
+
+        // 2. Display the current path in the TextField
+        scanFolderTextField.setText(this.currentSavedPath); // Use setText, not promptText, to show the actual value
+        scanFolderTextField.setEditable(false); // Keep it non-editable if only Browse is allowed
+
+        // 3. Configure the Browse Button
+        browseButton.setOnAction(event -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Select Download Folder...");
+
+            // Try setting the initial directory based on the TextField's current content
+            File currentDir = new File(scanFolderTextField.getText());
+            if (currentDir.isDirectory()) {
+                directoryChooser.setInitialDirectory(currentDir);
+            } else {
+                // Optional: Fallback if the path is invalid or empty
+                File homeDir = new File(System.getProperty("user.home"));
+                if (homeDir.isDirectory()) {
+                    directoryChooser.setInitialDirectory(homeDir);
+                }
+            }
+
+            File selectedDirectory = directoryChooser.showDialog(settingsPane.getScene().getWindow());
+
+            if (selectedDirectory != null) {
+                // Update the TextField with the selected path
+                String newPath = selectedDirectory.getAbsolutePath();
+                scanFolderTextField.setText(newPath);
+                
+                // Enable the save button ONLY if the path has changed
+                saveSettingsButton.setDisable(newPath.equals(this.currentSavedPath));
+            }
+        });
+
+        // 4. Configure the Save Button
+        saveSettingsButton.setOnAction(event -> {
+            String pathTobeSaved = scanFolderTextField.getText();
+            
+            // Save the new value using FileManager
+            FileManager.setConfigValue("FOLDER_TO_SCAN_PATH", pathTobeSaved);
+            
+            // Update the locally stored "current" path
+            this.currentSavedPath = pathTobeSaved; 
+
+            // Refresh the download monitor (assuming this is the correct way)
+            // Make sure 'so' and 'runningStates' are properly initialized/available
+            if (this.so != null && this.so.getDownloadManager() != null && this.so.getDownloadManager().getMonitorStatus() == runningStates.UP) {
+                 this.so.manageDownload(runningStates.DOWN);
+                 this.so.manageDownload(runningStates.UP);
+                 System.out.println("Refreshing download monitor..."); // Placeholder
+            }
+            saveSettingsButton.setDisable(true);
+
+            System.out.println("Settings saved: FOLDER_TO_SCAN_PATH = " + pathTobeSaved);
+        });
+
+        saveSettingsButton.setDisable(true);
     }
 
     /* GENERAL PURPOSE METHODS */

@@ -278,7 +278,9 @@ public class FileManager {
 			originalName = blockedFile.getName().replaceFirst("\\.blocked$", "");
 		}
 
+		logger.debug(originalName);
 		File restoredFile = new File(blockedFile.getParent(), originalName);
+		logger.debug(restoredFile.getAbsolutePath());
 
 		int counter = 1;
 		while (restoredFile.exists()) {
@@ -334,5 +336,4 @@ public class FileManager {
             return null;
         }
     }
-	
 }

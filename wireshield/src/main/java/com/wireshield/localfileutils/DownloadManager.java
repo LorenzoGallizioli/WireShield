@@ -45,10 +45,10 @@ public class DownloadManager {
 	 * @param antivirusManager The AntivirusManager instance for file scanning.
 	 */
 	private DownloadManager(AntivirusManager antivirusManager) {
-		this.downloadPath = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH"); // Automatically set default download path
+		this.downloadPath = null; // Automatically set default download path
 		this.monitorStatus = runningStates.DOWN; // Initially not monitoring
 		this.antivirusManager = antivirusManager;
-		logger.info("DownloadManager initialized with path: {}", getDownloadPath());
+		logger.info("DownloadManager initialized with path: {}", this.downloadPath);
 	}
 
 	/**
@@ -72,25 +72,23 @@ public class DownloadManager {
 	 * @throws IOException If an error occurs while setting up the WatchService.
 	 */
 	public void startMonitoring() {
-		if (monitorStatus == runningStates.UP) {
+		if (this.monitorStatus == runningStates.UP) {
 			logger.warn("Already monitoring the download directory.");
 			return;
 		}
 
-		String path = getDownloadPath();
+		String path = FileManager.getConfigValue("FOLDER_TO_SCAN_PATH");
 		if (path == null) {
 			logger.error("Download directory path is null. Cannot start monitoring.");
 			return;
 		}
 
-		File downloadDir = new File(getDownloadPath());
+		File downloadDir = new File(path);
 		if (!downloadDir.exists() || !downloadDir.isDirectory()) {
-			logger.error("Invalid download directory: {}", getDownloadPath());
+			logger.error("Invalid download directory: {}", path);
 			return;
 		}
 
-		this.monitorStatus = runningStates.UP;
-		logger.info("Started monitoring directory: {}", getDownloadPath());
 		Path watchPath = Paths.get(path);
 
 		try {
@@ -106,6 +104,9 @@ public class DownloadManager {
 		}
 
 		this.monitorThread = new Thread(() -> {
+
+			this.monitorStatus = runningStates.UP;
+			
 			while (!Thread.currentThread().isInterrupted()) {
 
 				WatchKey key;
@@ -115,6 +116,7 @@ public class DownloadManager {
 					key = watchService.take(); // Wait for events
 
 				} catch (InterruptedException e) {
+					
 					Thread.currentThread().interrupt();
 					continue;
 				}

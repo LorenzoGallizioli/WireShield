@@ -50,6 +50,16 @@
 										<Tooltip text="Logs" />
 									</tooltip>
 								</Button>
+
+								<Button id="settingsButton" mnemonicParsing="false" onAction="#viewSettings"
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-cog" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Logs" />
+									</tooltip>
+								</Button>
 							</children>
 						</HBox>
 					</VBox>
@@ -129,8 +139,10 @@
 								<children>
 									<HBox alignment="CENTER_LEFT" spacing="10">
 										<children>
-											<Label text="Scanned Files"
+											<Label text="Scanned Folder:"
 												styleClass="section-header" />
+											<Label text="" styleClass="scanFolder-label" 
+												fx:id="scanFolderLabel"	/>
 											<Pane HBox.hgrow="ALWAYS" />
 											<TextField fx:id="searchField"
 												promptText="Cerca file..." styleClass="search-field"
@@ -170,6 +182,51 @@
 						</children>
 					</AnchorPane>
 
+					<!-- Settings panel -->
+					<AnchorPane fx:id="settingsPane" prefHeight="643.0" prefWidth="1100.0"
+						styleClass="black-pane">
+						<children>
+							<!-- Contenitore principale per le due sezioni verticali -->
+							<VBox spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+							   <padding>
+								  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+							   </padding>
+							   <children>
+								  <!-- Sezione Impostazioni VPN -->
+								  <VBox spacing="10.0">
+									 <children>
+										<Label styleClass="section-header" text="VPN Settings" />
+										<!-- Contenuto futuro per le impostazioni VPN -->
+										<Label styleClass="status-text" text="(Nothing for now)" />
+										 <!-- Aggiungi qui altri controlli per la VPN quando necessario -->
+									 </children>
+								  </VBox>
+					  
+								  <!-- Separatore visivo tra le sezioni -->
+								  <Separator prefWidth="200.0" />
+					  
+								  <!-- Sezione Impostazioni Antivirus -->
+								  <VBox spacing="15.0">
+									 <children>
+										<Label styleClass="section-header" text="Antivirus Settings" />
+					  
+										<!-- Impostazione Cartella di Scansione -->
+										<HBox alignment="CENTER_LEFT" spacing="10.0">
+										   <children>
+											  <Label styleClass="stat-label" text="Targhet Folder:" />
+											  <TextField fx:id="scanFolderTextField" HBox.hgrow="ALWAYS" styleClass="search-field" />
+											  <Button fx:id="browseButton" mnemonicParsing="false" styleClass="action-button" text="Find..." />
+										   </children>
+										</HBox>
+										<!-- Aggiungi qui altri controlli per l'antivirus quando necessario -->
+									 </children>
+								  </VBox>
+
+								  <Button fx:id="saveSettingsButton" mnemonicParsing="false" styleClass="action-button" text="Save" />
+							   </children>
+							</VBox>
+						 </children>
+					</AnchorPane>
 
 					<!-- Home panel -->
 					<AnchorPane fx:id="homePane" prefHeight="643.0" prefWidth="1100.0"

@@ -145,30 +145,32 @@ public class AntivirusManager {
                 continue;
             }
 
-            ScanReport finalReport = new ScanReport();
-            finalReport.setFile(fileToScan);
+            //ScanReport finalReport = new ScanReport();
+            //finalReport.setFile(fileToScan);
 
             clamAV.analyze(fileToScan);
             ScanReport clamAVReport = clamAV.getReport();
 
-            // Process the file based on the scan results
             if (clamAVReport.getWarningClass() == warningClass.SUSPICIOUS || clamAVReport.getWarningClass() == warningClass.DANGEROUS) {
 
                 this.updateQuarantineStatus(clamAVReport.getFile(), true, clamAVReport.getThreatDetails());
-                FileManager.blockFileExecution(clamAVReport.getFile());
-                //this.postScanActions(clamAVReport.getFile());
+                clamAVReport.setFile(FileManager.blockFileExecution(clamAVReport.getFile()));
+                logger.info("file blocked: {}", clamAVReport.getFile().getAbsolutePath());
 
             } else {
                 this.restoreFromQuarantine(clamAVReport.getFile());
             }
 
+            /*
             if (clamAVReport != null) {
                 mergeReports(finalReport, clamAVReport);
             }
 
-            finalReports.add(finalReport);
+            logger.info("file blocked in finalreport: {}", finalReport.getFile().getAbsolutePath());
+            */
+            finalReports.add(clamAVReport);
 
-            if (finalReport.getWarningClass() == warningClass.DANGEROUS || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
+            if (clamAVReport.getWarningClass() == warningClass.DANGEROUS || clamAVReport.getWarningClass() == warningClass.SUSPICIOUS) {
                 logger.warn("Threat detected in file: {}", fileToScan.getName());
 
                 JOptionPane.showMessageDialog(null, "Threat detected in file: " + fileToScan.getName(), "Threat Detected", JOptionPane.WARNING_MESSAGE); // Show warning dialog
@@ -208,17 +210,23 @@ public class AntivirusManager {
         File file = report.getFile();
         boolean fileDeleted = false;
 
-        String blockedFilePath = file.getAbsolutePath() + ".blocked";
-        File blockedFile = new File(blockedFilePath);
+        //String blockedFilePath = file.getAbsolutePath() + ".blocked";
+        File blockedFile = new File(file.getAbsolutePath());
+        File blockedFileMeta = new File(file.getAbsolutePath().replace(".blocked", ".meta"));
 
         if (blockedFile.exists()) {
 
             if (blockedFile.delete()) {
                 logger.info("Infected file deleted: {}", blockedFile.getAbsolutePath());
+                
+                if(blockedFileMeta.exists()) {
+                    blockedFileMeta.delete();
+                }
 
                 for (ScanReport r : finalReports) {
                     if (report.getId() == r.getId()) {
                         finalReports.remove(r); // Remove the report from the list
+                        break;
                     }
                 }
 
@@ -233,9 +241,14 @@ public class AntivirusManager {
             if (file.delete()) {
                 logger.info("File deleted: {}", file.getAbsolutePath());
 
+                if(blockedFileMeta.exists()) {
+                    blockedFileMeta.delete();
+                }
+
                 for (ScanReport r : finalReports) {
                     if (report.getId() == r.getId()) {
                         finalReports.remove(r); // Remove the report from the list
+                        break;
                     }
                 }
 
@@ -258,10 +271,12 @@ public class AntivirusManager {
     public boolean restoreFileFromQuarantine(ScanReport report) {
 
         File file = report.getFile();
-        File blockedFile = new File(file.getAbsolutePath() + ".blocked");
+        //File blockedFile = new File(file.getAbsolutePath() + ".blocked");
+        File blockedFile = new File(file.getAbsolutePath());
 
         if (blockedFile.exists()) {
             File unblockedFile = FileManager.unblockFileExecution(blockedFile);
+            logger.debug("unblocked file path: {}", unblockedFile.getAbsolutePath());
 
             if (unblockedFile != null) {
                 File restoredFile = restoreFromQuarantine(unblockedFile);
@@ -630,10 +645,8 @@ public class AntivirusManager {
             logger.warn("File is null or does not exist, cannot check quarantine status.");
             return false;
         }
-
-        String quarantineDirPath = System.getProperty("user.home") + File.separator + "Downloads" + File.separator
-                + ".QUARANTINE";
-        return file.getAbsolutePath().startsWith(quarantineDirPath);
+        logger.info(file.getAbsolutePath());
+        return file.getAbsolutePath().contains(".QUARANTINE");
     }
 
     /**
