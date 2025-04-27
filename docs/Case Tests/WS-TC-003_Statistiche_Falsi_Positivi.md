@@ -1,3 +1,5 @@
+
+https://github.com/user-attachments/assets/e6e99929-e362-48b2-8b5a-366406ff2dbf
 ## General Information
 
 | Field     | Value                                                    |
@@ -153,9 +155,12 @@ During the test execution, the following files were scanned:
 ## Attachments and Collected Metrics
 
 - **Video recording of the test session**, including:
-  - Test execution  
-  - Antivirus status and WireShield behavior  
+  - Test execution
+  - Antivirus status and WireShield behavior
   - Real-time metrics display:  
     - CPU usage  
     - Memory usage  
-    - Disk I/O  
+    - Disk I/O
+
+https://github.com/user-attachments/assets/4bb5c45e-d80b-44cf-8168-86c97ce92152
+
