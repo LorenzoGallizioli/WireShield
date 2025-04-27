@@ -100,7 +100,10 @@ Verify that WireShield can detect modified malware variants through heuristic an
   - Real-time metrics display:  
     - CPU usage  
     - Memory usage  
-    - Disk I/O  
+    - Disk I/O
+
+https://github.com/user-attachments/assets/a3d9f28d-0c1f-485f-b5c6-24ae48fa2b50
+
 
 &nbsp;
 
