@@ -128,3 +128,6 @@ During the test execution, the following steps were successfully performed:
     - CPU usage
     - Memory usage
     - Disk I/O
+
+https://github.com/user-attachments/assets/8cf9795b-a93f-4457-a1a2-f32f2e659a15
+
