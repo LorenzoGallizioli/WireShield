@@ -124,8 +124,7 @@ public class DownloadManager {
 				for (WatchEvent<?> event : key.pollEvents()) {
 
 					try {
-						if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE ||
-								event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+						if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 
 							Path newFilePath = watchPath.resolve((Path) event.context());
 							File newFile = newFilePath.toFile();
