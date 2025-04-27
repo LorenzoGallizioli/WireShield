@@ -102,4 +102,8 @@ Verify that ClamAV correctly detects a file with a known viral signature (e.g., 
   - Real-time metrics display:  
     - CPU usage  
     - Memory usage  
-    - Disk I/O  
+    - Disk I/O
+
+
+https://github.com/user-attachments/assets/8948e82d-f18d-461b-b8cb-3e30f1a2177c
+
