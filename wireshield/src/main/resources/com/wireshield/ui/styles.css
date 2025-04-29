@@ -1,4 +1,3 @@
-
 @font-face {
     src: url('../../../fonts/Montserrat-Medium.ttf');
 }
@@ -7,291 +6,444 @@
     src: url('../../../fonts/Montserrat-Bold.ttf');
 }
 
-/* TEXT ANTIALIASING: makes fonts borders more smooth */
+/* TEXT ANTIALIASING */
 .text {
-	-fx-font-smoothing-type: gray;
+    -fx-font-smoothing-type: gray;
 }
 
-
-/* Base styles */
+/* --- BASE STYLES --- */
 .root {
     -fx-font-family: 'Montserrat Medium';
     -fx-font-size: 14px;
-    -fx-background-color: #1a1a1a;
-    -fx-text-fill: #ffffff;
+    /* Usiamo lo sfondo di modern-pane come base più coerente visto l'AV pane */
+    -fx-background-color: #1e1e2e;
+    -fx-text-fill: #cdd6f4; /* Colore testo base dalla palette Catppuccin */
 }
 
-.close-button {
+/* --- WINDOW CONTROLS (Presumibilmente usati altrove) --- */
+.close-button, .minimize-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #afaeae;
+    -fx-text-fill: #afaeae; /* Grigio chiaro */
     -fx-font-size: 20px;
     -fx-padding: 0;
     -fx-background-radius: 5px;
 }
 
 .close-button:hover {
-    -fx-background-color: #dd1c1a;
-}
-
-.minimize-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #afaeae;
-    -fx-font-size: 20px;
-    -fx-padding: 0;
-    -fx-background-radius: 5px;
+    -fx-background-color: #f38ba8; /* Rosso Catppuccin */
 }
 
 .minimize-button:hover {
-    -fx-background-color: #4d4d4d;
+    -fx-background-color: #45475a; /* Grigio scuro Catppuccin */
 }
 
-/* Pane styles */
+/* --- PANE STYLES --- */
+/* Stile principale per contenuti, usato da avPane */
+.modern-pane {
+    -fx-background-color: #1e1e2e; /* Base Catppuccin Mocha */
+    -fx-background-radius: 10;
+}
+
+/* Stile alternativo scuro, usato da homePane e logsPane */
 .black-pane {
-    -fx-background-color: #1a1a1a;
-    -fx-padding: 15px;
+    -fx-background-color: #1e1e2e;
+    -fx-padding: 15px; /* Mantenuto dal CSS originale */
 }
 
+/* --- TOP MENU BAR & BUTTONS --- */
+/* Stile per la HBox che contiene i bottoni menu */
+#menuBox {
+    /* Usiamo uno sfondo leggermente diverso dalla base per distinguerlo */
+    -fx-background-color: #181825; /* Variante più scura di Catppuccin */
+    -fx-padding: 5px 5px 5px 20px; /* Padding originale FXML + padding verticale/destro */
+    /* spacing è già nell'FXML, alignment pure */
+}
+
+/* Stile per i bottoni-icona nel menu */
 .btn-menu {
-	-fx-background-color: transparent;
-	-fx-text-fill: #ffffff;
-	-fx-background-radius: 0px;
-}
-
-.btn-menu:hover {
-    -fx-background-color: #252525;
-}
-
-/* Primary button style */
-.btn-primary {
-    -fx-background-color: #333333;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 16px;
-    -fx-padding: 10 20 10 20;
+    -fx-background-color: transparent; /* Trasparente di default */
+    -fx-background-radius: 5px; /* Angoli arrotondati */
+    -fx-padding: 8px; /* Spazio attorno all'icona */
     -fx-cursor: hand;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
-	-fx-font-smoothing-type: gray;
 }
 
-.btn-primary:hover {
-    -fx-background-color: #4d4d4d;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+/* Colore dell'icona nel bottone menu */
+.btn-menu .ikonli-font-icon {
+    -fx-fill: #cdd6f4; /* Testo base Catppuccin */
 }
 
-.btn-primary:pressed {
-    -fx-background-color: #666666;
+/* Hover state per bottone menu */
+.btn-menu:hover {
+    -fx-background-color: #45475a; /* Sfondo grigio scuro Catppuccin su hover */
 }
 
-/* Top bar styles */
-#hBox {
-    -fx-background-color: #333333;
-    -fx-padding: 5 10 5 10;
-    -fx-spacing: 8;
+.btn-menu:hover .ikonli-font-icon {
+    -fx-fill: #ffffff; /* Icona bianca su hover */
 }
 
-/* Left sidebar styles */
-#vBox {
-    -fx-background-color: #262626;
+/* Active state (da aggiungere via codice Java quando la vista è selezionata) */
+.btn-menu.active {
+    -fx-background-color: #89b4fa; /* Blu primario Catppuccin come sfondo attivo */
 }
 
-/* Upload peer button specific style */
+.btn-menu.active .ikonli-font-icon {
+    -fx-fill: #1e1e2e; /* Icona scura (colore base) per contrasto */
+}
+
+
+/* --- PRIMARY BUTTON (Stile unificato Catppuccin) --- */
+/* Usato in avPane e homePane (modificato FXML per coerenza) */
+.primary-button {
+    -fx-background-color: #89b4fa; /* Blu primario Catppuccin */
+    -fx-text-fill: #1e1e2e; /* Testo scuro (colore base) */
+    -fx-font-family: 'Montserrat Bold'; /* Usa il font bold */
+    -fx-font-size: 14px; /* Leggermente ridotto per coerenza */
+    -fx-padding: 8 16; /* Padding dalla definizione Catppuccin */
+    -fx-cursor: hand;
+    -fx-background-radius: 5px; /* Raggio dalla definizione Catppuccin */
+    /* Effetto opzionale, puoi rimuoverlo se non ti piace */
+    /* -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0, 0, 1); */
+}
+
+.primary-button:hover {
+    -fx-background-color: #b4befe; /* Viola/Blu chiaro Catppuccin su hover */
+}
+
+.primary-button:pressed {
+    -fx-background-color: #74c7ec; /* Azzurro Catppuccin su pressed */
+}
+
+/* --- SPECIFIC BUTTONS (Home Pane) --- */
 .upload-button {
-    -fx-background-color: #333333;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 16px;
+    -fx-background-color: #313244; /* Grigio scuro Catppuccin */
+    -fx-text-fill: #cdd6f4; /* Testo base */
+    -fx-font-family: 'Montserrat Bold';
+    -fx-font-size: 18px; /* Leggermente più grande per il '+' */
     -fx-min-width: 40px;
     -fx-min-height: 40px;
-    -fx-background-radius: 20px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-background-radius: 20px; /* Cerchio */
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1); /* Ombra leggera */
 }
 
 .upload-button:hover {
-    -fx-background-color: #404040;
+    -fx-background-color: #45475a; /* Grigio più chiaro su hover */
 }
 
-/* Panels specific styles */
-#avPane, #logsPane, #homePane {
-    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
+/* --- ANTI-VIRUS PANE STYLES --- */
+.header-label {
+    -fx-text-fill: #ffffff; /* Bianco */
+    -fx-font-family: 'Montserrat Bold';
+    -fx-font-size: 18px; /* Coerente con peer-info-title */
 }
 
-/* New styles for peer cards container */
-.peer-container-header {
-    -fx-min-height: 40px;
-    -fx-background-color: #262626;
+.status-text, .status-value {
+    -fx-text-fill: #cdd6f4; /* Testo base Catppuccin */
 }
 
-.peers-container {
-    -fx-background-color: #262626;
-    -fx-padding: 30px 20px 20px 20px; /* Extra padding on top for the upload button */
-    -fx-spacing: 10px;
-	-fx-background-radius: 10px;
-	-fx-border-color: #666666;
-	-fx-border-width: 1px;
-	-fx-border-radius: 10px;
+.status-indicator {
+    -fx-stroke: transparent;
 }
 
-/* Scroll pane */
+.status-indicator.active,  .status-indicator.clear{
+    -fx-fill: #a6e3a1; /* Verde Catppuccin */
+}
+
+.status-indicator.inactive, .status-indicator.dangerous {
+    -fx-fill: #f38ba8; /* Rosso Catppuccin */
+}
+
+.status-indicator.suspicious {
+    -fx-fill: #f9e2af; /* Giallo Catppuccin */
+}
+
+.stat-card {
+    -fx-background-color: #313244; /* Grigio scuro Catppuccin */
+    -fx-background-radius: 8px;
+    -fx-padding: 15px;
+    -fx-alignment: center; /* Dal FXML */
+}
+
+.stat-label {
+    -fx-text-fill: #cdd6f4; /* Testo base Catppuccin */
+    -fx-font-size: 14px;
+}
+
+.stat-value {
+    -fx-text-fill: #ffffff; /* Bianco */
+    -fx-font-size: 22px;
+    -fx-font-family: 'Montserrat Bold';
+}
+
+.section-header {
+    -fx-text-fill: #ffffff; /* Bianco */
+    -fx-font-size: 16px;
+    -fx-font-family: 'Montserrat Bold';
+}
+
+.search-field {
+    -fx-background-color: #313244; /* Grigio scuro Catppuccin */
+    -fx-text-fill: #ffffff; /* Bianco */
+    -fx-prompt-text-fill: #6c7086; /* Grigio testo prompt Catppuccin */
+    -fx-background-radius: 5px;
+    -fx-padding: 8px;
+    -fx-font-size: 14px;
+}
+
+.scanFolder-label {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6c7086; /* Grigio testo prompt Catppuccin */
+    -fx-padding: 8px;
+    -fx-font-size: 14px;
+}
+
+.transparent-scroll-pane {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+}
+
+.transparent-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.cards-container { /* Usato in AV Pane */
+    -fx-background-color: transparent;
+    -fx-padding: 5px; /* Padding attorno alle card */
+}
+
+.file-card {
+    -fx-background-color: #313244; /* Grigio scuro Catppuccin */
+    -fx-background-radius: 8px;
+    -fx-padding: 15px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0, 0, 1);
+}
+
+.file-card:hover {
+    -fx-background-color: #45475a; /* Grigio più chiaro su hover */
+}
+
+.file-name {
+    -fx-text-fill: #ffffff; /* Bianco */
+    -fx-font-family: 'Montserrat Bold';
+    -fx-font-size: 14px;
+}
+
+.file-path {
+    -fx-text-fill: #cdd6f4; /* Testo base Catppuccin */
+    -fx-font-size: 12px;
+}
+
+.file-status {
+    -fx-font-size: 12px;
+    -fx-font-family: 'Montserrat Bold';
+    -fx-padding: 3px 8px;
+    -fx-background-radius: 3px;
+}
+
+.status-clean {
+    -fx-text-fill: #a6e3a1; /* Verde */
+    -fx-background-color: rgba(166, 227, 161, 0.2); /* Sfondo verde trasparente */
+}
+
+.status-threat {
+    -fx-text-fill: #f38ba8; /* Rosso */
+    -fx-background-color: rgba(243, 139, 168, 0.2); /* Sfondo rosso trasparente */
+}
+
+.status-warning {
+    -fx-text-fill: #f9e2af; /* Giallo */
+    -fx-background-color: rgba(249, 226, 175, 0.2); /* Sfondo giallo trasparente */
+}
+
+/* Stili per il pannello dettagli file (se viene aggiunto dinamicamente) */
+.details-panel {
+    -fx-background-color: #181825; /* Sfondo menu bar per coerenza popup */
+    -fx-background-radius: 5px;
+    -fx-padding: 10px;
+    /* fx-spacing è proprietà del layout, non CSS */
+}
+
+.details-title {
+    -fx-text-fill: #cdd6f4;
+    -fx-font-family: 'Montserrat Bold';
+}
+
+.details-value {
+    -fx-text-fill: #bac2de; /* Altro grigio chiaro Catppuccin */
+}
+
+.expand-button { /* Potrebbe essere usato in file-card */
+    -fx-background-color: transparent;
+    -fx-text-fill: #89b4fa; /* Blu primario */
+    -fx-cursor: hand;
+}
+
+.expand-button:hover {
+    -fx-text-fill: #b4befe; /* Viola/Blu chiaro */
+}
+
+/* --- LOGS PANE --- */
+/* Definiamo lo stile mancante */
+.black-textarea {
+    -fx-font-family: monospace; /* Adatto per logs */
+    -fx-background-color: #1e1e2e; /* Sfondo coerente con modern-pane */
+    -fx-text-fill: #cdd6f4; /* Testo base */
+    -fx-background-insets: 0;
+    -fx-border-color: #313244; /* Bordo leggero */
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-padding: 5px;
+}
+
+/* Stile per il contenuto della TextArea (per scrollbar scure) */
+.black-textarea .content {
+    -fx-background-color: #1e1e2e;
+}
+
+/* --- HOME PANE STYLES --- */
+.peer-container-header { /* HBox sopra la lista peer */
+    -fx-min-height: 40px; /* Dall'originale */
+    /* Lo sfondo sarà quello del contenitore principale .peers-container */
+    -fx-background-color: transparent;
+    -fx-padding: 0 10px 10px 10px; /* Spazio per il bottone upload */
+}
+
+.peers-container { /* VBox principale sinistra */
+    -fx-background-color: #272733; /* Stesso sfondo di black-pane */
+    -fx-padding: 10px; /* Padding semplificato */
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    /* spacing è nell'FXML */
+    /* Rimosso bordo, meno necessario se occupa il lato */
+}
+
+/* Scroll pane dentro peers-container */
 .scroll-pane{
-	-fx-background-color: #262626;
+    -fx-background-color: transparent; /* Eredita #1a1a1a */
 }
 
 .scroll-pane > .viewport {
-    -fx-background-color: #262626;
+    -fx-background-color: transparent; /* Eredita #1a1a1a */
 }
 
-/* Peer card styles */
+/* Peer card */
 .peer-card {
-    -fx-background-color: #333333;
+    -fx-background-color: #313244; /* Grigio scuro Catppuccin */
     -fx-padding: 15px;
     -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1); /* Ombra Catppuccin */
     -fx-min-height: 80px;
-    -fx-min-width: 250px;
+    /* min-width non necessario se dentro VBox+ScrollPane */
 }
 
 .peer-card:hover {
-    -fx-background-color: #404040;
+    -fx-background-color: #45475a; /* Grigio più chiaro su hover */
     -fx-cursor: hand;
 }
 
 .peer-card.selected {
-    -fx-background-color: #4d4d4d;
-    -fx-border-color: #666666;
+    -fx-background-color: #45475a; /* Uguale a hover */
+    -fx-border-color: #89b4fa; /* Bordo blu primario per selezione */
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
 }
 
 .peer-card-text-name {
-	-fx-font-family: 'Montserrat Bold';
-	-fx-background-color: null;
+    -fx-font-family: 'Montserrat Bold';
     -fx-font-size: 16px;
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: #ffffff; /* Bianco */
 }
 
 .peer-card-text-address {
-	-fx-font-family: 'Montserrat Medium';
-	-fx-background-color: null;
-	-fx-font-size: 12px;
-	-fx-text-fill: #afaeae;
+    -fx-font-family: 'Montserrat Medium';
+    -fx-font-size: 12px;
+    -fx-text-fill: #cdd6f4; /* Testo base Catppuccin */
 }
 
+/* Connection status container (VBox destra alto) */
 .connection-container {
-	-fx-background-color: #262626;
-	-fx-spacing: 10px;
-    -fx-background-radius: 10px;
-}
-
-.connectionInfo-text {
-	-fx-font-family: 'Montserrat Medium';
-	-fx-text-fill: #afaeae;
-	-fx-font-size: 16px;
-	-fx-background-color: null;
-	-fx-font-smoothing-type: gray;
-}
-
-
-/* #_#_#_#_** PEER INFO CONTAINER CSS **_#_#_#_# */
-
-/* Stile per il container delle informazioni peer */
-.peerInfo-container {
-    -fx-background-color: #262626;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 0, 2);
-}
-
-/* Stile per il contenuto delle informazioni peer */
-.peer-info-content {
-	-fx-text-fill: #afaeae;
-    -fx-background-color: null;
+    -fx-background-color: #272733; /* Coerente con black-pane */
+    /* spacing è nell'FXML */
+    -fx-background-radius: 10px; /* Raggio per staccarlo visivamente */
     -fx-padding: 10px;
 }
 
-/* Stile per il titolo */
+/* Testo nelle info connessione */
+.connectionInfo-text {
+    -fx-font-family: 'Montserrat Medium';
+    -fx-text-fill: #cdd6f4; /* Testo base Catppuccin */
+    -fx-font-size: 16px; /* Leggermente più piccolo */
+}
+
+
+/* --- STILI NON DIRETTAMENTE USATI NELL'FXML FORNITO (Mantenuti per possibile uso altrove) --- */
+
+/* Stile per il container delle informazioni peer (potrebbe apparire dinamicamente) */
+.peerInfo-container {
+    -fx-background-color: #272733; /* Sfondo black-pane */
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 0, 2);
+    -fx-padding: 15px;
+}
+.peer-info-content { -fx-padding: 10px; } /* Interno */
 .peer-info-title {
-	-fx-text-fill: #afaeae;
+    -fx-text-fill: #ffffff; /* Bianco */
     -fx-font-size: 18px;
-    -fx-font-weight: bold;
+    -fx-font-family: 'Montserrat Bold';
     -fx-padding: 0 0 10px 0;
-    -fx-border-color: transparent transparent #ddd transparent;
+    -fx-border-color: transparent transparent #45475a transparent; /* Bordo grigio */
     -fx-border-width: 0 0 1px 0;
 }
-
-/* Stile per le etichette */
 .peer-info-label {
-    -fx-font-weight: bold;
-	-fx-text-fill: #ffffff; /* More white than other text */
+    -fx-font-family: 'Montserrat Bold';
+    -fx-text-fill: #ffffff; /* Bianco */
 }
+.peer-info-value { -fx-text-fill: #cdd6f4; } /* Testo base */
 
-/* Stile per i valori */
-.peer-info-value {
-	-fx-text-fill: #afaeae;
-}
-
-/* Stile per i pulsanti di azione */
-.action-button {
-	-fx-font-weight: bold;
-	-fx-padding: 8px 15px;
-	-fx-background-radius: 3px;
-	-fx-background-color: #333333;
-	-fx-text-fill: #ffffff;
-	-fx-cursor: hand;
-	-fx-background-radius: 8px;
-	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
-}
-
-.action-button:hover {
-	-fx-background-color: #668dff; /* smooth blue */
-	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
-}
-
-/* Stile per il pulsante di eliminazione */
-.danger-button {
-    -fx-font-weight: bold;
+/* Pulsanti azione generici (se usati dinamicamente) */
+.action-button, .danger-button {
+    -fx-font-family: 'Montserrat Bold';
     -fx-padding: 8px 15px;
-    -fx-background-radius: 3px;
-	-fx-background-color: #333333;
-	-fx-text-fill: #ffffff;
-	-fx-cursor: hand;
-	-fx-background-radius: 8px;
-	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-background-radius: 5px; /* Coerenza con primary */
+    -fx-background-color: #313244; /* Grigio scuro */
+    -fx-text-fill: #cdd6f4; /* Testo base */
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
 }
+.action-button:hover { -fx-background-color: #89b4fa; -fx-text-fill: #1e1e2e;} /* Blu primario */
+.danger-button:hover { -fx-background-color: #f38ba8; -fx-text-fill: #1e1e2e;} /* Rosso */
 
-.danger-button:hover {
-	-fx-background-color: #ff6666; /* smooth red */
-	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 4);
+.small-button { /* Simile a upload, ma non necessariamente tondo */
+    -fx-background-color: #313244;
+    -fx-text-fill: #cdd6f4;
+    -fx-font-size: 14px;
+    -fx-min-width: 35px;
+    -fx-min-height: 35px;
+    -fx-padding: 5px;
+    -fx-background-radius: 5px; /* Raggio standard */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
 }
+.small-button:hover { -fx-background-color: #45475a; }
 
-/* Stile per il pulsante piccolo */
-.small-button {
-	-fx-background-color: #333333;
-	-fx-text-fill: #ffffff;
-	-fx-font-size: 14px;
-	-fx-min-width: 40px;
-    -fx-min-height: 40px;
-	-fx-background-radius: 30px;
-	-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
-}
-
-.small-button:hover {
-    -fx-background-color: #404040;
-}
-
-
-/* Stile per il campo di gestione cidr */
-
+/* Campo input generico (se usato dinamicamente) */
 .input-field {
-    -fx-background-color: #404040;
+    -fx-background-color: #313244; /* Coerente con search-field */
     -fx-text-fill: #ffffff;
-    -fx-font-size: 16px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+    -fx-font-size: 14px;
+    -fx-background-radius: 5px;
+    -fx-padding: 8px;
 }
-
-.cidr-info-label {
-    -fx-font-weight: bold;
-	-fx-text-fill: #bebebe; /* More white than other text */
+.cidr-info-label { /* Testo vicino a input */
+    -fx-font-family: 'Montserrat Bold';
+    -fx-text-fill: #cdd6f4;
     -fx-font-size: 14px;
 }
 
-
+/* --- RIMOZIONE STILI RIDONDANTI/NON USATI --- */
+/*
+    - Rimossa definizione duplicata/vecchia di .btn-primary
+    - Rimossi #hBox, #vBox (non presenti in FXML)
+    - Consolidati alcuni colori verso la palette Catppuccin per maggiore coerenza
+    - Semplificati alcuni padding/bordi dove appropriato
+*/

@@ -1,6 +1,7 @@
 package com.wireshield.av;
 
 import java.io.File;
+import java.util.UUID;
 
 import com.wireshield.enums.warningClass;
 
@@ -15,6 +16,7 @@ public class ScanReport {
 	private File file; // The file that was scanned
 	private warningClass warningState; // The warning classification (CLEAR, SUSPICIOUS, DANGEROUS)
 	private Boolean isValid; // Indicates if the scan report is valid
+	private final UUID id; // Serialization ID
 
 	/**
 	 * Default constructor initializing default values for the scan report.
@@ -24,6 +26,7 @@ public class ScanReport {
 		this.threatDetails = "No threat detected";
 		this.warningState = warningClass.CLEAR;
 		this.isValid = true;
+		this.id = generateUniqueId();
 	}
 
 	/**
@@ -48,6 +51,25 @@ public class ScanReport {
 	}
 
 	/**
+	 * Generates a unique identifier for the peer using UUID.
+	 * 
+	 * @return A unique identifier string for the peer.
+	 * @see java.util.UUID#randomUUID()
+	 */
+	private static UUID generateUniqueId() {
+		return UUID.randomUUID();
+	}
+
+	/**
+	 * Gets the unique identifier of the scan report.
+	 *
+	 * @return The unique identifier.
+	 */
+	public UUID getId() {
+		return this.id;
+	}
+
+	/**
 	 * Sets whether a threat was detected in the scanned file.
 	 *
 	 * @param threatDetected True if a threat was detected, otherwise false.
@@ -62,8 +84,9 @@ public class ScanReport {
 	 * @return The threat details.
 	 */
 	public String getThreatDetails() {
-		return threatDetails;
+		return this.threatDetails;
 	}
+
 
 	/**
 	 * Sets the details of the detected threat.
@@ -109,6 +132,7 @@ public class ScanReport {
 	public void setWarningClass(warningClass warningClass) {
 		this.warningState = warningClass;
 	}
+
 
 	/**
 	 * Checks if the scan report is valid.

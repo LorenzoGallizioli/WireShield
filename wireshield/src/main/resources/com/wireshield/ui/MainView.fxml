@@ -6,102 +6,305 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.shape.Circle?>
+<?import org.kordamp.ikonli.javafx.*?>
 
-<StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wireshield.ui.UserInterface">
-   <AnchorPane prefHeight="630.0" prefWidth="1100.0">
-      <children>
-         <BorderPane prefHeight="630.0" prefWidth="1100.0">
-            <top>
-               <VBox>
-                  <HBox fx:id="menuBox" prefHeight="0" spacing="2.0" alignment="CENTER_LEFT" >
-    					<padding>
-        					<Insets left="20.0"/>
-    					</padding>
-    					<children>
-        					<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome" prefHeight="0" prefWidth="70.0" text="Home" styleClass="btn-menu" />
-        					<Button id="avButton" mnemonicParsing="false" onAction="#viewAv" prefHeight="0" prefWidth="100.0" text="Antivirus" styleClass="btn-menu" />
-        					<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs" prefHeight="0" prefWidth="70.0" text="Logs" styleClass="btn-menu" />
-    					</children>
-					</HBox>
-               </VBox>
-            </top>
-         </BorderPane>
-         <Pane layoutX="0" layoutY="28.0" prefHeight="643.0" prefWidth="1100.0">
-            <children>
-               <!-- AntiVirus panel --> 
-               <AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
-                  <children>
-                     <Label text="AV status:" layoutX="14.0" layoutY="10.0" />
-                     <Label fx:id="avStatusLabel" layoutX="14.0" layoutY="30.0" prefWidth="1070.0" />
-                     <Label text="Scanned files:" layoutX="14.0" layoutY="60.0" />
-                     <ListView fx:id="avFilesListView" layoutX="14.0" layoutY="80.0" prefHeight="250.0" prefWidth="1070.0" styleClass="black-listview"/>  
-                  </children>
-               </AnchorPane>
-               <!-- Logs panel --> 
-               <AnchorPane fx:id="logsPane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
-                  <children>
-                     <TextArea fx:id="logsArea" editable="false" layoutX="14.0" layoutY="14.0" prefHeight="615.0" prefWidth="1070.0" styleClass="black-textarea"/>
-                  </children>
-               </AnchorPane>
-               <!-- Home panel --> 
-               <AnchorPane fx:id="homePane" prefHeight="643.0" prefWidth="1100.0" styleClass="black-pane">
-                   <children>
-                       <!-- Peers list container -->
-                       <VBox styleClass="peers-container" prefWidth="300.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0">
-                           <HBox alignment="CENTER_RIGHT" spacing="10" styleClass="peer-container-header">
-        						<Button fx:id="uploadPeerButton" text="+" onAction="#handleFileSelection" styleClass="upload-button"/>
-    					   </HBox>
-                                
-                           <!-- Peer cards will be added here dynamically -->
-                           <ScrollPane fitToWidth="true" styleClass="scroll-pane" VBox.vgrow="ALWAYS">
-        				   		<content>
-            						<VBox fx:id="peerCardsContainer" spacing="10"/>
-        						</content>
-    					   </ScrollPane>
-                       </VBox>
-                       
-                       <!-- Connection status container -->
-					   <VBox styleClass="connection-container" prefWidth="740.0" prefHeight="130.0" AnchorPane.leftAnchor="320.0" AnchorPane.topAnchor="0.0">
-    
-    						<!-- Top row: Interface, Status and VPN button -->
-    						<HBox styleClass="connection-container" prefWidth="740.0" spacing="20">
-        						<padding>
-            						<Insets top="10" bottom="10" left="20" right="20"/>
-        						</padding>
-        						<VBox spacing="10">
-            						<Label fx:id="connInterfaceLabel" text="" styleClass="connectionInfo-text" />
-            						<HBox spacing="5">
-                						<Label text="Status: " styleClass="connectionInfo-text" />
-                						<Label fx:id="connStatusLabel" text="" styleClass="connectionInfo-text" />
-            						</HBox>
-        						</VBox>
-        						<Region HBox.hgrow="ALWAYS" />
-        						<Button fx:id="vpnButton" onAction="#changeVPNState" text="Start VPN" styleClass="btn-primary"/>
-    						</HBox>
-    
-    						<!-- Bottom row: Traffic and Handshake info -->
-    						<HBox spacing="0">
-        						<padding>
-            						<Insets left="20" right="20" bottom="10"/>
-        						</padding>
-        						<HBox alignment="CENTER" spacing="5">
-            						<Label text="Tx: " styleClass="connectionInfo-text" />
-            						<Label fx:id="sentTrafficLable" text="" minWidth="110" styleClass="connectionInfo-text" />
-        						</HBox>
-        						<HBox alignment="CENTER" spacing="5">
-            						<Label text="Rx: " styleClass="connectionInfo-text" />
-            						<Label fx:id="receivedTrafficLabel" text="" minWidth="110" styleClass="connectionInfo-text" />
-        						</HBox>
-        						<HBox>
-        							<Label text="Handshake time: " styleClass="connectionInfo-text" />
-        							<Label fx:id="lastHandshakeTimeLabel" text="" styleClass="connectionInfo-text" />
-        						</HBox>
-    						</HBox>
-					   </VBox>
-                   </children>
-               </AnchorPane>
-            </children>
-         </Pane>
-      </children>
-   </AnchorPane>
+<StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="com.wireshield.ui.UserInterface">
+	<AnchorPane prefHeight="630.0" prefWidth="1100.0">
+		<children>
+			<BorderPane prefHeight="630.0" prefWidth="1100.0">
+				<top>
+					<VBox>
+						<HBox fx:id="menuBox" prefHeight="0" spacing="10.0" alignment="CENTER_LEFT">
+							<padding>
+								<Insets left="20.0" />
+							</padding>
+							<children>
+								<Button id="homeButton" mnemonicParsing="false" onAction="#viewHome"
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-home" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Home" />
+									</tooltip>
+								</Button>
+
+								<Button id="avButton" mnemonicParsing="false" onAction="#viewAv"
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-shield-alt" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Antivirus" />
+									</tooltip>
+								</Button>
+
+								<Button id="logsButton" mnemonicParsing="false" onAction="#viewLogs"
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-list-alt" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Logs" />
+									</tooltip>
+								</Button>
+
+								<Button id="settingsButton" mnemonicParsing="false" onAction="#viewSettings"
+									prefHeight="40.0" prefWidth="40.0" text="" styleClass="btn-menu">
+									<graphic>
+										<FontIcon iconLiteral="fas-cog" iconSize="20" />
+									</graphic>
+									<tooltip>
+										<Tooltip text="Logs" />
+									</tooltip>
+								</Button>
+							</children>
+						</HBox>
+					</VBox>
+				</top>
+			</BorderPane>
+			<Pane layoutX="0" layoutY="44.0" prefHeight="643.0" prefWidth="1100.0">
+				<children>
+
+
+					<!-- AntiVirus panel -->
+					<AnchorPane fx:id="avPane" prefHeight="643.0" prefWidth="1100.0"
+						styleClass="modern-pane">
+						<children>
+
+							<!-- Header con titolo e stato -->
+							<HBox layoutX="14.0" layoutY="10.0" spacing="10" alignment="CENTER_LEFT"
+								prefHeight="60.0" prefWidth="1070.0">
+								<children>
+									<VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+										<children>
+											<Label text="Antivirus Monitoring"
+												styleClass="header-label">
+												<font>
+													<Font name="System Bold" size="20.0" />
+												</font>
+											</Label>
+											<HBox alignment="CENTER_LEFT" spacing="10">
+												<children>
+													<Label text="State:" styleClass="status-text" />
+													<Circle fx:id="statusIndicator" radius="8"
+														styleClass="status-indicator" />
+													<Label fx:id="avStatusLabel"
+														styleClass="status-value" />
+												</children>
+											</HBox>
+										</children>
+									</VBox>
+									<Button fx:id="startScanButton" mnemonicParsing="false"
+										styleClass="primary-button" text="Avvia Scansione">
+										<graphic>
+											<FontIcon iconLiteral="fas-play" iconSize="16" />
+										</graphic>
+									</Button>
+								</children>
+							</HBox>
+
+							<!-- Statistiche della scansione -->
+							<HBox layoutX="14.0" layoutY="80.0" spacing="20" prefHeight="100.0"
+								prefWidth="1070.0">
+								<children>
+									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+										<children>
+											<Label text="Scanned Files" styleClass="stat-label" />
+											<Label fx:id="totalScannedLabel" text="0"
+												styleClass="stat-value" />
+										</children>
+									</VBox>
+									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+										<children>
+											<Label text="Threats Detected" styleClass="stat-label" />
+											<Label fx:id="threatsDetectedLabel" text="0"
+												styleClass="stat-value" />
+										</children>
+									</VBox>
+									<VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+										<children>
+											<Label text="Current Status" styleClass="stat-label" />
+											<Label fx:id="currentStatusLabel" text="Waiting"
+												styleClass="stat-value" />
+										</children>
+									</VBox>
+								</children>
+							</HBox>
+
+							<VBox layoutX="14.0" layoutY="200.0" prefHeight="430.0"
+								prefWidth="1070.0">
+								<children>
+									<HBox alignment="CENTER_LEFT" spacing="10">
+										<children>
+											<Label text="Scanned Folder:"
+												styleClass="section-header" />
+											<Label text="" styleClass="scanFolder-label" 
+												fx:id="scanFolderLabel"	/>
+											<Pane HBox.hgrow="ALWAYS" />
+											<TextField fx:id="searchField"
+												promptText="Cerca file..." styleClass="search-field"
+												prefWidth="250.0" />
+										</children>
+										<padding>
+											<Insets bottom="10.0" />
+										</padding>
+									</HBox>
+
+									<!-- ScrollPane con fx:id e classe di stile per la scrollbar -->
+									<ScrollPane fx:id="fileListScrollPane" fitToWidth="true"
+										styleClass="transparent-scroll-pane" VBox.vgrow="ALWAYS"> <!--
+										Rimosso 'purple-scrollbar' se usi CSS esterno -->
+										<content>
+											<VBox fx:id="fileCardsContainer" spacing="10"
+												styleClass="cards-container" />
+										</content>
+									</ScrollPane>
+								</children>
+							</VBox>
+
+						</children>
+						<padding>
+							<Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+						</padding>
+					</AnchorPane>
+
+
+					<!-- Logs panel -->
+					<AnchorPane fx:id="logsPane" prefHeight="643.0" prefWidth="1100.0"
+						styleClass="black-pane">
+						<children>
+							<TextArea fx:id="logsArea" editable="false" layoutX="14.0"
+								layoutY="14.0" prefHeight="615.0" prefWidth="1070.0"
+								styleClass="black-textarea" />
+						</children>
+					</AnchorPane>
+
+					<!-- Settings panel -->
+					<AnchorPane fx:id="settingsPane" prefHeight="643.0" prefWidth="1100.0"
+						styleClass="black-pane">
+						<children>
+							<!-- Contenitore principale per le due sezioni verticali -->
+							<VBox spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+							   <padding>
+								  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+							   </padding>
+							   <children>
+								  <!-- Sezione Impostazioni VPN -->
+								  <VBox spacing="10.0">
+									 <children>
+										<Label styleClass="section-header" text="VPN Settings" />
+										<!-- Contenuto futuro per le impostazioni VPN -->
+										<Label styleClass="status-text" text="(Nothing for now)" />
+										 <!-- Aggiungi qui altri controlli per la VPN quando necessario -->
+									 </children>
+								  </VBox>
+					  
+								  <!-- Separatore visivo tra le sezioni -->
+								  <Separator prefWidth="200.0" />
+					  
+								  <!-- Sezione Impostazioni Antivirus -->
+								  <VBox spacing="15.0">
+									 <children>
+										<Label styleClass="section-header" text="Antivirus Settings" />
+					  
+										<!-- Impostazione Cartella di Scansione -->
+										<HBox alignment="CENTER_LEFT" spacing="10.0">
+										   <children>
+											  <Label styleClass="stat-label" text="Targhet Folder:" />
+											  <TextField fx:id="scanFolderTextField" HBox.hgrow="ALWAYS" styleClass="search-field" />
+											  <Button fx:id="browseButton" mnemonicParsing="false" styleClass="action-button" text="Find..." />
+										   </children>
+										</HBox>
+										<!-- Aggiungi qui altri controlli per l'antivirus quando necessario -->
+									 </children>
+								  </VBox>
+
+								  <Button fx:id="saveSettingsButton" mnemonicParsing="false" styleClass="action-button" text="Save" />
+							   </children>
+							</VBox>
+						 </children>
+					</AnchorPane>
+
+					<!-- Home panel -->
+					<AnchorPane fx:id="homePane" prefHeight="643.0" prefWidth="1100.0"
+						styleClass="black-pane">
+						<children>
+							<!-- Peers list container -->
+							<VBox styleClass="peers-container" prefWidth="300.0"
+								AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0"
+								AnchorPane.bottomAnchor="0.0">
+								<HBox alignment="CENTER_RIGHT" spacing="10"
+									styleClass="peer-container-header">
+									<Button fx:id="uploadPeerButton" text="+"
+										onAction="#handleFileSelection" styleClass="upload-button" />
+								</HBox>
+
+								<!-- Peer cards will be added here dynamically -->
+								<ScrollPane fitToWidth="true" styleClass="scroll-pane"
+									VBox.vgrow="ALWAYS">
+									<content>
+										<VBox fx:id="peerCardsContainer" spacing="10" />
+									</content>
+								</ScrollPane>
+							</VBox>
+
+							<!-- Connection status container -->
+							<VBox styleClass="connection-container" prefWidth="740.0"
+								prefHeight="130.0" AnchorPane.leftAnchor="320.0"
+								AnchorPane.topAnchor="0.0">
+
+								<!-- Top row: Interface, Status and VPN button -->
+								<HBox styleClass="connection-container" prefWidth="740.0"
+									spacing="20">
+									<padding>
+										<Insets top="10" bottom="10" left="20" right="20" />
+									</padding>
+									<VBox spacing="10">
+										<Label fx:id="connInterfaceLabel" text=""
+											styleClass="connectionInfo-text" />
+										<HBox spacing="5">
+											<Label text="Status: " styleClass="connectionInfo-text" />
+											<Label fx:id="connStatusLabel" text=""
+												styleClass="connectionInfo-text" />
+										</HBox>
+									</VBox>
+									<Region HBox.hgrow="ALWAYS" />
+									<Button fx:id="vpnButton" onAction="#changeVPNState"
+										text="Start VPN" styleClass="primary-button" />
+								</HBox>
+
+								<!-- Bottom row: Traffic and Handshake info -->
+								<HBox spacing="0">
+									<padding>
+										<Insets left="20" right="20" bottom="10" />
+									</padding>
+									<HBox alignment="CENTER" spacing="5">
+										<Label text="Tx: " styleClass="connectionInfo-text" />
+										<Label fx:id="sentTrafficLable" text="" minWidth="110"
+											styleClass="connectionInfo-text" />
+									</HBox>
+									<HBox alignment="CENTER" spacing="5">
+										<Label text="Rx: " styleClass="connectionInfo-text" />
+										<Label fx:id="receivedTrafficLabel" text="" minWidth="110"
+											styleClass="connectionInfo-text" />
+									</HBox>
+									<HBox>
+										<Label text="Handshake time: "
+											styleClass="connectionInfo-text" />
+										<Label fx:id="lastHandshakeTimeLabel" text=""
+											styleClass="connectionInfo-text" />
+									</HBox>
+								</HBox>
+							</VBox>
+						</children>
+					</AnchorPane>
+
+
+				</children>
+			</Pane>
+		</children>
+	</AnchorPane>
 </StackPane>

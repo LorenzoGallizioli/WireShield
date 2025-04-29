@@ -30,10 +30,10 @@ public class WireguardManager {
 	private String logs;
 	private Process WFPprocess;
 
-	Thread UpdateWireguardLogsThread;
-	Thread UpdateWireguardLogsThreadHook = new Thread(() -> {
-		UpdateWireguardLogsThread.interrupt();
-	});
+	private Thread setUpWFPRulesThread;
+	private Thread updateWireguardLogsThread;
+	private Thread startUpdateConnectionStatsThread;
+
 
 	/**
 	 * Private constructor for the WireguardManager class. Initializes paths and
@@ -61,8 +61,6 @@ public class WireguardManager {
 		} else {
 			throw new IllegalStateException("Il costruttore di PeerManager ha restituito un oggetto null");
 		}
-		
-		this.startUpdateWireguardLogs(); // Start log update thread
 	}
 
 	/**
@@ -89,14 +87,15 @@ public class WireguardManager {
 	 */
 	public void setInterfaceUp(String configFileName) {
 		String activeInterface = connection.getActiveInterface();
+
 		if (activeInterface != null) {
 			logger.warn("WireGuard interface is already up.");
 		}
 
 		String peerNameWithoutExtension = configFileName.contains(".") ? configFileName.substring(0, configFileName.lastIndexOf(".")) : configFileName;
-		setUpWFPRules(WFPManager.makeCommand(WFPManager.getAllCIDR_permit(defaultPeerPath, peerNameWithoutExtension)));
+		this.setUpWFPRules(WFPManager.makeCommand(WFPManager.getAllCIDR_permit(this.defaultPeerPath, peerNameWithoutExtension)));
 		
-		connection.setUp(configFileName); // Set the connection with the given config file name
+		this.connection.setUp(configFileName); // Set the connection with the given config file name
 	}
 
 	/**
@@ -105,16 +104,16 @@ public class WireguardManager {
 	 * @return True if the interface was stopped successfully, false otherwise.
 	 */
 	public void setInterfaceDown() {
-		String interfaceName = connection.getActiveInterface();
+		String interfaceName = this.connection.getActiveInterface();
 
 		if (interfaceName == null) {
 			logger.info("No active WireGuard interface.");
 			return;
 		}
 		
-		setDownWFPRules();
+		this.setDownWFPRules();
 
-		connection.setDown(interfaceName);
+		this.connection.setDown(interfaceName);
 	}
 
 	/**
@@ -152,28 +151,29 @@ public class WireguardManager {
 	 * iteration.
 	 */
 	public void startUpdateConnectionStats() {
-		Thread thread = new Thread(() -> {
-			while (connection.getStatus() == connectionStates.CONNECTED && !Thread.currentThread().isInterrupted()) { // Check interface is up
+		this.startUpdateConnectionStatsThread = new Thread(() -> {
+			while (this.connection.getStatus() == connectionStates.CONNECTED && !Thread.currentThread().isInterrupted()) { // Check interface is up
 				try {
 					
 					// Update connection stats
-					updateConnectionStats();
+					this.updateConnectionStats();
 					Thread.sleep(350); // wait
 					
 				} catch (InterruptedException e) {
-					logger.error("Log updater unexpecly interrupted - Stopping Thread...");
 					Thread.currentThread().interrupt();	
 				}
 			}
-			logger.info("updateConnectionStats() thread stopped.");
 			
-			connection.setLastHandshakeTime(0);
-			connection.setReceivedTraffic(0);
-			connection.setSentTraffic(0);
+			this.connection.setLastHandshakeTime(0);
+			this.connection.setReceivedTraffic(0);
+			this.connection.setSentTraffic(0);
+
+			logger.info("Thread stopped - [startUpdateConnectionStats()] query connection stats thread terminated.");
+
 		});
 
-		thread.setDaemon(true);
-		thread.start();
+		this.startUpdateConnectionStatsThread.setDaemon(true);
+		this.startUpdateConnectionStatsThread.start();
 	}
 	
 	/**
@@ -185,7 +185,7 @@ public class WireguardManager {
 	 * @throws IOException if an I/O error occurs while reading or creating the log file
 	 */
 	private void updateWireguardLogs(String[] command) throws InterruptedException, IOException {
-		File logFile = new File(logDumpPath);
+		File logFile = new File(this.logDumpPath);
 	    if (logFile.exists() && logFile.isFile()) {
 	        
 			//logger.debug(command[0] + " " + command[1] + " " + command[2]);
@@ -195,15 +195,15 @@ public class WireguardManager {
 		    Process process = processBuilder.start();
 			process.waitFor();
 	        	
-	        String logDump = FileManager.readFile(logDumpPath);
+	        String logDump = FileManager.readFile(this.logDumpPath);
 	        this.logs = logDump;
 
 	    } else {
-	        logger.error(logDumpPath + " not exits - Creating... ");
-	        if(FileManager.createFile(logDumpPath)) {
-	        	logger.info(logDumpPath + " created.");
+	        logger.error(this.logDumpPath + " not exits - Creating... ");
+	        if(FileManager.createFile(this.logDumpPath)) {
+	        	logger.info(this.logDumpPath + " created.");
 	        } else {
-	        	logger.error("Error occured during " + logDumpPath + " creation.");	        		
+	        	logger.error("Error occured during " + this.logDumpPath + " creation.");	        		
 	        }
 	    }    
 	}
@@ -217,32 +217,41 @@ public class WireguardManager {
 	 */
 	public void startUpdateWireguardLogs() {
 
-		String[] command = {"cmd.exe", "/c", wireguardPath + " /dumplog > " + logDumpPath};
+		String[] command = {"cmd.exe", "/c", this.wireguardPath + " /dumplog > " + this.logDumpPath};
 
-		UpdateWireguardLogsThread = new Thread(() -> {
-			while (!Thread.currentThread().isInterrupted() || connection.getStatus() == connectionStates.CONNECTED) {
+		this.updateWireguardLogsThread = new Thread(() -> {
+
+			while (!Thread.currentThread().isInterrupted()) {
 				
 				try {
 					
-					updateWireguardLogs(command);
+					this.updateWireguardLogs(command);
 					Thread.sleep(500);
 					
 				} catch (InterruptedException e) {
-					logger.info("Log updater interrupted (InterruptedException) - Stopping Thread...");
 					Thread.currentThread().interrupt();	
 					
 				} catch (IOException e) {
-					logger.error("Log updater unexpecly interrupted (IOException) - Stopping Thread...");
 					Thread.currentThread().interrupt();	
 				}
 			}
+			logger.info("Thread stopped - [startUpdateWireguardLogs()] retrive wireguard logs thread terminated.");
 		});
 
-		Runtime.getRuntime().addShutdownHook(UpdateWireguardLogsThreadHook);
-
 		// Set the thread as not a Deamon to ensure log file remains in a consistent state
-		UpdateWireguardLogsThread.setDaemon(false);
-		UpdateWireguardLogsThread.start();
+		this.updateWireguardLogsThread.setDaemon(false);
+		this.updateWireguardLogsThread.start();
+	}
+
+	public void stopUpdateWireguardLogs(){
+		if (this.updateWireguardLogsThread != null && this.updateWireguardLogsThread.isAlive()) {
+			this.updateWireguardLogsThread.interrupt();
+			try {
+				this.updateWireguardLogsThread.join();
+			} catch (InterruptedException e) {
+				logger.error("Error stopping updateWireguardLogs thread: {}", e.getMessage());
+			}
+		}
 	}
 
 	/**
@@ -254,15 +263,15 @@ public class WireguardManager {
  	 */
 	public void setUpWFPRules(String command) {
 
-		Thread thread = new Thread(() -> {
+		this.setUpWFPRulesThread = new Thread(() -> {
 			try {
 				// Start process
-				WFPprocess = new ProcessBuilder(command.split(" ")).start();
+				this.WFPprocess = new ProcessBuilder(command.split(" ")).start();
 				System.out.println("WFP custom rules applied: " + command);
 	
 				while (!Thread.currentThread().isInterrupted()) {
 					// Check if process is still running
-					WFPprocess.waitFor();
+					this.WFPprocess.waitFor();
 
 					if (!WFPprocess.isAlive()) {
 						System.out.println("WFP process terminated");
@@ -274,17 +283,15 @@ public class WireguardManager {
 				System.out.println("WFP custom rules removed");
 					
 			} catch (InterruptedException e) {
-				logger.error("WFPprocess unexpecly interrupted (InterruptedException) - Stopping Thread...");
 				Thread.currentThread().interrupt();	
 			} catch (IOException e) {
-				logger.error("WFPprocess unexpecly interrupted (IOException) - Stopping Thread...");
 				Thread.currentThread().interrupt();	
 			}
-			logger.info("setUpWFPRules() thread and service interrupted.");
+			logger.info("Thread stopped - [setUpWFPRules()] WFP rules thread interrupted.");
 		});
 		
-		thread.setDaemon(true);
-		thread.start();
+		this.setUpWFPRulesThread.setDaemon(true);
+		this.setUpWFPRulesThread.start();
 	}
 
 	
@@ -293,8 +300,8 @@ public class WireguardManager {
  	 * This method is called when the connection is closed or the process has finished.
  	 */
 	public void setDownWFPRules() {
-        if (WFPprocess != null && WFPprocess.isAlive()) {
-            WFPprocess.destroy(); 
+        if (this.WFPprocess != null && this.WFPprocess.isAlive()) {
+            this.WFPprocess.destroy(); 
         }
     }
 	
@@ -304,10 +311,10 @@ public class WireguardManager {
 	 * @return A string containing the connection logs.
 	 */
     public String getConnectionLogs(){
-        connection.updateActiveInterface();
-        connection.updateTraffic();
-        connection.updateLastHandshakeTime();
-        return connection.toString();
+        this.connection.updateActiveInterface();
+        this.connection.updateTraffic();
+        this.connection.updateLastHandshakeTime();
+        return this.connection.toString();
     }
 
 	/**
@@ -316,7 +323,7 @@ public class WireguardManager {
 	 * @return The current connection status.
 	 */
 	public connectionStates getConnectionStatus() {
-		return connection.getStatus();
+		return this.connection.getStatus();
 	}
 
 	/**
@@ -343,9 +350,34 @@ public class WireguardManager {
 	 * @return The WireGuard logs.
 	 */
 	public String getLog() {
+
+		if (this.logs == null) return "Waiting for VPN connection...";
+
     	String[] lines = this.logs.split("\n");
     	Collections.reverse(Arrays.asList(lines));
     	this.logs = String.join("\n", lines);
 		return this.logs;
+	}
+
+
+	/**
+	 * Interrupts all threads associated with the `clamdServiceStart` and `clamdServiceStop` services, if they are active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+		if(this.setUpWFPRulesThread != null && this.setUpWFPRulesThread.isAlive()){
+			this.setUpWFPRulesThread.interrupt();
+			this.setUpWFPRulesThread.join();
+		}
+		if(this.updateWireguardLogsThread != null && this.updateWireguardLogsThread.isAlive()){
+			this.updateWireguardLogsThread.interrupt();
+			this.updateWireguardLogsThread.join();
+		}
+		if(this.startUpdateConnectionStatsThread != null && this.startUpdateConnectionStatsThread.isAlive()){
+			this.startUpdateConnectionStatsThread.interrupt();
+			this.startUpdateConnectionStatsThread.join();
+		}
+
+		while(this.WFPprocess != null && this.WFPprocess.isAlive()){}
 	}
 }

@@ -4,15 +4,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.wireshield.enums.runningStates;
 import com.wireshield.enums.warningClass;
+import com.wireshield.windows.ServicesUtils;
 
 /**
  * Implements antivirus scanning functionality using ClamAV. This class uses the
@@ -23,52 +21,39 @@ import com.wireshield.enums.warningClass;
  */
 public class ClamAV implements AVInterface {
 
-    // Logger for logging ClamAV-related information and errors.
-    private static final Logger logger = LogManager.getLogger(ClamAV.class);
+	// Logger for logging ClamAV-related information and errors.
+	private static final Logger logger = LogManager.getLogger(ClamAV.class);
 
-    // Singleton instance of ClamAV.
-    private static ClamAV instance;
-    // Scan report generated after the most recent file analysis.
-    private ScanReport clamavReport;
+	private static ClamAV instance;
+	private ScanReport clamavReport;
+	private runningStates clamdState = runningStates.DOWN; // State of ClamAV service
 
-    // Manager for handling file operations
-    private AntivirusManager antivirusManager;
+	Thread clamdServiceStartThread;
+	Thread clamdServiceStopThread;
 
-    /**
-     * Private constructor to enforce Singleton pattern. Initializes ClamAV and
-     * logs the creation of the instance.
-     */
-    private ClamAV() {
-        this.clamavReport = null; // Initialize the scan report as null
-        this.antivirusManager = AntivirusManager.getInstance(); // Get instance of AntivirusManager
-        logger.info("ClamAV initialized.");
-    }
+	/**
+	 * Private constructor to enforce Singleton pattern. Initializes ClamAV and logs
+	 * the creation of the instance.
+	 */
+	private ClamAV() {
+		this.clamavReport = null; // Initialize the scan report as null
+		logger.info("ClamAV initialized.");
+	}
 
-    /**
-     * Retrieves the Singleton instance of ClamAV. Ensures that only one
-     * instance of this class is created and used throughout the application.
-     *
-     * @return The single instance of ClamAV.
-     */
-    public static synchronized ClamAV getInstance() {
-        if (instance == null) {
-            instance = new ClamAV();
-        }
-        return instance;
-    }
+	/**
+	 * Retrieves the Singleton instance of ClamAV. Ensures that only one instance of
+	 * this class is created and used throughout the application.
+	 * 
+	 * @return The single instance of ClamAV.
+	 */
+	public static synchronized ClamAV getInstance() {
+		if (instance == null) {
+			instance = new ClamAV();
+		}
+		return instance;
+	}
 
-    /**
-     * Analyzes a file for potential threats using ClamAV. This method interacts
-     * with the ClamAV command-line tool (`clamscan.exe`) to scan the specified
-     * file. The scan results are processed and stored in a scan report, which
-     * includes information about whether the file contains threats or
-     * suspicious activity.
-     *
-     * @param file The file to be analyzed. It must not be null and must exist
-     *             on the filesystem. If the file is invalid, the method will create
-     *             an appropriate error report.
-     */
-    public void analyze(File file) {
+	public void analyze(File file) {
         // Check if the file is null or does not exist
         if (file == null || !file.exists()) {
             clamavReport = new ScanReport(); // Initialize an error scan report
@@ -88,16 +73,16 @@ public class ClamAV implements AVInterface {
         }
 
         try {
-            // Define the path to the ClamAV executable
-            String clamavPath = "C:\\Program Files\\ClamAV\\clamscan.exe";
-            logger.info("ClamAV path: {}", clamavPath); // Log the path for debugging purposes
+            String clamavPath = FileManager.getConfigValue("CLAMAV_STD_PATH");
+			File folder = new File(clamavPath);
+			if (folder.exists() && folder.isDirectory()) {
+				clamavPath += File.separator + "clamdscan.exe";
+			} else {
+				logger.error("ClamAV path is not a directory: {}", clamavPath);
+				return;
+			}
 
-            File clamavExecutable = new File(clamavPath);
-            if (!clamavExecutable.exists()) {
-                throw new IOException("ClamAV executable not found at: " + clamavPath);
-            }
-
-            // Create a ProcessBuilder to execute the ClamAV scan
+			logger.info("cmd: {}", clamavPath + " " + file.getAbsolutePath());
             ProcessBuilder processBuilder = new ProcessBuilder(clamavPath, file.getAbsolutePath());
             processBuilder.redirectErrorStream(true); // Redirect error stream to standard output
             Process process = processBuilder.start(); // Start the ClamAV process
@@ -137,45 +122,19 @@ public class ClamAV implements AVInterface {
             clamavReport.setValid(true); // Mark the report as valid
             clamavReport.setThreatDetected(threatDetected || suspiciousDetected); // Set the detection flag
 
-            // Process the file based on the scan results
-            if (threatDetected || suspiciousDetected) {
-                // Update file status in quarantine metadata
-                antivirusManager.updateQuarantineStatus(file, true, threatDetails);
-
-                // Block file execution for infected files
-                FileManager.blockFileExecution(file);
-
-                // Set appropriate warning class and details
-                if (threatDetected) {
-                    clamavReport.setThreatDetails(threatDetails); // Add threat details
-                    clamavReport.setWarningClass(warningClass.DANGEROUS); // Classify the file as dangerous
-                    logger.warn("Threat found, marking as dangerous and keeping in quarantine."); // Log the classification
-                } else {
-                    clamavReport.setThreatDetails("Suspicious activity detected"); // Add suspicious details
-                    clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Classify the file as suspicious
-                    logger.warn("Suspicious activity detected, marking as suspicious and keeping in quarantine."); // Log the classification
-                }
-                // Now, interact with the user to decide what to do
-                postScanActions(file);
-
-            } else {
-
-                // File is clean, restore it from quarantine
-                File restoredFile = antivirusManager.restoreFromQuarantine(file);
-
-                if (restoredFile != null) {
-                    logger.info("Clean file restored from quarantine: {}", restoredFile.getAbsolutePath());
-
-                    // Update the report to reference the restored file
-                    clamavReport.setFile(restoredFile);
-                    clamavReport.setThreatDetails("No threat detected"); // Indicate no threats
-                    clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
-                } else {
-                    logger.error("Failed to restore clean file from quarantine: {}", file.getAbsolutePath());
-                    clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicate no threats but restoration failed
-                    clamavReport.setWarningClass(warningClass.CLEAR); // Mark the file as clear
-                }
-            }
+            if (threatDetected) {
+				this.clamavReport.setThreatDetails(threatDetails);
+				this.clamavReport.setWarningClass(warningClass.DANGEROUS);
+				logger.warn("Threat found, marking as dangerous.");
+			} else if (suspiciousDetected) {
+				this.clamavReport.setThreatDetails("Suspicious activity detected");
+				this.clamavReport.setWarningClass(warningClass.SUSPICIOUS);
+				logger.warn("Suspicious activity detected, marking as suspicious.");
+			} else {
+				this.clamavReport.setThreatDetails("No threat detected");
+				this.clamavReport.setWarningClass(warningClass.CLEAR);
+				logger.info("No threat detected.");
+			}
 
             reader.close(); // Close the reader after processing output
             int exitCode = process.waitFor();
@@ -200,153 +159,231 @@ public class ClamAV implements AVInterface {
             logger.error("Scan interrupted: {}", e.getMessage(), e);
         }
     }
+					
 
-    /**
-     * Asks the user what to do with the file after the scan.
-     * If the file was found to be infected or suspicious, asks the user to delete
-     * the file or restore it
-     * from quarantine.
-     * If the user chooses to delete the file, deletes the associated metadata file
-     * as well.
-     * If the user chooses to restore the file, restores the file from quarantine
-     * and updates the report
-     * to reference the restored file.
-     * If the user enters an invalid input, the file remains in quarantine.
-     * 
-     * @param file the file to process
-     */
-    public void postScanActions(File file) {
-        // Only if the file was found to be infected or suspicious
-        if (clamavReport.getWarningClass() == warningClass.DANGEROUS
-                || clamavReport.getWarningClass() == warningClass.SUSPICIOUS) {
+	/**
+	 * Starts the "clamd" service in a daemon thread if it exists.
+	 * If the service is found, attempts to start it and logs the result.
+	 */
+	public void startClamdService() {
 
-            // Don't close the scanner inside the method
-            Scanner scanner = new Scanner(System.in); // Keep the scanner open
-            try {
-                // Ask the user what to do with the file
-                System.out.println("The file " + file.getAbsolutePath() + " was found to be infected or suspicious.");
-                System.out.println("1. Delete the file");
-                System.out.println("2. Restore the file");
+		Runnable clamdServiceTask = () -> {
+			String serviceName = "clamd";
+			Boolean closeflag = false;
 
-                String userChoice = scanner.nextLine().trim(); // Read the user's choice
+			try {
 
-                if ("1".equals(userChoice)) {
-                    // The user chose to delete the file
-                    boolean fileDeleted = false;
+				if (ServicesUtils.serviceExists(serviceName)) {
 
-                    // Check if the file was renamed with the .blocked extension
-                    String blockedFilePath = file.getAbsolutePath() + ".blocked";
-                    File blockedFile = new File(blockedFilePath);
+					if (ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already running.");
+						this.clamdState = runningStates.UP;
+						return;
+					}
 
-                    // If the renamed file exists, try to delete it
-                    if (blockedFile.exists()) {
-                        if (blockedFile.delete()) {
-                            logger.info("Infected file deleted: {}", blockedFile.getAbsolutePath());
-                            fileDeleted = true;
-                        } else {
-                            logger.error("Error deleting the infected file: {}", blockedFile.getAbsolutePath());
-                        }
-                    } else {
-                        // If the renamed file doesn't exist, delete the original file
-                        if (file.delete()) {
-                            logger.info("File deleted: {}", file.getAbsolutePath());
-                            fileDeleted = true;
-                        } else {
-                            logger.error("Error deleting the file: {}", file.getAbsolutePath());
-                        }
-                    }
+					if (ServicesUtils.startService(serviceName)) {
 
-                    // Delete the associated metadata file as well
-                    if (fileDeleted) {
-                        // Determine the path of the metadata file
-                        Path metadataPath = Paths.get(file.getAbsolutePath() + ".meta");
-                        try {
-                            if (Files.deleteIfExists(metadataPath)) {
-                                logger.info("Metadata file deleted: {}", metadataPath);
-                                clamavReport.setThreatDetails("File and metadata deleted by user.");
-                            } else {
-                                logger.warn("Metadata file not found: {}", metadataPath);
-                                clamavReport.setThreatDetails("File deleted by user. Metadata not found.");
-                            }
-                        } catch (IOException e) {
-                            logger.error("Error deleting the metadata file: {}", metadataPath, e);
-                            clamavReport.setThreatDetails("File deleted, but error deleting metadata.");
-                        }
-                        clamavReport.setWarningClass(warningClass.CLEAR);
-                    } else {
-                        clamavReport.setThreatDetails("Error deleting the file.");
-                        clamavReport.setWarningClass(warningClass.CLEAR);
-                    }
-                }
+						while (ServicesUtils.isServiceStarting(serviceName)
+								&& !Thread.currentThread().isInterrupted()) {
+							logger.info("Service " + serviceName + " is starting... " + closeflag);
+							try {
+								Thread.sleep(200);
+							} catch (InterruptedException e) {
+								closeflag = true;
+								Thread.currentThread().interrupt();
+							}
+						}
 
-                else if ("2".equals(userChoice)) {
-                    // The user chose to restore the file
-                    File blockedFile = new File(file.getAbsolutePath() + ".blocked"); // Check if the file was renamed
+						if (closeflag) {
+							Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+								ServicesUtils.stopService(serviceName);
+							}));
+							closeflag = false;
+						}
 
-                    // If the renamed file exists, unblock it and restore it from quarantine
-                    if (blockedFile.exists()) {
-                        // Remove the .blocked extension to get the original file name
-                        File unblockedFile = FileManager.unblockFileExecution(blockedFile); // Function that removes the .blocked extension
+						this.clamdState = runningStates.UP;
+						logger.info("Service " + serviceName + " started successfully.");
 
-                        if (unblockedFile != null) {
-                            // Once the file is unblocked, restore it from quarantine
-                            File restoredFile = antivirusManager.restoreFromQuarantine(unblockedFile);
+					} else {
+						logger.info("Failed to start service " + serviceName);
+					}
 
-                            if (restoredFile != null) {
-                                logger.info("Infected file restored from quarantine: {}",
-                                        restoredFile.getAbsolutePath());
+				} else {
+					logger.info("Service " + serviceName + " not found.");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 
-                                // Update the report to reference the restored file
-                                clamavReport.setFile(restoredFile);
-                                clamavReport.setThreatDetails("No threat detected after restore"); // Indicates that no threats were found after restore
-                                clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
-                            } else {
-                                logger.error("Failed to restore infected file from quarantine: {}",
-                                        unblockedFile.getAbsolutePath());
-                                clamavReport.setThreatDetails("Infected file restoration failed"); // Indicates that the restore failed
-                                clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
-                            }
-                        } else {
-                            logger.error("Failed to unblock infected file: {}", blockedFile.getAbsolutePath());
-                            clamavReport.setThreatDetails("Failed to unblock infected file"); // Indicates that the file was not unblocked
-                            clamavReport.setWarningClass(warningClass.DANGEROUS); // Keeps the warning class
-                        }
-                    } else {
-                        // If the file was not renamed or not found, restore the original file
-                        File restoredFile = antivirusManager.restoreFromQuarantine(file);
+			}
 
-                        if (restoredFile != null) {
-                            logger.info("Clean file restored from quarantine: {}", restoredFile.getAbsolutePath());
+			logger.info("Thread stopped - [startClamdService()] starting clamd service thread terminated.");
+		};
 
-                            // Update the report to reference the restored file
-                            clamavReport.setFile(restoredFile);
-                            clamavReport.setThreatDetails("No threat detected"); // Indicates that no threats were found
-                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
-                        } else {
-                            logger.error("Failed to restore clean file from quarantine: {}", file.getAbsolutePath());
-                            clamavReport.setThreatDetails("No threat detected but restoration failed"); // Indicates that no threats were found, but the restore failed
-                            clamavReport.setWarningClass(warningClass.CLEAR); // Marks the file as clear
-                        }
-                    }
+		this.clamdServiceStartThread = new Thread(clamdServiceTask);
 
-                } else {
-                    // Invalid input, so the file remains in quarantine
-                    logger.warn("Invalid choice, file remains in quarantine.");
-                    clamavReport.setThreatDetails("Invalid choice, file remains in quarantine.");
-                    clamavReport.setWarningClass(warningClass.SUSPICIOUS); // Or DANGEROUS
-                }
-            } catch (Exception e) {
-                logger.error("Error reading user's choice.", e);
-            }
-        }
-    }
+		this.clamdServiceStartThread.setDaemon(false);
+		this.clamdServiceStartThread.start();
+	}
 
-    /**
-     * Retrieves the most recent scan report generated by ClamAV.
-     *
-     * @return The scan report, or null if no scan has been performed.
-     */
-    public ScanReport getReport() {
-        return clamavReport; // Return the most recent scan report
-    }
+	/**
+	 * Stops the "clamd" service in a daemon thread if it is currently running.
+	 * Checks for service existence and running state before attempting to stop it.
+	 */
+	public void stopClamdService() {
+
+		Runnable clamdServiceTask = () -> {
+			String serviceName = "clamd";
+
+			try {
+				if (ServicesUtils.serviceExists(serviceName)) {
+
+					// this method was been called simultaneously with the UI.stopAllThreads()
+					// method. The thread interruption was been generating an exeption in
+					// isServiceRunning() --> return false;.
+					// So, whitout the while loop in UI.closeWindow(), isServiceRunning() returned
+					// false even if the service was running.
+					// ServicesUtils.isServiceRunning(serviceName);
+
+					if (!ServicesUtils.isServiceRunning(serviceName)) {
+						logger.info("Service " + serviceName + " is already not running.");
+						this.clamdState = runningStates.DOWN;
+						return;
+					}
+
+					ServicesUtils.stopService(serviceName);
+
+					while (ServicesUtils.isServiceRunning(serviceName) && !Thread.currentThread().isInterrupted()) {
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException e) {
+							logger.error("Error while waiting for clamd service to start: {}", e.getMessage());
+							Thread.currentThread().interrupt();
+						}
+					}
+
+					this.clamdState = runningStates.DOWN;
+					logger.info("Service " + serviceName + " stopped successfully.");
+				} else {
+					logger.info("Service " + serviceName + " not found.");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			logger.info("Thread stopped - [stopClamdService()] stopping clamd service thread terminated.");
+		};
+
+		this.clamdServiceStopThread = new Thread(clamdServiceTask);
+
+		this.clamdServiceStopThread.setDaemon(false);
+		this.clamdServiceStopThread.start();
+	}
+
+	/**
+	 * Retrieves the most recent scan report generated by ClamAV.
+	 * 
+	 * @return The scan report, or null if no scan has been performed.
+	 */
+	public ScanReport getReport() {
+		return this.clamavReport; // Return the most recent scan report
+	}
+
+	/**
+	 * Retrieves the most recent clamd state.
+	 * 
+	 * @return runningState.
+	 */
+	public runningStates getClamdState() {
+		return this.clamdState;
+	}
+
+	/**
+	 * Interrupts all threads associated with the `clamdServiceStart` and
+	 * `clamdServiceStop` services, if they are active.
+	 * Checks if each thread is not null and is alive before attempting to interrupt
+	 * it.
+	 */
+	public void interruptAllThreads() throws InterruptedException {
+
+		/**
+		 * clamdServiceStopThread must stopped before clamdServiceStartThread
+		 * in the case of stopping during clamd startup, the fact that
+		 * thread.interrupt()
+		 * is called on clamdServiceStopThread at this time ensures that the thread will
+		 * not be interrupted if started by clamdServiceStartThread
+		 */
+		if (this.clamdServiceStopThread != null && this.clamdServiceStopThread.isAlive()) {
+			this.clamdServiceStopThread.interrupt();
+			this.clamdServiceStopThread.join();
+		}
+		if (this.clamdServiceStartThread != null && this.clamdServiceStartThread.isAlive()) {
+			this.clamdServiceStartThread.interrupt();
+			this.clamdServiceStartThread.join();
+		}
+	}
+
+	/**
+	 * Updates ClamAV virus definitions using freshclam in a separate thread.
+	 * 
+	 * This method starts a new thread that runs the freshclam command-line tool
+	 * to update the virus definitions. The method takes a callback that is called
+	 * when the update is completed.
+	 * 
+	 * @param onComplete
+	 *                   a callback to be called when the update is completed.
+	 */
+	public void updateFreshClam(Runnable onComplete) {
+		Thread freshclamThread = new Thread(() -> {
+			try {
+				// Retrieve the ClamAV path from the configuration file
+				String clamavPath = FileManager.getConfigValue("CLAMAV_STD_PATH");
+
+				// Check if the ClamAV path is valid
+				File folder = new File(clamavPath);
+				String freshclamPath;
+
+				if (folder.exists() && folder.isDirectory()) {
+					// Construct the freshclam command-line path
+					freshclamPath = clamavPath + File.separator + "freshclam.exe";
+				} else {
+					logger.error("ClamAV path is not valid: {}", clamavPath);
+					return;
+				}
+
+				// Start the freshclam command-line tool
+				logger.info("Running freshclam from path: {}", freshclamPath);
+				ProcessBuilder processBuilder = new ProcessBuilder(freshclamPath);
+				processBuilder.redirectErrorStream(true);
+				Process process = processBuilder.start();
+
+				// Wait for the process to complete and log its output
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						logger.info("[freshclam] {}", line);
+					}
+				}
+
+				// Wait for the process to complete and log its exit code
+				int exitCode = process.waitFor();
+				logger.info("freshclam exited with code: {}", exitCode);
+
+			} catch (IOException | InterruptedException e) {
+				// Handle any errors that occur during the update
+				logger.error("Error running freshclam: {}", e.getMessage(), e);
+				Thread.currentThread().interrupt();
+			} finally {
+				// Log a message when the update is complete
+				logger.info("Freshclam update completed.");
+				if (onComplete != null) {
+					// Call the callback when the update is complete
+					onComplete.run();
+				}
+			}
+		});
+
+		// Set the thread as a daemon thread so that it does not prevent the JVM from exiting
+		freshclamThread.setDaemon(true);
+		freshclamThread.start();
+	}
 }

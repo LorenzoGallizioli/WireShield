@@ -52,7 +52,8 @@ public class AntivirusManager {
 
     private AntivirusManager() {
         logger.info("AntivirusManager initialized.");
-        scannerStatus = runningStates.DOWN;
+        this.scannerStatus = runningStates.DOWN;
+        this.clamAV = ClamAV.getInstance();
     }
 
     /**
@@ -92,38 +93,45 @@ public class AntivirusManager {
      * already running, it logs a warning and exits.
      */
     public void startScan() {
-        if (scannerStatus == runningStates.UP) {
-            logger.warn("Scan process is already running.");
+        if (this.scannerStatus == runningStates.UP) {
+            logger.warn("Scan Thread is already running.");
             return;
         }
-        scannerStatus = runningStates.UP;
-        logger.info("Starting antivirus scan process...");
 
-        scanThread = new Thread(() -> {
+        this.scanThread = new Thread(() -> {
+            this.scannerStatus = runningStates.UP;
+
+            while (clamAV.getClamdState() == runningStates.DOWN && !Thread.currentThread().isInterrupted()) { // to be introduced a method to stop this thread if clamdservice fails startup
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            };
 
             performScan();
+            this.scannerStatus = runningStates.DOWN;
 
+            logger.info("Thread stopped - [startScan()] ScannerThread interrupted.");
         });
 
-        scanThread.setDaemon(true);
-        scanThread.start();
+        this.scanThread.setDaemon(false);
+        this.scanThread.start();
     }
 
     private void performScan() {
         while (!Thread.currentThread().isInterrupted()) {
             File fileToScan;
 
-            if (clamAV == null) {
+            if (this.clamAV == null) {
                 logger.error("ClamAV object not exists - Shutting down AV scanner");
                 Thread.currentThread().interrupt();
             }
 
-            // Retrieve the next file to scan from the buffer
-            synchronized (scanBuffer) {
+            synchronized (this.scanBuffer) {
                 fileToScan = scanBuffer.poll();
             }
 
-            // Wait for new files if the buffer is empty
             if (fileToScan == null) {
                 synchronized (this) {
                     try {
@@ -131,66 +139,205 @@ public class AntivirusManager {
                         wait();
 
                     } catch (InterruptedException e) {
-                        // error occurred - Shut down service
                         Thread.currentThread().interrupt();
                     }
                 }
                 continue;
             }
 
-            // Create a new scan report for the file
-            ScanReport finalReport = new ScanReport();
-            finalReport.setFile(fileToScan);
+            //ScanReport finalReport = new ScanReport();
+            //finalReport.setFile(fileToScan);
 
-            // Analyze the file using ClamAV
             clamAV.analyze(fileToScan);
             ScanReport clamAVReport = clamAV.getReport();
 
-            if (clamAVReport != null)
+            if (clamAVReport.getWarningClass() == warningClass.SUSPICIOUS || clamAVReport.getWarningClass() == warningClass.DANGEROUS) {
+
+                this.updateQuarantineStatus(clamAVReport.getFile(), true, clamAVReport.getThreatDetails());
+                clamAVReport.setFile(FileManager.blockFileExecution(clamAVReport.getFile()));
+                logger.info("file blocked: {}", clamAVReport.getFile().getAbsolutePath());
+
+            } else {
+                this.restoreFromQuarantine(clamAVReport.getFile());
+            }
+
+            /*
+            if (clamAVReport != null) {
                 mergeReports(finalReport, clamAVReport);
+            }
 
-            // Add the final report to the results list
-            finalReports.add(finalReport);
+            logger.info("file blocked in finalreport: {}", finalReport.getFile().getAbsolutePath());
+            */
+            finalReports.add(clamAVReport);
 
-            // If the file is dangerous or suspicious, take action
-            if (finalReport.getWarningClass() == warningClass.DANGEROUS
-                    || finalReport.getWarningClass() == warningClass.SUSPICIOUS) {
+            if (clamAVReport.getWarningClass() == warningClass.DANGEROUS || clamAVReport.getWarningClass() == warningClass.SUSPICIOUS) {
                 logger.warn("Threat detected in file: {}", fileToScan.getName());
 
-                JOptionPane.showMessageDialog(null, "Threat detected in file: " + fileToScan.getName(),
-                        "Threat Detected", JOptionPane.WARNING_MESSAGE); // Show warning dialog
+                JOptionPane.showMessageDialog(null, "Threat detected in file: " + fileToScan.getName(), "Threat Detected", JOptionPane.WARNING_MESSAGE); // Show warning dialog
                 filesToRemove.add(fileToScan);
             }
         }
-        scannerStatus = runningStates.DOWN;
     }
 
     /*
      * Stops the ongoing antivirus scan process gracefully.
      */
     public void stopScan() {
-        if (scannerStatus == runningStates.DOWN) {
+        if (this.scannerStatus == runningStates.DOWN) {
             logger.warn("No scan process is running.");
             return;
         }
 
-        if (scanThread != null && scanThread.isAlive()) {
+        if (this.scanThread != null && this.scanThread.isAlive()) {
             scanThread.interrupt();
 
             try {
-                scanThread.join(); // Wait for the thread to terminate
+                scanThread.join();
             } catch (InterruptedException e) {
             }
         }
     }
 
     /**
-     * Sets the ClamAV engine for file analysis.
+     * Deletes the specified file from the quarantine directory. If the file is
+     * not found in quarantine, it attempts to delete the original file.
      *
-     * @param clamAV the ClamAV instance.
+     * @param report The scan report containing the file to be deleted.
+     * @return true if the file was successfully deleted, false otherwise.
+     */
+    public boolean deleteFileFromQuarantine(ScanReport report) {
+
+        File file = report.getFile();
+        boolean fileDeleted = false;
+
+        //String blockedFilePath = file.getAbsolutePath() + ".blocked";
+        File blockedFile = new File(file.getAbsolutePath());
+        File blockedFileMeta = new File(file.getAbsolutePath().replace(".blocked", ".meta"));
+
+        if (blockedFile.exists()) {
+
+            if (blockedFile.delete()) {
+                logger.info("Infected file deleted: {}", blockedFile.getAbsolutePath());
+                
+                if(blockedFileMeta.exists()) {
+                    blockedFileMeta.delete();
+                }
+
+                for (ScanReport r : finalReports) {
+                    if (report.getId() == r.getId()) {
+                        finalReports.remove(r); // Remove the report from the list
+                        break;
+                    }
+                }
+
+                fileDeleted = true;
+
+            } else {
+                logger.error("Error deleting the infected file: {}", blockedFile.getAbsolutePath());
+            }
+
+        } else {
+
+            if (file.delete()) {
+                logger.info("File deleted: {}", file.getAbsolutePath());
+
+                if(blockedFileMeta.exists()) {
+                    blockedFileMeta.delete();
+                }
+
+                for (ScanReport r : finalReports) {
+                    if (report.getId() == r.getId()) {
+                        finalReports.remove(r); // Remove the report from the list
+                        break;
+                    }
+                }
+
+                fileDeleted = true;
+            } else {
+                logger.error("Error deleting the file: {}", file.getAbsolutePath());
+            }
+        }
+
+        return fileDeleted;
+    }
+
+    /**
+     * Restores a file from quarantine. If the file is blocked, it first
+     * unblocks it and then restores it to its original location.
+     *
+     * @param report The scan report containing the file to be restored.
+     * @return true if the file was successfully restored, false otherwise.
+     */
+    public boolean restoreFileFromQuarantine(ScanReport report) {
+
+        File file = report.getFile();
+        //File blockedFile = new File(file.getAbsolutePath() + ".blocked");
+        File blockedFile = new File(file.getAbsolutePath());
+
+        if (blockedFile.exists()) {
+            File unblockedFile = FileManager.unblockFileExecution(blockedFile);
+            logger.debug("unblocked file path: {}", unblockedFile.getAbsolutePath());
+
+            if (unblockedFile != null) {
+                File restoredFile = restoreFromQuarantine(unblockedFile);
+
+                if (restoredFile != null) {
+                    logger.info("Infected file restored from quarantine: {}",
+                            restoredFile.getAbsolutePath());
+
+                    report.setFile(restoredFile);
+                    report.setThreatDetails("RESTORED: user choice");
+                    report.setWarningClass(warningClass.CLEAR);
+
+                    // Replace the old report with the new one in the finalReports list
+                    for (ScanReport r : finalReports) {
+                        if (report.getId() == r.getId()) {
+                            finalReports.remove(r);
+                            finalReports.add(report);
+                        }
+                    }
+
+                    return true;
+
+                } else {
+                    logger.error("Failed to restore infected file from quarantine: {}", unblockedFile.getAbsolutePath());
+                    report.setThreatDetails("Infected file restoration failed");
+                    return false;
+
+                }
+            } else {
+                logger.error("Failed to unblock infected file: {}", blockedFile.getAbsolutePath());
+                report.setThreatDetails("Failed to unblock infected file");
+                report.setWarningClass(warningClass.DANGEROUS);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * for test use only
      */
     public void setClamAV(ClamAV clamAV) {
         this.clamAV = clamAV;
+    }
+
+    /**
+     * return the ClamAV object.
+     *
+     * @return the ClamAV object.
+     */
+    public ClamAV getClamAV() {
+        return this.clamAV;
+    }
+
+    /**
+     * Retrieves the current status of the ClamAV service.
+     *
+     * @return the clamd service status.
+     */
+    public runningStates getClamdStatus() {
+        return clamAV.getClamdState();
     }
 
     /**
@@ -199,7 +346,7 @@ public class AntivirusManager {
      * @return the scanner status.
      */
     public runningStates getScannerStatus() {
-        return scannerStatus;
+        return this.scannerStatus;
     }
 
     /**
@@ -208,7 +355,7 @@ public class AntivirusManager {
      * @return the list of scan reports.
      */
     public List<ScanReport> getFinalReports() {
-        return finalReports;
+        return this.finalReports;
     }
 
     /**
@@ -217,7 +364,7 @@ public class AntivirusManager {
      * @return a copy of the scan buffer.
      */
     public synchronized List<File> getScanBuffer() {
-        return new ArrayList<>(scanBuffer);
+        return new ArrayList<>(this.scanBuffer);
     }
 
     /**
@@ -226,17 +373,17 @@ public class AntivirusManager {
      * @param target the target report to be updated.
      * @param source the source report to merge from.
      */
-	void mergeReports(ScanReport target, ScanReport source) {
-		if (source != null && source.isThreatDetected()) {
-			target.setThreatDetected(true);
-			target.setThreatDetails(source.getThreatDetails());
+    void mergeReports(ScanReport target, ScanReport source) {
+        if (source != null && source.isThreatDetected()) {
+            target.setThreatDetected(true);
+            target.setThreatDetails(source.getThreatDetails());
 
-			if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
-				target.setWarningClass(source.getWarningClass());
-			}
-			target.setValid(target.isValidReport() && (source.isValidReport()));
-		}
-	}
+            if (source.getWarningClass().compareTo(target.getWarningClass()) > 0) {
+                target.setWarningClass(source.getWarningClass());
+            }
+            target.setValid(target.isValidReport() && (source.isValidReport()));
+        }
+    }
 
     /**
      * Moves the specified file to a quarantine directory for further analysis.
@@ -245,36 +392,26 @@ public class AntivirusManager {
      * unchanged. Metadata about the file, including its original path and size,
      * is stored in a separate metadata file.
      *
-     * If the quarantine directory does not exist, it is created and made hidden.
-     * Access control lists (ACLs) are set to ensure full access for the program
-     * while restricting other users to read-only access.
+     * If the quarantine directory does not exist, it is created and made
+     * hidden. Access control lists (ACLs) are set to ensure full access for the
+     * program while restricting other users to read-only access.
      *
      * @param originalFile the file to be moved to quarantine
      * @return the quarantined file, or null if an error occurs
      */
     public File moveToQuarantine(File originalFile) {
+
         if (originalFile == null || !originalFile.exists()) {
             logger.warn("File is null or does not exist, cannot quarantine it.");
             return null;
         }
 
-        // Check if the file is already in quarantine
-        String quarantineDirPath = System.getProperty("user.home") + File.separator + "Downloads" + File.separator
-                + ".QUARANTINE";
-        if (originalFile.getAbsolutePath().startsWith(quarantineDirPath)) {
-            logger.info("File is already in quarantine: {}", originalFile.getAbsolutePath());
-            return originalFile;
-        }
-
-        // Create the quarantine directory inside "Downloads"
-        String downloadsDirPath = System.getProperty("user.home") + File.separator + "Downloads";
-        Path quarantineDir = Paths.get(downloadsDirPath, ".QUARANTINE");
+        Path quarantineDir = Paths.get(FileManager.getConfigValue("FOLDER_TO_SCAN_PATH"), ".QUARANTINE");
 
         try {
             if (!Files.exists(quarantineDir)) {
                 Files.createDirectories(quarantineDir);
 
-                // Make the directory hidden in Windows
                 Files.setAttribute(quarantineDir, "dos:hidden", true);
                 logger.info("Created quarantine directory: {}", quarantineDir);
 
@@ -283,34 +420,27 @@ public class AntivirusManager {
                             AclFileAttributeView.class);
 
                     if (aclAttrView != null) {
-                        // Service for getting the user from the system
                         UserPrincipalLookupService lookupService = FileSystems.getDefault()
                                 .getUserPrincipalLookupService();
 
-                        // Get the current user (who is an administrator)
                         UserPrincipal currentUser = lookupService
                                 .lookupPrincipalByName(System.getProperty("user.name"));
 
-                        // Full access for the program (administrator) - read, write, delete
                         AclEntry fullAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(currentUser) // The program administrator
-                                .setPermissions(AclEntryPermission.values()) // Full permissions
+                                .setPrincipal(currentUser)
+                                .setPermissions(AclEntryPermission.values())
                                 .build();
 
-                        // Read-only for **all** other users (both local and non-local)
                         AclEntry readOnlyAccess = AclEntry.newBuilder()
                                 .setType(AclEntryType.ALLOW)
-                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone")) // SID for Everyone apply read-only for all users
+                                .setPrincipal(lookupService.lookupPrincipalByName("Everyone"))
                                 .setPermissions(
                                         AclEntryPermission.READ_DATA,
                                         AclEntryPermission.READ_ATTRIBUTES,
                                         AclEntryPermission.READ_ACL)
                                 .build();
 
-                        // Set the ACL for the quarantine directory
-                        // - Full access for the program (administrator)
-                        // - Read-only for **all** other users
                         aclAttrView.setAcl(Arrays.asList(fullAccess, readOnlyAccess));
                         logger.info("Set ACL: full access for the program (administrator), read-only for all users.");
                     }
@@ -319,7 +449,6 @@ public class AntivirusManager {
                 }
             }
 
-            // Generate a unique file name
             String quarantineFileName = originalFile.getName();
             Path targetPath = quarantineDir.resolve(quarantineFileName);
             int counter = 1;
@@ -336,15 +465,13 @@ public class AntivirusManager {
                 counter++;
             }
 
-            // Create a preliminary metadata file (without scan result)
             Path metadataPath = quarantineDir.resolve(quarantineFileName + ".meta");
             Properties metadata = new Properties();
             metadata.setProperty("originalPath", originalFile.getAbsolutePath());
             metadata.setProperty("quarantineDate", new Date().toString());
-            metadata.setProperty("scanStatus", "pending"); // awaiting scan
+            metadata.setProperty("scanStatus", "pending");
             metadata.setProperty("fileSize", String.valueOf(originalFile.length()));
 
-            // Save metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Quarantine metadata");
             }
@@ -363,21 +490,20 @@ public class AntivirusManager {
 
     /**
      * Updates the quarantine status of a given file based on the scan results.
-     * If the file is identified as a threat, the threat details are also updated
-     * in the file's metadata. The metadata file is expected to be located at
-     * the same path as the quarantined file with a ".meta" extension.
+     * If the file is identified as a threat, the threat details are also
+     * updated in the file's metadata. The metadata file is expected to be
+     * located at the same path as the quarantined file with a ".meta"
+     * extension.
      *
      * @param quarantinedFile The file whose quarantine status is to be updated.
-     *                        This file must not be null and must exist in the
-     *                        filesystem.
-     * @param isThreat        A boolean indicating whether the file is considered a
-     *                        threat.
-     * @param threatDetails   The details of the threat if one is detected. This
-     *                        parameter
-     *                        is used only if isThreat is true.
+     * This file must not be null and must exist in the filesystem.
+     * @param isThreat A boolean indicating whether the file is considered a
+     * threat.
+     * @param threatDetails The details of the threat if one is detected. This
+     * parameter is used only if isThreat is true.
      * @return True if the metadata is successfully updated, otherwise false.
-     *         Returns false if the file or its metadata cannot be found or if an
-     *         error occurs during the update process.
+     * Returns false if the file or its metadata cannot be found or if an error
+     * occurs during the update process.
      */
     public boolean updateQuarantineStatus(File quarantinedFile, boolean isThreat, String threatDetails) {
         if (quarantinedFile == null || !quarantinedFile.exists()) {
@@ -392,20 +518,17 @@ public class AntivirusManager {
         }
 
         try {
-            // Load existing metadata
             Properties metadata = new Properties();
             try (InputStream in = Files.newInputStream(metadataPath)) {
                 metadata.load(in);
             }
 
-            // Update with scan results
             metadata.setProperty("scanStatus", isThreat ? "threat" : "clean");
             metadata.setProperty("scanDate", new Date().toString());
             if (isThreat && threatDetails != null) {
                 metadata.setProperty("threatDetails", threatDetails);
             }
 
-            // Save updated metadata
             try (OutputStream out = Files.newOutputStream(metadataPath)) {
                 metadata.store(out, "Updated quarantine metadata after scan");
             }
@@ -421,14 +544,12 @@ public class AntivirusManager {
 
     /**
      * Restores a quarantined file to its original location.
-     * 
+     *
      * @param quarantinedFile the quarantined file to restore
-     * @return the restored file if successful, otherwise null
-     *         Restores the file to its original location and deletes the metadata
-     *         file.
-     *         Returns null if the file or its metadata cannot be found or if an
-     *         error
-     *         occurs during the restoration process.
+     * @return the restored file if successful, otherwise null Restores the file
+     * to its original location and deletes the metadata file. Returns null if
+     * the file or its metadata cannot be found or if an error occurs during the
+     * restoration process.
      */
     public File restoreFromQuarantine(File quarantinedFile) {
         if (quarantinedFile == null || !quarantinedFile.exists()) {
@@ -457,12 +578,49 @@ public class AntivirusManager {
 
             // 2. Move the file to the original location
             Path targetPath = Paths.get(originalPath);
-            Files.createDirectories(targetPath.getParent()); // ensure folder exists
+            Files.createDirectories(targetPath.getParent());
+
+            if (Files.exists(targetPath)) {
+
+                if (FileManager.calculateFileHash(targetPath).equals(FileManager.calculateFileHash(quarantinedFile.toPath()))) {
+                    logger.warn("Identic file already exists at the original location: {}", targetPath);
+
+                    File file = targetPath.toFile();
+                    Files.deleteIfExists(metadataPath);
+
+                    return file;
+
+                } 
+                else 
+                {
+
+                    int counter = 1;
+                    while (Files.exists(targetPath)) {
+                        String Name = targetPath.getFileName().toString();
+                        String extension = "";
+                        String baseName = "";
+
+                        Path parentDir = targetPath.getParent();
+                        if (parentDir != null) {
+                            baseName = parentDir.toString();
+                        }
+
+                        int dotIndex = Name.lastIndexOf('.');
+                        if (dotIndex > 0) {
+                            extension = Name.substring(dotIndex);
+                            Name = Name.substring(0, dotIndex);
+                        }
+
+                        Name = baseName + " (" + counter + ")" + extension;
+
+                        targetPath = parentDir.resolve(Name);
+                        counter++;
+                    }
+                }
+            }
+
             Files.move(quarantinedFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
             File restoredFile = targetPath.toFile();
-
-            // 3. Delete metadata
             Files.deleteIfExists(metadataPath);
 
             logger.info("File restored from quarantine: {}", restoredFile.getAbsolutePath());
@@ -479,6 +637,26 @@ public class AntivirusManager {
                 logger.warn("Unable to delete metadata file after restoration error", ex);
             }
             return null;
+        }
+    }
+
+    public boolean isFileInQuarantine(File file) {
+        if (file == null || !file.exists()) {
+            logger.warn("File is null or does not exist, cannot check quarantine status.");
+            return false;
+        }
+        logger.info(file.getAbsolutePath());
+        return file.getAbsolutePath().contains(".QUARANTINE");
+    }
+
+    /**
+     * Interrupts `scanThread` thread, if is active. Checks if each thread is
+     * not null and is alive before attempting to interrupt it.
+     */
+    public void interruptAllThreads() throws InterruptedException {
+        if (this.scanThread != null && this.scanThread.isAlive()) {
+            this.scanThread.interrupt();
+            this.scanThread.join();
         }
     }
 }

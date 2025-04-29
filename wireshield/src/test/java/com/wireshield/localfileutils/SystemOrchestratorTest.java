@@ -1,28 +1,29 @@
 package com.wireshield.localfileutils;
 
-import com.wireshield.av.AntivirusManager;
-import com.wireshield.enums.connectionStates;
-import com.wireshield.enums.runningStates;
-import com.wireshield.wireguard.WireguardManager;
-import com.wireshield.enums.vpnOperations;
-import com.wireshield.wireguard.Peer;
-import com.wireshield.wireguard.PeerManager;
+import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.MockitoAnnotations;
 
-import java.util.Map;
+import com.wireshield.av.AntivirusManager;
+import com.wireshield.enums.connectionStates;
+import com.wireshield.enums.runningStates;
+import com.wireshield.enums.vpnOperations;
+import com.wireshield.wireguard.Peer;
+import com.wireshield.wireguard.PeerManager;
+import com.wireshield.wireguard.WireguardManager;
 
 
 
@@ -186,7 +187,7 @@ public class SystemOrchestratorTest {
 		orchestrator.manageAV(runningStates.UP);
 
 		// Call the method to get the antivirus status
-		runningStates status = orchestrator.getAVStatus();
+		runningStates status = orchestrator.getScannerStatus();
 
 		// Verify that the antivirus status is UP
 		assertEquals(runningStates.UP, status);
