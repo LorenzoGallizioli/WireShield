@@ -9,7 +9,7 @@
 	<artifactId>wireshield</artifactId>
 	<version>1.0</version>
 
-	<name>wireshield</name>
+	<name>WireShield</name>
 	<url>https://github.com/LorenzoGallizioli/WireShield.git</url>
 
   <properties>

@@ -120,11 +120,11 @@ public class UserInterface extends Application implements PeerOperationListener 
     public void start(Stage primaryStage) {
         try {
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/MainView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);
-            scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
 
             primaryStage.initStyle(StageStyle.DECORATED);
             primaryStage.setTitle("WireShield - ALPHA");
@@ -509,7 +509,7 @@ public class UserInterface extends Application implements PeerOperationListener 
 
             peerInfoContainer.getChildren().clear();
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("peerInfo.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/peerInfo.fxml"));
             javafx.scene.Node newContent = loader.load();
 
             PeerInfoController controller = loader.getController();
