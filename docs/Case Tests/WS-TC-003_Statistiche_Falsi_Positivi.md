@@ -146,7 +146,7 @@ During the test execution, the following files were scanned:
 
 ## Status
 
-[Passed]
+**Passed**
 
 &nbsp;
 
