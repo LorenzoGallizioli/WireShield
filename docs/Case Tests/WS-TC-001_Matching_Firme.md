@@ -45,7 +45,7 @@ Verify that ClamAV correctly detects a file with a known viral signature (e.g., 
 
 ## Test Data
 
-- A Test file.
+- A test file.
 - Source: [https://www.testfile.org/](https://www.testfile.org/)  
 - File: `eicar.com`  
 - Source: [https://www.eicar.org/](https://www.eicar.org/)  
