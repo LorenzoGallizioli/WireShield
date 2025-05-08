@@ -115,7 +115,7 @@ During the test execution, various key aspects of the system and behavior during
 
 ## Status
 
-[Passed]
+**Passed**
 
 &nbsp;
 
