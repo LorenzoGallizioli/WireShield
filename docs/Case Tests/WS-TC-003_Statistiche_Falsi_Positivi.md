@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/e6e99929-e362-48b2-8b5a-366406ff2dbf
 ## General Information
 
 | Field     | Value                                                    |
