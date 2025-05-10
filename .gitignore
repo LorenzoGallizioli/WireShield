@@ -1,6 +1,7 @@
 # Project custom files
-wireshield/config/connection-configurations/*
-wireshield/config/logDump.txt
+config/connection-configurations/*
+config/logDump.txt
+wireshield/*
 
 ### STS ###
 .apt_generated
@@ -71,7 +72,7 @@ local.properties
 
 ### Eclipse Patch ###
 # Eclipse Core
-# .project
+#.project
 
 # JDT-specific (Eclipse Java Development Tools)
 # .classpath
@@ -101,7 +102,7 @@ local.properties
 *.class
 
 # Log file
-*.log
+logs/*
 
 # BlueJ files
 *.ctxt
