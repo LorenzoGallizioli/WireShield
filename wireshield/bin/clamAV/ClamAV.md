@@ -8,7 +8,7 @@ Benvenuto! Questa guida ti permette di scaricare rapidamente, configurare e auto
 
 Clicca sul link qui sotto per scaricare il file eseguibile ClamAV pronto per l'uso:
 
-👉 [Scarica ClamAV per WireShield](link del file .exe su github)
+👉 [Scarica ClamAV per WireShield](https://github.com/LorenzoGallizioli/WireShield/blob/main/wireshield/bin/clamAV/clamAV_Installer.exe)
 
 ---
 
