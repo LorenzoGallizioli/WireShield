@@ -21,12 +21,6 @@
 8. [📞 Contatti](#-contatti)
 
 &nbsp;
-## 🧑‍💻 Chi Siamo
-
-Siamo **Davide Bonsembiante**, **Lorenzo Gallizioli** e **Thomas Paganelli**, studenti universitari al **3° anno di Ingegneria Informatica** presso l'**Università degli Studi di Bergamo**. Questo progetto è stato sviluppato come progetto per il corso di **Ingegneria del Software**.
-
-
-&nbsp;
 ## 📝 Descrizione del Progetto
 
 Il progetto consiste in un'applicazione **client Java** progettata per connettersi a una VPN tramite il protocollo **WireGuard** e integrare un sistema di **scansione antivirus** che analizzi i file scaricati attraverso la rete. 
@@ -46,7 +40,7 @@ L’applicazione permette la configurazione e la gestione di una connessione VPN
    - **Caricamento file di configurazione**: supporto per file `.conf` di WireGuard, che semplifica il setup della connessione.
 
 ### 2. Scansione Antivirus Integrata
-Per proteggere i file scaricati durante l’utilizzo della VPN, il client offre una doppia opzione per la scansione antivirus:
+Per proteggere i file scaricati durante l’utilizzo della VPN, il client offre una scansione antivirus:
    - **Integrazione con ClamAV**: scansione antivirus open-source con ClamAV.
    - **Aggiornamento automatico delle firme virus**: ogni volta che WireShield viene avviato, l'applicazione aggiorna automaticamente le firme virali per garantire la massima protezione.
 
@@ -62,7 +56,7 @@ L’applicazione presenta un’interfaccia **JavaFX** che consente all’utente 
    - **Configurare la connessione VPN**: l'utente può facilmente configurare e gestire la connessione VPN direttamente dall'interfaccia grafica.
    - **Monitorare la connessione**: visualizzazione di informazioni in tempo reale sulla VPN, come la latenza, la velocità di connessione e i dettagli del traffico.
    - **Visualizzare i risultati delle scansioni antivirus**: l'interfaccia fornisce feedback chiari e immediati riguardo ai risultati delle scansioni antivirus, indicando se i file sono sicuri o contengono malware.
-   - **Gestire i file in quarantena: visualizzare**, ripristinare o eliminare definitivamente i file posti in quarantena.
+   - **Gestire i file in quarantena**, ripristinare o eliminare definitivamente i file posti in quarantena.
 
 ### 5. Logging e Notifiche
 L’applicazione tiene traccia di tutte le operazioni e fornisce notifiche in tempo reale:
@@ -76,18 +70,16 @@ L’applicazione tiene traccia di tutte le operazioni e fornisce notifiche in te
 
 > ⚠️ **Permessi Amministrativi**: Poiché l’applicazione interagisce con WireGuard, è necessario eseguire il programma con privilegi elevati (root/sudo) per gestire le connessioni di rete.
 
-1. **ClamAV**: Necessario per la scansione antivirus ([Segui la guida per installare clamAV sul tuo PC](https://github.com/LorenzoGallizioli/WireShield/blob/7e6f6c54f63fd79cc4b99bfd91c4ab223ffa6286/wireshield/bin/ClamAV.md))
-.
+1. **ClamAV**: Necessario per la scansione antivirus. Lo script di installazione automatizzato per Windows ora offre:
+   - **Download dinamico dell'ultima versione**: Lo script scarica automaticamente l'ultima versione stabile di ClamAV direttamente dal sito ufficiale.
+   - **Configurazione automatica**: I file di configurazione necessari vengono scaricati e installati automaticamente.
+   - **Pulizia automatica**: I file temporanei vengono rimossi al termine dell'installazione.
+   - **Aggiornamento automatico delle firme**: Le firme virali vengono automaticamente aggiornate all'avvio di WireShield, garantendo che l'antivirus sia sempre aggiornato con le ultime definizioni disponibili.
+
+👉 [Scarica ClamAV per WireShield](https://github.com/LorenzoGallizioli/WireShield/blob/main/wireshield/bin/clamAV/clamAV_Installer.exe)
+
 2. **Java 11** o versione successiva: L’applicazione è sviluppata in Java e utilizza funzionalità correlate come JavaFX.
 
-### Installazione di ClamAV (Windows)
-Lo script di installazione automatizzato per Windows ora offre:
-1. **Download dinamico dell'ultima versione**: Lo script scarica automaticamente l'ultima versione stabile di ClamAV direttamente dal sito ufficiale.
-2. **Configurazione automatica**: I file di configurazione necessari vengono scaricati e installati automaticamente.
-3. **Installazione come servizio Windows**: ClamAV viene configurato come servizio di sistema per garantire il funzionamento continuo.
-4. **Pulizia automatica**: I file temporanei vengono rimossi al termine dell'installazione.
-
-L'aggiornamento delle firme virali avviene automaticamente all'avvio di WireShield, garantendo che l'antivirus sia sempre aggiornato con le ultime definizioni disponibili.
 
 &nbsp;
 ## 🛠️ Come Usare l'Applicazione
