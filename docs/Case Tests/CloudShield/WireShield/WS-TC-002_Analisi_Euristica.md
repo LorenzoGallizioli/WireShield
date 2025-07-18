@@ -1,107 +1,113 @@
-## Informazioni Generali
+## General Information
 
-| Campo     | Valore                                                    |
-|-----------|------------------------------------------------------------|
-| Progetto  | WireShield – Client VPN con protezione antivirus integrata |
-| Versione  | 1.0                                                        |
-| Autore    | Davide Bonsembiante                                        |
-| Data      | 15-04-2025                                                 |
+| Field     | Value                                                    |
+|-----------|----------------------------------------------------------|
+| Project   | WireShield – VPN Client with Integrated Antivirus        |
+| Version   | 1.0                                                      |
+| Author    | Davide Bonsembiante                                      |
+| Date      | 15-04-2025                                               |
 
 &nbsp;
 
 ## Test Case ID: [WS-TC-002] 
-### Titolo: Rilevamento euristico di malware modificato
+### Title: Heuristic Detection of Modified Malware
 
-**Categoria di test:**  
-Analisi euristica
+**Test Category:**  
+Heuristic Analysis
 
-**Priorità:**  
-Alta
-
-&nbsp;
-
-## Obiettivo  
-Verificare che WireShield possa rilevare varianti di malware modificate attraverso l'analisi euristica, anche quando la firma esatta non è presente nel database di ClamAV.
+**Priority:**  
+High
 
 &nbsp;
 
-## Pre-condizioni
-
-- WireShield correttamente installato e configurato  
-- ClamAV installato e attivo
-- Il servizio di antivirus (`AntivirusManager`) e monitoraggio dei file (`DownloadManager`) in esecuzione  
-- Campione di malware open-source disponibile
+## Objective  
+Verify that WireShield can detect modified malware variants through heuristic analysis, even when the exact signature is not present in the ClamAV database.
 
 &nbsp;
 
-## Ambiente di test
+## Pre-conditions
 
-- Sistema operativo: Windows 10 
-- Versione Java: OpenJDK 23 
-- Versione ClamAV: 1.4.2
-- Dipendenze: JavaFX, ClamAV CLI, logger locale attivo
-
-&nbsp;
-
-## Dati di test
-
-- File: `malware_sample.exe` (campione originale)
-- File: `malware_sample_modified.exe` (campione modificato)
-- Origine: Repository di malware open-source per test
-- Modifiche: Alterazione di stringhe non-funzionali, cambiamento di metadati, modifica di parti non-eseguibili del binario
+- WireShield is correctly installed and configured  
+- ClamAV is installed and active  
+- The antivirus service (`AntivirusManager`) and file monitoring service (`DownloadManager`) are running  
+- The file `eicar.txt` is available  
 
 &nbsp;
 
-## Passi di esecuzione
+## Test Environment
 
-1. Preparare il campione di malware modificato:
-    - Copiare il campione originale
-    - Modificare parti non-funzionali con hexeditor
-    - Cambiare stringhe e metadati senza alterare la funzionalità
-2. Avviare WireShield
-3. Scansionare il file modificato
-4. Osservare il comportamento del sistema 
-5. Verificare se il file viene rilevato come sospetto/dannoso
-6. Controllare i log per verificare il tipo di rilevamento
-7. Confermare che sia stato un rilevamento euristico e non basato su firma
+- Operating System: Windows 10  
+- Java Version: OpenJDK 23  
+- ClamAV Version: 1.4.2  
+- Dependencies: JavaFX, ClamAV CLI, active local logger  
 
 &nbsp;
 
-## Risultati attesi
+## Test Data
 
-- Il file malware_sample_modified.exe viene rilevato come potenzialmente dannoso  
-- Il rilevamento è di tipo euristico (in base al tempo impiegato per analizzare il file) 
-- Il file viene spostato in quarantena
-- Il log contiene un messaggio tipo: `"Virus rilevato..."`  
-- L'interfaccia chiede all'utente come procedere, ovvero eliminare il file, oppure ripristinarlo.
-
-&nbsp;
-
-## Risultati effettivi
-
-- [Da compilare durante l'esecuzione]
+- File: `eicar.com.txt` (original sample)  
+- File: `eicar_modified.txt` (modified version)  
+- Modifications made:  
+  - Alteration of the standard EICAR string:  
+    ```
+    X5O!Q%@AP[5\PZX54(P^)7CC)7}$EICAR-TEST-STANDARD-ANTIMALWARE-FILE!$H+H*
+    ```
 
 &nbsp;
 
-## Stato
+## Execution Steps
 
-[Superato/Fallito]
-
-&nbsp;
-
-## Metriche rilevate
-
-| Metrica             | Valore    |
-|---------------------|-----------|
-| Tempo di esecuzione | [ms/s]    |
-| Utilizzo CPU        | [%]       |
-| Utilizzo memoria    | [MB]      |
-| Altro               | [eventuali]
+1. Download the file `eicar.txt` (official antivirus test file).  
+2. Start WireShield.  
+3. Scan the modified file (`eicar.txt`).  
+4. Observe the system behavior.  
+5. Check if the file is detected as suspicious or malicious.  
+6. Create a copy of the file and modify it:  
+   - Alter some characters of the standard string without changing the general structure.  
+7. Scan the modified file (`eicar.txt`).  
+8. Observe the system behavior.  
+9. Check if the file is detected as suspicious or malicious.  
 
 &nbsp;
 
-## Allegati
+## Expected Results
 
-- Screenshot  
-- Log  
-- Altre evidenze
+- The file `eicar_modified.txt` should be detected as potentially malicious through heuristic analysis.  
+- The file should be moved to quarantine.  
+- The interface should prompt the user to delete or restore the file.  
+
+&nbsp;
+
+## Actual Results
+
+- The file `eicar_modified.txt` was detected as **clean** by ClamAV.  
+- No virus detection notification appeared in the user interface.  
+- Logs do not contain malware reports for the modified file.  
+
+&nbsp;
+
+## Status
+
+**Failed**
+
+&nbsp;
+
+## Attachments and Collected Metrics
+
+- **Video recording of the test session**, including:  
+  - Test execution  
+  - Antivirus status and WireShield behavior  
+  - Real-time metrics display:  
+    - CPU usage  
+    - Memory usage  
+    - Disk I/O
+
+https://github.com/user-attachments/assets/a3d9f28d-0c1f-485f-b5c6-24ae48fa2b50
+
+
+&nbsp;
+
+## Note  
+To achieve effective heuristic analysis, it may be necessary to:  
+- Use more sophisticated samples or deeper alterations.  
+- Configure ClamAV to enable a more advanced heuristic scanning level.  

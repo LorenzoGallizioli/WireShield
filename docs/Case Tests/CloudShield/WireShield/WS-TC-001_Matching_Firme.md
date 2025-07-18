@@ -1,102 +1,111 @@
-## Informazioni Generali
+## General Information
 
-| Campo     | Valore                                                    |
-|-----------|------------------------------------------------------------|
-| Progetto  | WireShield – Client VPN con protezione antivirus integrata |
-| Versione  | 1.0                                                        |
-| Autore    | Davide Bonsembiante                                        |
-| Data      | 15-04-2025                                                 |
+| Field     | Value                                                     |
+|-----------|-----------------------------------------------------------|
+| Project   | WireShield – VPN Client with Integrated Antivirus         |
+| Version   | 1.0                                                       |
+| Author    | Davide Bonsembiante                                       |
+| Date      | 15-04-2025                                                |
 
 &nbsp;
 
 ## Test Case ID: [WS-TC-001]  
-### Titolo: Rilevamento di file contenente firma virale nota
+### Title: Detection of a File Containing a Known Viral Signature
 
-**Categoria di test:**  
-Rilevamento basato su firma
+**Test Category:**  
+Signature-based Detection
 
-**Priorità:**  
-Alta
-
-&nbsp;
-
-## Obiettivo  
-Verificare che ClamAV rilevi correttamente un file con una firma virale nota (es. EICAR) e che WireShield sposti il file in quarantena, generando dei log e notificando l’utente.
+**Priority:**  
+High
 
 &nbsp;
 
-## Pre-condizioni
-
-- WireShield correttamente installato e configurato  
-- ClamAV installato e attivo
-- Il servizio di antivirus (`AntivirusManager`) e monitoraggio dei file (`DownloadManager`) in esecuzione  
-- File di test `eicar.com` disponibile
+## Objective  
+Verify that ClamAV correctly detects a file with a known viral signature (e.g., EICAR) and that WireShield moves the file to quarantine, generates logs, and notifies the user.
 
 &nbsp;
 
-## Ambiente di test
+## Pre-conditions
 
-- Sistema operativo: Windows 10 
-- Versione Java: OpenJDK 23 
-- Versione ClamAV: 1.4.2
-- Dipendenze: JavaFX, ClamAV CLI, logger locale attivo
+- WireShield is correctly installed and configured  
+- ClamAV is installed and active  
+- The antivirus service (`AntivirusManager`) and file monitoring service (`DownloadManager`) are running  
+- Test file `eicar.com` is available
 
 &nbsp;
 
-## Dati di test
+## Test Environment
 
+- Operating System: Windows 10  
+- Java Version: OpenJDK 23  
+- ClamAV Version: 1.4.2  
+- Dependencies: JavaFX, ClamAV CLI, active local logger  
+
+&nbsp;
+
+## Test Data
+
+- A test file.
+- Source: [https://www.testfile.org/](https://www.testfile.org/)  
 - File: `eicar.com`  
-- Origine: [https://www.eicar.org/](https://www.eicar.org/)  
-- Contenuto: stringa di test antivirale standard  
-- Note: il file **non è pericoloso**, ma serve solo per testare i motori antivirus
+- Source: [https://www.eicar.org/](https://www.eicar.org/)  
+- Content: standard antivirus test string  
+- Notes: the file **is not dangerous**, but is only used to test antivirus engines  
 
 &nbsp;
 
-## Passi di esecuzione
+## Execution Steps
 
-1. Avviare WireShield  
-2. Scaricare `eicar.com`
-3. Attendere la scansione automatica  
-4. Controllare che il file sia stato spostato in `quarantena/`  
-5. Verificare i logger presenti nel terminale
-6. Controllare se ClamAV ha rilevato il file come dannoso e chiede come procedere, se rimuoverlo o ripristinarlo
-
-&nbsp;
-
-## Risultati attesi
-
-- Il file `eicar.com` viene rilevato come infetto da ClamAV  
-- Il file viene spostato in quarantena  
-- Il log contiene un messaggio tipo: `"Virus rilevato..."`  
-- L'interfaccia chiede all'utente come procedere, ovvero eliminare il file, oppure ripristinarlo.
+1. Start WireShield.  
+2. Download a test PDF file.  
+3. Wait for WireShield to automatically scan the file.  
+4. Verify that the file is moved to the `quarantine/` folder (if detected as infected).  
+5. Check the scan result in the **Antivirus** section of the GUI.  
+6. Download the test file `eicar.com`.  
+7. Wait for the automatic scan.  
+8. Verify that the file `eicar.com` is also moved to the `quarantine/` folder.  
+9. Check in the GUI that ClamAV detected the file as malicious and prompts the user to delete or restore it.  
 
 &nbsp;
 
-## Risultati effettivi
+## Expected Results
 
-- [Da compilare durante l'esecuzione]
-
-&nbsp;
-
-## Stato
-
-**Superato**
+- The test PDF file is detected as **clean** by ClamAV.  
+- The file `eicar.com` is detected as **infected** by ClamAV.  
+- The infected file is automatically moved to `quarantine/`.  
+- Logs display a message similar to `"Virus detected..."`.  
+- The graphical interface prompts the user to either **delete** the file or **restore** it.  
 
 &nbsp;
 
-## Metriche rilevate
+## Actual Results
 
-| Metrica             | Valore    |
-|---------------------|-----------|
-| Tempo di esecuzione | [ms/s]    |
-| Utilizzo CPU        | [%]       |
-| Utilizzo memoria    | [MB]      |
-| Altro               | [eventuali]
+- No false positives were detected during the scan of the clean PDF file.  
+- The file `eicar.com` was correctly identified as infected by ClamAV.  
+- WireShield automatically moved `eicar.com` to the `quarantine/` folder.  
+- The **Antivirus** section of the GUI correctly displayed the detection of the threat and prompted the user to choose whether to delete or restore the file.  
+- A notification was displayed in the GUI, prompting the user to take action:  
+  - **Permanently delete**.  
+  - **Restore to the Downloads folder**.  
 
 &nbsp;
 
-## Allegati
+## Status
 
-- Screenshot  
-- Log  
-- Altre evidenze
+**Passed**
+
+&nbsp;
+
+## Attachments and Collected Metrics
+
+- **Video recording of the test session**, including:  
+  - Test execution  
+  - Antivirus status and WireShield behavior  
+  - Real-time metrics display:  
+    - CPU usage  
+    - Memory usage  
+    - Disk I/O
+
+
+https://github.com/user-attachments/assets/8948e82d-f18d-461b-b8cb-3e30f1a2177c
+

@@ -1,173 +1,140 @@
-## Informazioni Generali
+## General Information
 
-| Campo     | Valore                                                    |
-|-----------|------------------------------------------------------------|
-| Progetto  | WireShield – Client VPN con protezione antivirus integrata |
-| Versione  | 1.0                                                        |
-| Autore    | Davide Bonsembiante                                        |
-| Data      | 15-04-2025                                                 |
+| Field     | Value                                                    |
+|-----------|----------------------------------------------------------|
+| Project   | WireShield – VPN Client with Integrated Antivirus        |
+| Version   | 1.0                                                      |
+| Author    | Davide Bonsembiante                                      |
+| Date      | 15-04-2025                                               |
 
 &nbsp;
 
 ## Test Case ID: [WS-TC-004]  
-### Titolo: Performance e Timing di Scansione con ClamAV
+### Title: Performance and Scan Timing with ClamAV
 
-**Categoria di test:**  
-Prestazioni e temporizzazione
+**Test Category:**  
+Performance and Timing
 
-**Priorità:**  
-Alta
-
-&nbsp;
-
-## Obiettivo  
-Misurare il tempo necessario per scansionare vari file di dimensioni e complessità diverse utilizzando ClamAV, e verificare che la performance del sistema rimanga adeguata sotto carico.
+**Priority:**  
+High
 
 &nbsp;
 
-## Pre-condizioni
-
-- WireShield correttamente installato e configurato  
-- ClamAV installato e attivo  
-- Il servizio di antivirus (`AntivirusManager`) e monitoraggio dei file (`DownloadManager`) in esecuzione  
-- Sistema con risorse sufficienti (CPU e memoria) per testare la performance
+## Objective  
+Measure the time required to scan various files of different sizes and complexities using ClamAV, and verify that the system's performance remains adequate under load.
 
 &nbsp;
 
-## Ambiente di test
+## Pre-conditions
 
-- Sistema operativo: Windows 10  
-- Versione Java: OpenJDK 23  
-- Versione ClamAV: 1.4.2  
-- Dipendenze: JavaFX, ClamAV CLI, logger locale attivo
-
-&nbsp;
-
-## Dati di test
-
-- Dataset misto di file:
-  - File di piccole dimensioni (1-5 MB)
-  - File di dimensioni medie (10-50 MB)
-  - File di grandi dimensioni (100-500 MB)
-  - File di tipo malizioso e benigno
+- WireShield is correctly installed and configured  
+- ClamAV is installed and active  
+- The antivirus service (`AntivirusManager`) and file monitoring service (`DownloadManager`) are running  
+- System with sufficient resources (CPU and memory) to test performance
 
 &nbsp;
 
-## Passi di esecuzione
+## Test Environment
 
-1. Preparare i seguenti file per il test:
-    - File di piccole dimensioni (esempio: `small_file.exe` da 3 MB)
-    - File di medie dimensioni (esempio: `medium_file.exe` da 25 MB)
-    - File di grandi dimensioni (esempio: `large_file.exe` da 200 MB)
-2. Avviare il programma di test (`PerformanceTestClamAV.java`) allegato nella sezione **Allegati**
-3. Esaminare il tempo totale di scansione per ogni file, come riportato nel log di output
-4. Ripetere la scansione più volte per ognuno dei file di dimensioni diverse per verificare la coerenza dei risultati
-5. Verificare che il sistema non vada in crash o rallenti in modo significativo durante le scansioni di grandi file
-6. Valutare l’utilizzo delle risorse del sistema (CPU, memoria) durante le scansioni
+- Operating System: Windows 10  
+- Java Version: OpenJDK 23  
+- ClamAV Version: 1.4.2  
+- Dependencies: JavaFX, ClamAV CLI, active local logger
 
 &nbsp;
 
-## Risultati attesi
+## Test Data
 
-- Il tempo di scansione per ogni file dovrebbe essere riportato nel log.
-- I tempi di scansione dovrebbero essere accettabili e coerenti, in base alla dimensione del file (esempio: il file più grande dovrebbe richiedere più tempo, ma senza rallentamenti eccessivi).
-- Non ci dovrebbero essere crash del sistema durante le scansioni.
-- Il sistema non dovrebbe consumare una quantità eccessiva di risorse CPU/memoria e causare problemi a lavorare in parallelo.
+- Mixed dataset of files:
+  - Small files (10 MB)
+  - Medium files (50 MB)
+  - Large files (200 MB)
+
+&nbsp;
+
+## Execution Steps
+
+1. **Prepare the test files**:
+    - Small file (e.g., `10MB-TESTFILE.ORG.pdf` of 10 MB)
+    - Medium file (e.g., `50MB-TESTFILE.ORG.pdf` of 50 MB)
+    - Large file (e.g., `200MB-TESTFILE.ORG.pdf` of 200 MB)
   
-&nbsp;
+2. **Start the scanning process**:
+    - Scan the **small file** and record the scan time.
+    - Scan the **medium file** and record the scan time.
+    - Scan the **large file** and record the scan time.
 
-## Risultati effettivi
+3. **Repeat the scan** for each of the files listed above to verify consistency in results.
 
-- [Da compilare durante l'esecuzione]
+4. **Monitor system resources**:
+    - Check CPU and memory usage during scans.
+    - Ensure the system does not crash or slow down significantly during scans of large files.
 
-&nbsp;
-
-## Stato
-
-[Superato/Fallito]
-
-&nbsp;
-
-## Metriche rilevate
-
-| Metrica             | Valore    |
-|---------------------|-----------|
-| Tempo di esecuzione (file piccoli) | [ms/s]    |
-| Tempo di esecuzione (file medi)   | [ms/s]    |
-| Tempo di esecuzione (file grandi) | [ms/s]    |
-| Utilizzo CPU        | [%]       |
-| Utilizzo memoria    | [MB]      |
-| Altro               | [eventuali]
+5. **Evaluate performance**:
+    - Monitor resource usage for each scan and verify that the system maintains adequate performance even during scans of large files.
 
 &nbsp;
 
-## Allegati
+## Expected Results
 
-### 📄 Codice Java – PerformanceTestClamAV.java
+- Scan times should be acceptable and consistent, based on file size (e.g., larger files should take more time, but without excessive slowdowns).
+- There should be no system crashes during scans.
+- The system should not consume excessive CPU/memory resources, causing issues with parallel work.
 
-```java
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
+&nbsp;
 
-public class PerformanceTestClamAV {
+## Actual Results
 
-    public static void main(String[] args) {
-        // Lista dei file da testare
-        File[] filesToScan = {
-            new File("path_to_files/small_file.exe"),   // 3 MB
-            new File("path_to_files/medium_file.exe"),  // 25 MB
-            new File("path_to_files/large_file.exe")    // 200 MB
-        };
+During the test execution, various key aspects of the system and behavior during file scans were monitored, as highlighted in the attached video. The results obtained are as follows:
 
-        // Variabili per la misurazione dei tempi
-        long startTime, endTime;
-        long totalTime = 0;
+1. **File Quarantine**:
+    - The infected file was detected and correctly moved to the `.QUARANTINE` folder, regardless of file size.
+    - The movement of files, including large ones (up to 200 MB), was completed quickly and without noticeable slowdowns, ensuring a smooth user experience.
+    - The system retained the `.blocked` extension as expected to indicate the file was quarantined.
 
-        for (File file : filesToScan) {
-            System.out.println("▶ Inizio scansione di: " + file.getName());
-            
-            // Iniziamo a misurare il tempo di scansione
-            startTime = System.currentTimeMillis();
-            int result = scanFileWithClamAV(file); // Funzione per la scansione con ClamAV
-            endTime = System.currentTimeMillis();
-            
-            long elapsedTime = endTime - startTime;
-            totalTime += elapsedTime;
-            
-            // Stampa dei risultati
-            if (result == 0) {
-                System.out.println("✅ Scansione completata con successo per: " + file.getName());
-            } else {
-                System.out.println("⚠️ Errore durante la scansione di: " + file.getName());
-            }
-            
-            System.out.println("Tempo di scansione per " + file.getName() + ": " + elapsedTime + " ms");
-        }
+2. **File Scanning**:
+    - The antivirus scan completed the analysis of each file without slowdowns or interruptions, even for large files.
+    - Large files, such as the 200 MB file, were analyzed quickly, with no loss of system performance. The scan was completed in acceptable times, with the system maintaining optimal performance throughout the process.
+    - During the scanning process, the system demonstrated excellent resource management, with no PC slowdowns or crashes, even under the load of large files.
 
-        // Stampa dei tempi totali
-        System.out.println("\n🏁 Tempo totale di scansione per tutti i file: " + totalTime + " ms");
-    }
+3. **Clean File Restoration**:
+    - The clean file was successfully restored from quarantine, removing the `.blocked` extension and returning the file to its original path without any issues.
+    - Even large files were restored quickly and without errors, confirming that the system can handle files of various sizes without compromising performance.
+    - The clean file was verified and found to be fully executable, without damage, confirming proper file handling throughout the process.
 
-    // Funzione per eseguire la scansione con ClamAV
-    public static int scanFileWithClamAV(File file) {
-        // Comando per eseguire la scansione con ClamAV tramite CLI
-        String command = "clamdscan --no-summary --stdout " + file.getAbsolutePath();
-        
-        try {
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            return process.exitValue();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-}
-```
+4. **Resource Usage**:
+    - CPU and memory usage during the scan was monitored, and no usage spikes were detected that could compromise system stability.
+    - The system correctly handled small and large files without evident impacts on overall performance.
 
-### Dettagli:
+5. **General Behavior**:
+    - No system crashes were detected during the test execution.
+    - The infected file's handling, its movement to quarantine, and analysis were quick and error-free.
+    - No issues were encountered during file analysis or clean file restoration.
 
-- Il codice misura il tempo di scansione per diversi file di diverse dimensioni e stampa i risultati in modo che possano essere analizzati.
-- Ogni file viene scansionato tramite il comando `clamdscan` di ClamAV e il tempo di esecuzione per ciascuna scansione viene registrato.
-- Alla fine del test, viene riportato il tempo totale di scansione per tutti i file, e ogni file viene testato singolarmente.
+&nbsp;
+
+## Status
+
+**Passed**
+
+&nbsp;
+
+## Attachments and Collected Metrics
+
+- **Video recording of the test session**, including:
+  - Test execution
+  - Antivirus status and WireShield behavior
+  - Real-time metrics display:
+    - CPU usage
+    - Memory usage
+    - Disk I/O
+
+
+https://github.com/user-attachments/assets/fa185560-66d4-4225-9055-00d7c2c2caed
+
+
+&nbsp;
+
+## Notes
+
+- It is noted that the connection used during the test is a **Wi-Fi** connection, which is more unstable compared to a wired **Ethernet** connection. Additionally, the connection is **VDSL**, and the cabinet is located at a distance of **1190 meters**, which may contribute to some slowness in network operations and scan times.
